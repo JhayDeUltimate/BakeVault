@@ -1,7 +1,7 @@
-
 import React from 'react';
-import { Category } from '../types';
+import { NavLink, useLocation } from 'react-router-dom';
 import { CATEGORIES } from '../constants';
+import { Category } from '../types';
 
 interface CategoryMenuProps {
   isOpen: boolean;
@@ -11,12 +11,14 @@ interface CategoryMenuProps {
 }
 
 const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose, onSelectCategory, selectedCategory }) => {
+  const location = useLocation();
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-brand-darkGray/40 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
-      
+
       <div className="fixed inset-y-0 right-0 max-w-full flex">
         <div className="w-screen max-w-xs">
           <div className="h-full flex flex-col bg-white shadow-2xl">
@@ -31,36 +33,61 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose, onSelectCa
               </div>
 
               <div className="space-y-3">
+                <div className="space-y-2 pb-5 border-b border-orange-100">
+                  {[
+                    { to: '/', label: 'Home' },
+                    { to: '/catalog', label: 'Catalog' },
+                    { to: '/about', label: 'About' }
+                  ].map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      onClick={onClose}
+                      className={`block w-full text-left px-6 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
+                        location.pathname === link.to
+                          ? 'bg-brand-orange text-white border-brand-orange shadow-lg'
+                          : 'bg-white text-brand-darkGray border-orange-50 hover:bg-orange-50'
+                      }`}
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+
                 <button
-                  onClick={() => { onSelectCategory('All'); onClose(); }}
+                  onClick={() => {
+                    onSelectCategory('All');
+                    onClose();
+                  }}
                   className={`w-full text-left px-6 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
-                    selectedCategory === 'All' 
-                      ? 'bg-brand-brown text-white border-brand-brown shadow-lg' 
+                    selectedCategory === 'All'
+                      ? 'bg-brand-brown text-white border-brand-brown shadow-lg'
                       : 'bg-white text-brand-darkGray border-orange-50 hover:bg-orange-50'
                   }`}
                 >
                   All Products
                 </button>
-                {CATEGORIES.map((cat) => (
+                {CATEGORIES.map((category) => (
                   <button
-                    key={cat}
-                    onClick={() => { onSelectCategory(cat); onClose(); }}
+                    key={category}
+                    onClick={() => {
+                      onSelectCategory(category);
+                      onClose();
+                    }}
                     className={`w-full text-left px-6 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
-                      selectedCategory === cat 
-                        ? 'bg-brand-brown text-white border-brand-brown shadow-lg' 
+                      selectedCategory === category
+                        ? 'bg-brand-brown text-white border-brand-brown shadow-lg'
                         : 'bg-white text-brand-darkGray border-orange-50 hover:bg-orange-50'
                     }`}
                   >
-                    {cat}
+                    {category}
                   </button>
                 ))}
               </div>
             </div>
-            
+
             <div className="bg-brand-cream/30 p-6 border-t border-orange-100">
-               <p className="text-[10px] text-center text-brand-darkGray/40 font-bold uppercase tracking-widest">
-                 BakeVault Lagos
-               </p>
+              <p className="text-[10px] text-center text-brand-darkGray/40 font-bold uppercase tracking-widest">BakeVault Lagos</p>
             </div>
           </div>
         </div>

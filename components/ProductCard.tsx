@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from '../types';
 
@@ -10,11 +9,10 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
   return (
     <div className="bg-white rounded-[20px] sm:rounded-[24px] shadow-sm border border-orange-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full">
-      {/* Reduced aspect ratio on mobile (3:2) compared to sm:square */}
       <div className="relative aspect-[3/2] sm:aspect-square overflow-hidden bg-brand-cream/50 border-b border-orange-50">
-        <img 
-          src={product.image} 
-          alt={product.name} 
+        <img
+          src={product.image}
+          alt={product.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           loading="lazy"
         />
@@ -24,26 +22,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
           </span>
         </div>
       </div>
-      
-      {/* Content Container */}
+
       <div className="p-3 sm:p-5 flex flex-col flex-grow text-center">
         <div className="mb-2 sm:mb-4">
           <h3 className="text-[11px] sm:text-base font-bold text-brand-darkGray mb-1 leading-tight min-h-[28px] sm:min-h-[44px] line-clamp-2 font-display">
             {product.name}
           </h3>
         </div>
-        
-        {/* Availability & Action */}
+
         <div className="mt-auto pt-2 sm:pt-4 border-t border-orange-50 space-y-2 sm:space-y-4">
           <div className="hidden sm:flex flex-col items-center">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-brand-brown font-extrabold text-[9px] sm:text-[10px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">Retail</span>
-              <span className="text-brand-darkGray/20 text-[9px] sm:text-[10px]">•</span>
-              <span className="text-brand-brown font-extrabold text-[9px] sm:text-[10px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">Wholesale</span>
+              <span className="text-brand-brown font-extrabold text-[9px] sm:text-[10px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">
+                Retail
+              </span>
+              <span className="text-brand-darkGray/20 text-[9px] sm:text-[10px]">|</span>
+              <span className="text-brand-brown font-extrabold text-[9px] sm:text-[10px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">
+                Wholesale
+              </span>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => onAddToCart(product)}
             className="w-full bg-brand-orange hover:bg-brand-brown text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg shadow-brand-orange/5 active:scale-95"
           >

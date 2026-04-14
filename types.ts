@@ -1,5 +1,4 @@
-
-export type Category = 
+export type Category =
   | 'Yogurt & Dairy Starters'
   | 'Milk Flavorings & Essences'
   | 'Preservatives & Additives'
@@ -15,11 +14,19 @@ export interface Product {
   name: string;
   category: Category;
   description?: string;
-  price: string; // "Contact for price" or numeric if available
+  price: string;
   image: string;
   isCustom?: boolean;
 }
 
 export interface CartItem extends Product {
   quantity: number;
+}
+
+export interface Testimonial {
+  id: number;
+  name: string;
+  role: string;
+  quote: string;
+  initials: string;
 }

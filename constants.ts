@@ -1,5 +1,4 @@
-
-import { Product, Category } from './types';
+import { Category, Product, Testimonial } from './types';
 
 export const CATEGORIES: Category[] = [
   'Yogurt & Dairy Starters',
@@ -14,35 +13,35 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const PRODUCTS: Product[] = [
-  { 
-    id: '1', 
-    name: 'Yogourmet Yogurt Starter', 
-    category: 'Yogurt & Dairy Starters', 
-    price: 'Wholesale', 
+  {
+    id: '1',
+    name: 'Yogourmet Yogurt Starter',
+    category: 'Yogurt & Dairy Starters',
+    price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=80&w=1200',
     description: 'The gold standard for home and commercial yogurt production. Achieve a smooth, creamy texture and perfect tang every single time.'
   },
-  { 
-    id: '4', 
-    name: 'Lux Essence Milk Flavour', 
-    category: 'Milk Flavorings & Essences', 
-    price: 'Wholesale', 
+  {
+    id: '4',
+    name: 'Lux Essence Milk Flavour',
+    category: 'Milk Flavorings & Essences',
+    price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1550507992-eb63ffee0847?auto=format&fit=crop&q=80&w=1200',
     description: 'A highly concentrated premium essence that delivers a rich, creamy aroma to breads, cakes, and dairy products. The secret to that signature bakery scent.'
   },
-  { 
-    id: '17', 
-    name: "Hershey's Chocolate Syrup", 
-    category: 'Syrups & Toppings', 
-    price: 'Wholesale', 
+  {
+    id: '17',
+    name: "Hershey's Chocolate Syrup",
+    category: 'Syrups & Toppings',
+    price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&q=80&w=1200',
     description: 'Genuine chocolate flavor that remains smooth and decadent. Perfect for drizzling over masterpieces or mixing into rich batters.'
   },
-  { 
-    id: '23', 
-    name: 'Havana Active Baking Powder', 
-    category: 'Baking Ingredients', 
-    price: 'Wholesale', 
+  {
+    id: '23',
+    name: 'Havana Active Baking Powder',
+    category: 'Baking Ingredients',
+    price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=1200',
     description: 'Engineered for high-altitude and tropical climates. Ensures a consistent, reliable rise for all your breads and pastries.'
   },
@@ -79,4 +78,8 @@ export const PRODUCTS: Product[] = [
   { id: '35', name: 'Premium Icing Sugar (Leviti)', category: 'Other Products', price: 'Wholesale', image: 'https://picsum.photos/seed/icing/400/300' }
 ];
 
-export const WHATSAPP_NUMBER = '2349064652679';
+export const TESTIMONIALS: Testimonial[] = [
+  { id: 1, name: 'Amaka O.', role: 'Lagos Pastries', quote: 'BakeVault is my go-to for Havana Active. Always fresh.', initials: 'AO' },
+  { id: 2, name: 'Tunde W.', role: 'Mainline Breads', quote: 'Wholesale prices saved our bakery 15%. Fast delivery!', initials: 'TW' },
+  { id: 3, name: 'Mrs. Adeyemi', role: 'The Cake Studio', quote: 'Finally a supplier that understands Lagos urgency!', initials: 'MA' }
+];

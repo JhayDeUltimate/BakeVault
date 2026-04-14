@@ -1,7 +1,6 @@
-
 import React from 'react';
+import { WHATSAPP_NUMBER } from '../config';
 import { CartItem } from '../types';
-import { WHATSAPP_NUMBER } from '../constants';
 
 interface CartProps {
   isOpen: boolean;
@@ -15,9 +14,14 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
   if (!isOpen) return null;
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
+  const hasWhatsappNumber = Boolean(WHATSAPP_NUMBER);
 
   const handleCheckout = () => {
-    const orderText = items.map(item => `• ${item.name} (Qty: ${item.quantity})`).join('\n');
+    if (!hasWhatsappNumber) {
+      return;
+    }
+
+    const orderText = items.map((item) => `- ${item.name} (Qty: ${item.quantity})`).join('\n');
     const message = encodeURIComponent(`Hello BakeVault! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`);
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
   };
@@ -25,7 +29,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-brand-darkGray/40 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
-      
+
       <div className="fixed inset-y-0 right-0 max-w-full flex">
         <div className="w-screen max-w-md">
           <div className="h-full flex flex-col bg-white shadow-2xl">
@@ -68,14 +72,14 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                           </div>
                           <div className="flex-1 flex items-end justify-between text-sm">
                             <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
-                              <button 
+                              <button
                                 onClick={() => onUpdateQuantity(item.id, -1)}
                                 className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm"
                               >
                                 -
                               </button>
                               <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
-                              <button 
+                              <button
                                 onClick={() => onUpdateQuantity(item.id, 1)}
                                 className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm"
                               >
@@ -108,13 +112,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
               <div className="mt-8">
                 <button
                   onClick={handleCheckout}
-                  disabled={items.length === 0}
+                  disabled={items.length === 0 || !hasWhatsappNumber}
                   className="w-full flex justify-center items-center px-8 py-4 rounded-2xl shadow-lg text-base font-bold text-white bg-green-600 hover:bg-green-700 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed gap-3 uppercase"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.389l-1.071 3.914 4.024-1.056c.915.541 1.983.853 3.12.853 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767zm3.344 8.205c-.15.422-.766.782-1.056.818-.289.035-.555.051-1.636-.369-1.393-.541-2.288-1.956-2.358-2.05-.071-.094-.576-.766-.576-1.459 0-.692.361-1.034.489-1.176.128-.142.279-.177.373-.177h.262c.085 0 .197-.033.303.224l.432 1.052c.036.088.058.188.001.298-.057.11-.086.182-.172.282l-.258.303c-.085.1-.176.208-.078.376.098.168.435.719.932 1.162.641.571 1.179.749 1.347.834.168.085.267.071.366-.042.1-.113.424-.492.538-.661.114-.168.228-.141.385-.084.157.057.994.469 1.165.555.172.085.286.128.329.201.042.073.042.422-.108.844z"/>
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.389l-1.071 3.914 4.024-1.056c.915.541 1.983.853 3.12.853 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767zm3.344 8.205c-.15.422-.766.782-1.056.818-.289.035-.555.051-1.636-.369-1.393-.541-2.288-1.956-2.358-2.05-.071-.094-.576-.766-.576-1.459 0-.692.361-1.034.489-1.176.128-.142.279-.177.373-.177h.262c.085 0 .197-.033.303.224l.432 1.052c.036.088.058.188.001.298-.057.11-.086.182-.172.282l-.258.303c-.085.1-.176.208-.078.376.098.168.435.719.932 1.162.641.571 1.179.749 1.347.834.168.085.267.071.366-.042.1-.113.424-.492.538-.661.114-.168.228-.141.385-.084.157.057.994.469 1.165.555.172.085.286.128.329.201.042.073.042.422-.108.844z" />
                   </svg>
-                  GET PRICE VIA WHATSAPP
+                  {hasWhatsappNumber ? 'Get Price via WhatsApp' : 'WhatsApp unavailable'}
                 </button>
               </div>
               <div className="mt-6 flex justify-center text-sm text-center">
