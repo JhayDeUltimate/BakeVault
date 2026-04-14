@@ -1,5 +1,7 @@
+'use client'
+
 import React, { useEffect, useState } from 'react';
-import { Product } from '../../bakevault/src/lib/types';
+import { Product } from '../../types';
 
 interface HeroSectionProps {
   products: Product[];
@@ -75,3 +77,4 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
 };
 
 export default HeroSection;
+

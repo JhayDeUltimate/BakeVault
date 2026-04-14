@@ -1,5 +1,7 @@
+'use client'
+
 import React from 'react';
-import { Product } from '../bakevault/src/lib/types';
+import { Product } from '../types';
 
 interface ProductCardProps {
   product: Product;
@@ -59,3 +61,4 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
 };
 
 export default ProductCard;
+

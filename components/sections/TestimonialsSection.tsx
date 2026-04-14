@@ -1,5 +1,7 @@
+'use client'
+
 import React, { useEffect, useState } from 'react';
-import { Testimonial } from '../../bakevault/src/lib/types';
+import { Testimonial } from '../../types';
 
 interface TestimonialsSectionProps {
   testimonials: Testimonial[];
@@ -80,3 +82,4 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ testimonials 
 };
 
 export default TestimonialsSection;
+

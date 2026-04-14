@@ -1,19 +1,23 @@
+'use client'
+
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import ProductCard from '../components/ProductCard';
 import AboutSection from '../components/sections/AboutSection';
 import HeroSection from '../components/sections/HeroSection';
 import TestimonialsSection from '../components/sections/TestimonialsSection';
 import SectionHeading from '../components/ui/SectionHeading';
 import { CATEGORIES, PRODUCTS, TESTIMONIALS } from '../constants';
-import { Category, Product } from '../bakevault/src/lib/types';
+import { Category, Product } from '../types';
 
 interface HomePageProps {
-  onAddToCart: (product: Product) => void;
-  onSelectCategory: (category: Category | 'All') => void;
+  onAddToCart?: (product: Product) => void;
+  onSelectCategory?: (category: Category | 'All') => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onAddToCart, onSelectCategory }) => {
+const noop = () => {};
+
+const HomePage: React.FC<HomePageProps> = ({ onAddToCart = noop, onSelectCategory = noop }) => {
   const heroProducts = useMemo(() => PRODUCTS.filter((product) => product.description && product.id.length < 5).slice(0, 4), []);
   const featuredProducts = useMemo(() => PRODUCTS.slice(0, 4), []);
 
@@ -51,7 +55,7 @@ const HomePage: React.FC<HomePageProps> = ({ onAddToCart, onSelectCategory }) =>
                 <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">Featured Essentials</h3>
                 <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-2">A quick look at the best-selling staples bakers keep reordering.</p>
               </div>
-              <Link to="/catalog" className="text-brand-brown font-bold text-xs sm:text-sm hover:text-brand-orange transition-colors whitespace-nowrap">
+              <Link href="/catalog" className="text-brand-brown font-bold text-xs sm:text-sm hover:text-brand-orange transition-colors whitespace-nowrap">
                 Full Catalog
               </Link>
             </div>
@@ -71,3 +75,4 @@ const HomePage: React.FC<HomePageProps> = ({ onAddToCart, onSelectCategory }) =>
 };
 
 export default HomePage;
+

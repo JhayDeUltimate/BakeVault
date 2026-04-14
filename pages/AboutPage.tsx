@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import AboutSection from '../components/sections/AboutSection';
 import TestimonialsSection from '../components/sections/TestimonialsSection';
 import SectionHeading from '../components/ui/SectionHeading';
@@ -18,7 +18,7 @@ const AboutPage: React.FC = () => {
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              to="/catalog"
+              href="/catalog"
               className="w-full sm:w-auto text-center bg-brand-orange text-white font-extrabold px-8 py-4 rounded-2xl hover:bg-brand-brown transition-all shadow-lg active:scale-95 font-display text-sm uppercase tracking-wide"
             >
               Browse Catalog

@@ -1,6 +1,8 @@
+'use client'
+
 
 import React, { useState } from 'react';
-import { Category, Product } from '../bakevault/src/lib/types';
+import { Category, Product } from '../types';
 import { CATEGORIES } from '../constants';
 
 interface AddProductModalProps {
@@ -133,3 +135,4 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onAd
 };
 
 export default AddProductModal;
+
