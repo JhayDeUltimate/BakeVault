@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import AboutSection from '../components/sections/AboutSection';
 import TestimonialsSection from '../components/sections/TestimonialsSection';
 import SectionHeading from '../components/ui/SectionHeading';
-import { TESTIMONIALS } from '../constants';
-import { WHATSAPP_URL } from '../config';
+import { TESTIMONIALS, WHATSAPP_URL } from '../constants';
 
 const AboutPage: React.FC = () => {
   return (

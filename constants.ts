@@ -1,5 +1,7 @@
 import { Category, Product, Testimonial } from './types';
 
+const rawWhatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER?.trim() ?? '';
+
 export const CATEGORIES: Category[] = [
   'Yogurt & Dairy Starters',
   'Milk Flavorings & Essences',
@@ -83,3 +85,7 @@ export const TESTIMONIALS: Testimonial[] = [
   { id: 2, name: 'Tunde W.', role: 'Mainline Breads', quote: 'Wholesale prices saved our bakery 15%. Fast delivery!', initials: 'TW' },
   { id: 3, name: 'Mrs. Adeyemi', role: 'The Cake Studio', quote: 'Finally a supplier that understands Lagos urgency!', initials: 'MA' }
 ];
+
+export const WHATSAPP_NUMBER = rawWhatsappNumber.replace(/\D/g, '');
+export const WHATSAPP_URL = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : '';
+export const WHATSAPP_DISPLAY_NUMBER = rawWhatsappNumber ? (rawWhatsappNumber.startsWith('+') ? rawWhatsappNumber : `+${rawWhatsappNumber}`) : '';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { WHATSAPP_NUMBER } from '../config';
+import { WHATSAPP_NUMBER } from '../constants';
 import { CartItem } from '../types';
 
 interface CartProps {

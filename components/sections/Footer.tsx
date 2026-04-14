@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { WHATSAPP_DISPLAY_NUMBER, WHATSAPP_URL } from '../../config';
+import { WHATSAPP_DISPLAY_NUMBER, WHATSAPP_URL } from '../../constants';
 import BrandLogo from '../ui/BrandLogo';
 
 const Footer: React.FC = () => {
