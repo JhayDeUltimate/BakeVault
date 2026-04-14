@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react';
 import { WHATSAPP_NUMBER } from '../constants';
 import { CartItem } from '../types';
@@ -139,3 +141,4 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 };
 
 export default Cart;
+

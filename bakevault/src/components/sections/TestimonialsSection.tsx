@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useEffect, useState } from 'react';
 import { Testimonial } from '../../types';
 
@@ -80,3 +82,4 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ testimonials 
 };
 
 export default TestimonialsSection;
+

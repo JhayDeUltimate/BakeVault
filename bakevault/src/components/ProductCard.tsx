@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react';
 import { Product } from '../types';
 
@@ -59,3 +61,4 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
 };
 
 export default ProductCard;
+

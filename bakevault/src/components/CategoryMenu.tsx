@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { CATEGORIES } from '../constants';
@@ -97,3 +99,4 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose, onSelectCa
 };
 
 export default CategoryMenu;
+

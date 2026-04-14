@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import BrandLogo from './ui/BrandLogo';
@@ -72,3 +74,4 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
 };
 
 export default Header;
+

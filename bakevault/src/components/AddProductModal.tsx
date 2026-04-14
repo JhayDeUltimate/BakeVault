@@ -1,3 +1,5 @@
+'use client'
+
 
 import React, { useState } from 'react';
 import { Category, Product } from '../types';
@@ -133,3 +135,4 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onAd
 };
 
 export default AddProductModal;
+

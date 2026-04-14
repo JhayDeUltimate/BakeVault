@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useEffect, useState } from 'react';
 import { Product } from '../../types';
 
@@ -75,3 +77,4 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
 };
 
 export default HeroSection;
+
