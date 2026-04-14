@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import ProductCard from '../components/ProductCard';
 import AboutSection from '../components/sections/AboutSection';
 import HeroSection from '../components/sections/HeroSection';
@@ -53,7 +53,7 @@ const HomePage: React.FC<HomePageProps> = ({ onAddToCart, onSelectCategory }) =>
                 <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">Featured Essentials</h3>
                 <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-2">A quick look at the best-selling staples bakers keep reordering.</p>
               </div>
-              <Link to="/catalog" className="text-brand-brown font-bold text-xs sm:text-sm hover:text-brand-orange transition-colors whitespace-nowrap">
+              <Link href="/catalog" className="text-brand-brown font-bold text-xs sm:text-sm hover:text-brand-orange transition-colors whitespace-nowrap">
                 Full Catalog
               </Link>
             </div>

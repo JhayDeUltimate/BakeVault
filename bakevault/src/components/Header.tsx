@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import BrandLogo from './ui/BrandLogo';
 
 interface HeaderProps {
@@ -11,10 +12,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories }) => {
-  const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
+  const pathname = usePathname();
+
+  const navLinkClassName = (href: string) =>
     [
       'transition-colors font-bold text-sm uppercase tracking-[0.2em]',
-      isActive ? 'text-brand-orange' : 'text-brand-darkGray/60 hover:text-brand-orange'
+      pathname === href ? 'text-brand-orange' : 'text-brand-darkGray/60 hover:text-brand-orange'
     ].join(' ');
 
   return (
@@ -22,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           <Link
-            to="/"
+            href="/"
             className="flex-shrink-0 group"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
@@ -30,15 +33,15 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
-            <NavLink to="/" end className={navLinkClassName}>
+            <Link href="/" className={navLinkClassName('/')}>
               Home
-            </NavLink>
-            <NavLink to="/catalog" className={navLinkClassName}>
+            </Link>
+            <Link href="/catalog" className={navLinkClassName('/catalog')}>
               Catalog
-            </NavLink>
-            <NavLink to="/about" className={navLinkClassName}>
+            </Link>
+            <Link href="/about" className={navLinkClassName('/about')}>
               About
-            </NavLink>
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4">

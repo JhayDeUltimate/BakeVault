@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { WHATSAPP_DISPLAY_NUMBER, WHATSAPP_URL } from '../../constants';
 import BrandLogo from '../ui/BrandLogo';
 
@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
     <footer className="bg-brand-darkGray text-white py-12 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
         <div className="text-center md:text-left">
-          <Link to="/" className="inline-flex mb-6">
+          <Link href="/" className="inline-flex mb-6">
             <BrandLogo textClassName="text-white" />
           </Link>
           <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest">Copyright {new Date().getFullYear()} BakeVault Lagos.</p>
@@ -45,13 +45,13 @@ const Footer: React.FC = () => {
         <div className="text-center md:text-right">
           <h5 className="font-display font-bold text-lg text-brand-orange uppercase tracking-widest mb-4">Quick Links</h5>
           <div className="space-y-2">
-            <Link to="/" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">
+            <Link href="/" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">
               Home
             </Link>
-            <Link to="/catalog" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">
+            <Link href="/catalog" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">
               Catalog
             </Link>
-            <Link to="/about" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">
+            <Link href="/about" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">
               About
             </Link>
             <p className="pt-2 text-brand-orange font-bold font-display text-lg">sales@bakevault.com.ng</p>

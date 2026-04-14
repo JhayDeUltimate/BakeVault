@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { CATEGORIES } from '../constants';
 import { Category } from '../types';
 
@@ -13,7 +14,7 @@ interface CategoryMenuProps {
 }
 
 const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose, onSelectCategory, selectedCategory }) => {
-  const location = useLocation();
+  const pathname = usePathname();
 
   if (!isOpen) return null;
 
@@ -41,18 +42,18 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose, onSelectCa
                     { to: '/catalog', label: 'Catalog' },
                     { to: '/about', label: 'About' }
                   ].map((link) => (
-                    <NavLink
+                    <Link
                       key={link.to}
-                      to={link.to}
+                      href={link.to}
                       onClick={onClose}
                       className={`block w-full text-left px-6 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
-                        location.pathname === link.to
+                        pathname === link.to
                           ? 'bg-brand-orange text-white border-brand-orange shadow-lg'
                           : 'bg-white text-brand-darkGray border-orange-50 hover:bg-orange-50'
                       }`}
                     >
                       {link.label}
-                    </NavLink>
+                    </Link>
                   ))}
                 </div>
 
