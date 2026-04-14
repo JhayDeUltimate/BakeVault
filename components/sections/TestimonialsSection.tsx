@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Testimonial } from '../../types';
+import { Testimonial } from '../../bakevault/src/lib/types';
 
 interface TestimonialsSectionProps {
   testimonials: Testimonial[];

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import ProductCard from '../components/ProductCard';
 import SectionHeading from '../components/ui/SectionHeading';
 import { CATEGORIES, PRODUCTS } from '../constants';
-import { Category, Product } from '../types';
+import { Category, Product } from '../bakevault/src/lib/types';
 
 interface CatalogPageProps {
   selectedCategory: Category | 'All';

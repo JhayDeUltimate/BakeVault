@@ -6,7 +6,7 @@ import HeroSection from '../components/sections/HeroSection';
 import TestimonialsSection from '../components/sections/TestimonialsSection';
 import SectionHeading from '../components/ui/SectionHeading';
 import { CATEGORIES, PRODUCTS, TESTIMONIALS } from '../constants';
-import { Category, Product } from '../types';
+import { Category, Product } from '../bakevault/src/lib/types';
 
 interface HomePageProps {
   onAddToCart: (product: Product) => void;

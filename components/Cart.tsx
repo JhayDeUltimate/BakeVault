@@ -1,6 +1,6 @@
 import React from 'react';
 import { WHATSAPP_NUMBER } from '../constants';
-import { CartItem } from '../types';
+import { CartItem } from '../bakevault/src/lib/types';
 
 interface CartProps {
   isOpen: boolean;

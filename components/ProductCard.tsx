@@ -1,5 +1,5 @@
 import React from 'react';
-import { Product } from '../types';
+import { Product } from '../bakevault/src/lib/types';
 
 interface ProductCardProps {
   product: Product;

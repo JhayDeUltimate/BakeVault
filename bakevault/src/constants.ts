@@ -1,6 +1,6 @@
-import { Category, Product, Testimonial } from './bakevault/src/lib/types';
+import type { Category, Product, Testimonial } from './types'
 
-const rawWhatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER?.trim() ?? '';
+const rawWhatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim() ?? ''
 
 export const CATEGORIES: Category[] = [
   'Yogurt & Dairy Starters',
@@ -11,8 +11,8 @@ export const CATEGORIES: Category[] = [
   'Margarine & Spreads',
   'Baking Ingredients',
   'Food Coloring',
-  'Other Products'
-];
+  'Other Products',
+]
 
 export const PRODUCTS: Product[] = [
   {
@@ -21,7 +21,8 @@ export const PRODUCTS: Product[] = [
     category: 'Yogurt & Dairy Starters',
     price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=80&w=1200',
-    description: 'The gold standard for home and commercial yogurt production. Achieve a smooth, creamy texture and perfect tang every single time.'
+    description:
+      'The gold standard for home and commercial yogurt production. Achieve a smooth, creamy texture and perfect tang every single time.',
   },
   {
     id: '4',
@@ -29,7 +30,8 @@ export const PRODUCTS: Product[] = [
     category: 'Milk Flavorings & Essences',
     price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1550507992-eb63ffee0847?auto=format&fit=crop&q=80&w=1200',
-    description: 'A highly concentrated premium essence that delivers a rich, creamy aroma to breads, cakes, and dairy products. The secret to that signature bakery scent.'
+    description:
+      'A highly concentrated premium essence that delivers a rich, creamy aroma to breads, cakes, and dairy products. The secret to that signature bakery scent.',
   },
   {
     id: '17',
@@ -37,7 +39,8 @@ export const PRODUCTS: Product[] = [
     category: 'Syrups & Toppings',
     price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&q=80&w=1200',
-    description: 'Genuine chocolate flavor that remains smooth and decadent. Perfect for drizzling over masterpieces or mixing into rich batters.'
+    description:
+      'Genuine chocolate flavor that remains smooth and decadent. Perfect for drizzling over masterpieces or mixing into rich batters.',
   },
   {
     id: '23',
@@ -45,7 +48,8 @@ export const PRODUCTS: Product[] = [
     category: 'Baking Ingredients',
     price: 'Wholesale',
     image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=1200',
-    description: 'Engineered for high-altitude and tropical climates. Ensures a consistent, reliable rise for all your breads and pastries.'
+    description:
+      'Engineered for high-altitude and tropical climates. Ensures a consistent, reliable rise for all your breads and pastries.',
   },
   { id: '2', name: 'Yogourmet Probiotic Yogurt Starter', category: 'Yogurt & Dairy Starters', price: 'Wholesale', image: 'https://picsum.photos/seed/yogurt2/400/300' },
   { id: '3', name: 'Milk Tantaliza Ex (Urban Foods)', category: 'Milk Flavorings & Essences', price: 'Wholesale', image: 'https://picsum.photos/seed/milk1/400/300' },
@@ -77,15 +81,19 @@ export const PRODUCTS: Product[] = [
   { id: '32', name: 'Big Bake Bread Improver', category: 'Other Products', price: 'Wholesale', image: 'https://picsum.photos/seed/bake/400/300' },
   { id: '33', name: 'STK Royal Food Additive', category: 'Other Products', price: 'Wholesale', image: 'https://picsum.photos/seed/stk/400/300' },
   { id: '34', name: 'Cee Calcium Propionate', category: 'Other Products', price: 'Wholesale', image: 'https://picsum.photos/seed/cee/400/300' },
-  { id: '35', name: 'Premium Icing Sugar (Leviti)', category: 'Other Products', price: 'Wholesale', image: 'https://picsum.photos/seed/icing/400/300' }
-];
+  { id: '35', name: 'Premium Icing Sugar (Leviti)', category: 'Other Products', price: 'Wholesale', image: 'https://picsum.photos/seed/icing/400/300' },
+]
 
 export const TESTIMONIALS: Testimonial[] = [
   { id: 1, name: 'Amaka O.', role: 'Lagos Pastries', quote: 'BakeVault is my go-to for Havana Active. Always fresh.', initials: 'AO' },
   { id: 2, name: 'Tunde W.', role: 'Mainline Breads', quote: 'Wholesale prices saved our bakery 15%. Fast delivery!', initials: 'TW' },
-  { id: 3, name: 'Mrs. Adeyemi', role: 'The Cake Studio', quote: 'Finally a supplier that understands Lagos urgency!', initials: 'MA' }
-];
+  { id: 3, name: 'Mrs. Adeyemi', role: 'The Cake Studio', quote: 'Finally a supplier that understands Lagos urgency!', initials: 'MA' },
+]
 
-export const WHATSAPP_NUMBER = rawWhatsappNumber.replace(/\D/g, '');
-export const WHATSAPP_URL = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : '';
-export const WHATSAPP_DISPLAY_NUMBER = rawWhatsappNumber ? (rawWhatsappNumber.startsWith('+') ? rawWhatsappNumber : `+${rawWhatsappNumber}`) : '';
+export const WHATSAPP_NUMBER = rawWhatsappNumber.replace(/\D/g, '')
+export const WHATSAPP_URL = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : ''
+export const WHATSAPP_DISPLAY_NUMBER = rawWhatsappNumber
+  ? rawWhatsappNumber.startsWith('+')
+    ? rawWhatsappNumber
+    : `+${rawWhatsappNumber}`
+  : ''

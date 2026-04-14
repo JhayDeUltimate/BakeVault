@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Category, Product } from '../types';
+import { Category, Product } from '../bakevault/src/lib/types';
 import { CATEGORIES } from '../constants';
 
 interface AddProductModalProps {

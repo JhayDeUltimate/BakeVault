@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { CATEGORIES } from '../constants';
-import { Category } from '../types';
+import { Category } from '../bakevault/src/lib/types';
 
 interface CategoryMenuProps {
   isOpen: boolean;

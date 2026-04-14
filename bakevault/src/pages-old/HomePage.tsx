@@ -11,11 +11,13 @@ import { CATEGORIES, PRODUCTS, TESTIMONIALS } from '../constants';
 import { Category, Product } from '../types';
 
 interface HomePageProps {
-  onAddToCart: (product: Product) => void;
-  onSelectCategory: (category: Category | 'All') => void;
+  onAddToCart?: (product: Product) => void;
+  onSelectCategory?: (category: Category | 'All') => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onAddToCart, onSelectCategory }) => {
+const noop = () => {};
+
+const HomePage: React.FC<HomePageProps> = ({ onAddToCart = noop, onSelectCategory = noop }) => {
   const heroProducts = useMemo(() => PRODUCTS.filter((product) => product.description && product.id.length < 5).slice(0, 4), []);
   const featuredProducts = useMemo(() => PRODUCTS.slice(0, 4), []);
 

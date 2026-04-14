@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Product } from '../../types';
+import { Product } from '../../bakevault/src/lib/types';
 
 interface HeroSectionProps {
   products: Product[];
