@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useCategories } from '@/hooks'
 import ImageUpload from '@/components/admin/ImageUpload'
+import { supabase } from '@/lib/supabase'
+import { toSlug } from '@/lib/api'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
 interface Props {
@@ -43,13 +45,39 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name.trim()) { setError('Product name is required.'); return }
+
+    // Clean submit flow: require an image URL (uploaded via ImageUpload)
+    if (!form.image_url) {
+      console.log('No image selected')
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+
     try {
-      setSaving(true)
-      setError(null)
-      await onSave(form)
+      const slug = toSlug(form.name)
+
+      const { error } = await supabase.from('products').insert({
+        name: form.name,
+        slug,
+        description: form.description ?? null,
+        category_id: form.category_id || null,
+        image_url: form.image_url,
+        is_available: form.is_available,
+        is_featured: form.is_featured,
+        price_type: form.price_type,
+        display_order: form.display_order,
+      })
+
+      if (error) {
+        console.error(error)
+        setError(error.message)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed')
+      const msg = err instanceof Error ? err.message : 'Save failed'
+      console.error(msg)
+      setError(msg)
     } finally {
       setSaving(false)
     }
@@ -110,6 +138,7 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
       <div>
         <label className={label}>Product Photo</label>
         <ImageUpload
+          key={initial?.id ?? 'new'}
           currentUrl={form.image_url || null}
           onUpload={url => set('image_url', url)}
           onError={msg => setError(msg)}

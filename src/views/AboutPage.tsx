@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom'
 import AboutSection        from '@/components/sections/AboutSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading      from '@/components/ui/SectionHeading'
-import { TESTIMONIALS, WHATSAPP_URL } from '@/constants'
+import { WHATSAPP_URL }    from '@/constants'
+import { useTestimonials } from '@/hooks'
 
 export default function AboutPage() {
+  // FIX: use the DB-backed hook instead of the hardcoded TESTIMONIALS constant
+  // so changes made in Admin → Testimonials are immediately reflected here.
+  const { testimonials } = useTestimonials(true)
+
   return (
     <>
       <section className="bg-white border-b border-orange-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
@@ -36,7 +41,7 @@ export default function AboutPage() {
         </div>
       </section>
       <AboutSection withBorder={false} />
-      <TestimonialsSection testimonials={TESTIMONIALS} />
+      <TestimonialsSection testimonials={testimonials} />
     </>
   )
 }

@@ -17,13 +17,14 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
 
-  async function handleCheckout() {
-    const orderText   = items.map(item => `• ${item.name} (Qty: ${item.quantity})`).join('\n')
-    const message     = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
-    const encoded     = encodeURIComponent(message)
+  function handleCheckout() {
+    const orderText = items.map(item => `• ${item.name} (Qty: ${item.quantity})`).join('\n')
+    const message   = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
+    const encoded   = encodeURIComponent(message)
 
-    // Log to Supabase (non-blocking — failure must not stop WhatsApp)
-    await logEnquiry(
+    // FIX: Fire-and-forget — open WhatsApp immediately; DB logging happens in
+    // the background. A network hiccup must never block the customer's order.
+    logEnquiry(
       items.map(i => ({ product_id: i.id, product_name: i.name, category: i.category, quantity: i.quantity })),
       message
     )
@@ -42,7 +43,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
             <div className="flex-1 py-8 overflow-y-auto px-6 sm:px-8">
               <div className="flex items-start justify-between">
                 <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">Your Shopping Bag</h2>
-                <button onClick={onClose} className="ml-3 p-2 text-brand-darkGray/40 hover:text-brand-orange transition-colors">
+                <button onClick={onClose} className="ml-3 p-2 text-brand-darkGray/40 hover:text-brand-orange transition-colors" aria-label="Close cart">
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -81,9 +82,9 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                           </div>
                           <div className="flex-1 flex items-end justify-between text-sm">
                             <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
-                              <button onClick={() => onUpdateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">-</button>
+                              <button onClick={() => onUpdateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm" aria-label="Decrease quantity">-</button>
                               <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
-                              <button onClick={() => onUpdateQuantity(item.id,  1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">+</button>
+                              <button onClick={() => onUpdateQuantity(item.id,  1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm" aria-label="Increase quantity">+</button>
                             </div>
                             <button type="button" onClick={() => onRemove(item.id)} className="font-bold text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
                               Remove

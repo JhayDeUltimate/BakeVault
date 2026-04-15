@@ -5,9 +5,10 @@ import AboutSection        from '@/components/sections/AboutSection'
 import HeroSection         from '@/components/sections/HeroSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading      from '@/components/ui/SectionHeading'
-import { CATEGORIES, TESTIMONIALS } from '@/constants'
+import { TESTIMONIALS }    from '@/constants'
 import { useCart }         from '@/lib/cart-context'
 import { useProducts }     from '@/hooks'
+import { mapDBProduct }    from '@/lib/utils'
 
 export default function HomePage() {
   const { addToCart } = useCart()
@@ -15,12 +16,29 @@ export default function HomePage() {
 
   const { products: featuredFromDB } = useProducts({ featuredOnly: true })
 
-  const heroProducts     = useMemo(() => featuredFromDB.filter(p => p.description).slice(0, 4), [featuredFromDB])
-  const featuredProducts = useMemo(() => featuredFromDB.slice(0, 4), [featuredFromDB])
+  // Slides for HeroSection — needs DBProductWithCategory for image_url + description
+  const heroSlides = useMemo(
+    () => featuredFromDB.slice(0, 4),
+    [featuredFromDB]
+  )
+
+  // Cards for ProductCard grid — mapped to the storefront Product shape
+  const featuredProducts = useMemo(
+    () => featuredFromDB.map(mapDBProduct).slice(0, 4),
+    [featuredFromDB]
+  )
 
   return (
     <>
-      <HeroSection products={featuredProducts} onAddToCart={addToCart} />
+      {/*
+        FIX: HeroSection's onAddToCart receives DBProductWithCategory.
+        Map it to Product before calling addToCart so cart items always
+        have `image` and `category` fields (not `image_url` / `categories`).
+      */}
+      <HeroSection
+        products={heroSlides}
+        onAddToCart={p => addToCart(mapDBProduct(p))}
+      />
       <AboutSection />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
@@ -33,7 +51,9 @@ export default function HomePage() {
               description="Jump into the part of the vault you need most and head straight to the full catalog."
             />
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-12">
-              {CATEGORIES.map(category => (
+              {['Yogurt & Dairy Starters','Milk Flavorings & Essences','Preservatives & Additives',
+                'Syrups & Toppings','Milk Flavouring Powders (Bulk)','Margarine & Spreads',
+                'Baking Ingredients','Food Coloring','Other Products'].map(category => (
                 <button
                   key={category}
                   onClick={() => navigate('/catalog')}
@@ -58,6 +78,9 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+              {/* FIX: featuredProducts is now Product[] (mapped) so ProductCard
+                  and addToCart both receive the correct shape with `image` and
+                  `category` fields populated. */}
               {featuredProducts.map(product => (
                 <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
               ))}

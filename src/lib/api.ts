@@ -17,7 +17,7 @@ export async function getProducts(filters?: {
   categoryId?: string | null
   search?: string
   featuredOnly?: boolean
-  includeUnavailable?: boolean   // only the admin needs this
+  includeUnavailable?: boolean
 }): Promise<DBProductWithCategory[]> {
   let query = supabase
     .from('products')
@@ -163,17 +163,13 @@ export async function logEnquiry(
   items: EnquiryItem[],
   whatsappMessage: string
 ): Promise<void> {
-  // Fire-and-forget. A logging failure must never block opening WhatsApp.
   const payload: Database['public']['Tables']['enquiries']['Insert'] = {
     items: items as unknown as Json,
     whatsapp_message: whatsappMessage,
     status: 'sent',
   }
 
-  const { error } = await supabase
-    .from('enquiries')
-    .insert(payload)
-
+  const { error } = await supabase.from('enquiries').insert(payload)
   if (error) console.error('[BakeVault] Failed to log enquiry:', error.message)
 }
 
@@ -251,8 +247,19 @@ export async function upsertSetting(key: string, value: string): Promise<void> {
 
 // ─── Image Upload ─────────────────────────────────────────────────────────────
 
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+
 export async function uploadProductImage(file: File): Promise<string> {
-  const ext = file.name.split('.').pop() ?? 'jpg'
+  // FIX: validate on the client before wasting a round-trip to storage
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    throw new Error(`Unsupported file type "${file.type}". Please upload a JPEG, PNG, or WebP image.`)
+  }
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 5 MB.`)
+  }
+
+  const ext  = file.name.split('.').pop() ?? 'jpg'
   const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
   const { error } = await supabase.storage

@@ -10,7 +10,7 @@ export default function AdminProducts() {
   const { products, loading, error, refetch } = useProducts({ includeUnavailable: true })
   const [modal,  setModal]   = useState<Modal>(null)
   const [search, setSearch]  = useState('')
-  const [saving, setSaving]  = useState<string | null>(null)  // product id being deleted
+  const [saving, setSaving]  = useState<string | null>(null)
 
   const visible = search.trim()
     ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -105,6 +105,7 @@ export default function AdminProducts() {
                     <button
                       onClick={() => toggleAvailable(p)}
                       className={`relative w-9 h-5 rounded-full transition-colors ${p.is_available ? 'bg-green-500' : 'bg-gray-300'}`}
+                      aria-label={p.is_available ? 'Mark unavailable' : 'Mark available'}
                     >
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${p.is_available ? 'translate-x-4' : ''}`} />
                     </button>
@@ -114,13 +115,14 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => setModal({ mode: 'edit', product: p })} className="text-gray-400 hover:text-orange-500 transition-colors">
+                      <button onClick={() => setModal({ mode: 'edit', product: p })} className="text-gray-400 hover:text-orange-500 transition-colors" aria-label={`Edit ${p.name}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                       </button>
                       <button
                         onClick={() => handleDelete(p)}
                         disabled={saving === p.id}
                         className="text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                        aria-label={`Delete ${p.name}`}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>
@@ -147,12 +149,20 @@ export default function AdminProducts() {
               <h2 className="text-lg font-bold text-gray-800">
                 {modal.mode === 'add' ? 'Add Product' : `Edit — ${modal.product.name}`}
               </h2>
-              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <div className="px-6 py-5">
+              {/*
+                FIX: The `key` prop forces React to fully unmount and remount
+                ProductForm whenever the modal target changes. Without this,
+                switching from "add" to "edit product X" to "edit product Y"
+                without closing the modal keeps stale useState values from the
+                previous product in all form fields (including image_url).
+              */}
               <ProductForm
+                key={modal.mode === 'edit' ? modal.product.id : '__new__'}
                 initial={modal.mode === 'edit' ? modal.product : null}
                 onSave={handleSave}
                 onCancel={() => setModal(null)}
