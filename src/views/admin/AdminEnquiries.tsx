@@ -1,6 +1,6 @@
-import { useCategories } from '@/hooks'
-import { createProduct } from '@/lib/api'
-import type { DBProductWithCategory } from '@/lib/database.types'
+import React, { useEffect, useState } from 'react'
+import { getEnquiries, updateEnquiryStatus } from '@/lib/api'
+import type { DBEnquiry } from '@/lib/database.types'
 
 export function AdminEnquiries() {
   const [enquiries, setEnquiries] = useState<DBEnquiry[]>([])

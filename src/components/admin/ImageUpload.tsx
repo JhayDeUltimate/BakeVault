@@ -1,6 +1,5 @@
+import React, { useRef, useState } from 'react'
 import { uploadProductImage } from '@/lib/api'
-import { useCategories }      from '@/hooks'
-import type { DBProductWithCategory } from '@/lib/database.types'
 
 interface Props {
   currentUrl: string | null

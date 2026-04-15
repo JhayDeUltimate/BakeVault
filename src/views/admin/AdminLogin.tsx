@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks'
+import BrandLogo from '@/components/ui/BrandLogo'
 
 export default function AdminLogin() {
   const { signIn, user } = useAuth()
@@ -32,14 +33,10 @@ export default function AdminLogin() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-2">
-            <div className="bg-orange-600 text-white p-2 rounded-xl">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <span className="text-2xl font-extrabold text-gray-800 tracking-tight">BakeVault Admin</span>
+            <BrandLogo iconClassName="w-10 h-10 p-1.5" textClassName="text-2xl text-gray-800" />
+            <span className="text-2xl font-extrabold text-gray-800 tracking-tight">Admin</span>
           </div>
-          <p className="text-sm text-gray-500">Sign in to manage your store</p>
+          <p className="text-sm text-gray-500">Sign in to manage store</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">

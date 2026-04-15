@@ -1,6 +1,6 @@
-import { useCategories } from '@/hooks'
-import { createProduct } from '@/lib/api'
-import type { DBProductWithCategory } from '@/lib/database.types'
+import React, { useEffect, useState } from 'react'
+import { getProducts, getCategories, getEnquiries } from '@/lib/api'
+import type { DBEnquiry } from '@/lib/database.types'
 
 interface Stats {
   totalProducts:    number
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     <div className="space-y-8 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Overview of your BakeVault store</p>
+        <p className="text-sm text-gray-500 mt-1">Overview of your store</p>
       </div>
 
       {/* Stat cards */}

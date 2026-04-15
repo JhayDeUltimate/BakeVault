@@ -11,7 +11,7 @@ export default function AboutPage() {
       <section className="bg-white border-b border-orange-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="max-w-7xl mx-auto">
           <SectionHeading
-            eyebrow="About BakeVault"
+            eyebrow="About"
             title="Built for bakers who need dependable stock, fast answers, and supply they can trust."
             description="We help home bakers, cake studios, and growing production teams source premium ingredients without the friction that slows down daily operations."
           />
@@ -23,7 +23,7 @@ export default function AboutPage() {
               Browse Catalog
             </Link>
             {WHATSAPP_URL && (
-              <a                                          {/* ← bug fix: was missing */}
+              <a
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noreferrer"

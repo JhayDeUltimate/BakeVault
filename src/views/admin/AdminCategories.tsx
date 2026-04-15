@@ -1,6 +1,7 @@
+import React, { useState } from 'react'
 import { useCategories } from '@/hooks'
-import { createProduct } from '@/lib/api'
-import type { DBProductWithCategory } from '@/lib/database.types'
+import { createCategory, updateCategory, deleteCategory } from '@/lib/api'
+import type { DBCategory } from '@/lib/database.types'
 
 export function AdminCategories() {
   const { categories, loading, error, refetch } = useCategories()

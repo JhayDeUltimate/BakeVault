@@ -8,9 +8,9 @@ const Footer: React.FC = () => (
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
       <div className="text-center md:text-left">
         <Link to="/" className="inline-flex mb-6">
-          <BrandLogo textClassName="text-white" />
+          <BrandLogo hideText iconClassName="w-50 h-50 p-1" />
         </Link>
-        <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest">Copyright {new Date().getFullYear()} BakeVault Lagos.</p>
+        <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest">Copyright {new Date().getFullYear()} Lagos.</p>
       </div>
 
       <div className="flex flex-col items-center md:items-start gap-3">
@@ -39,7 +39,7 @@ const Footer: React.FC = () => (
           <Link to="/"        className="block text-white/60 hover:text-white transition-colors font-medium text-sm">Home</Link>
           <Link to="/catalog" className="block text-white/60 hover:text-white transition-colors font-medium text-sm">Catalog</Link>
           <Link to="/about"   className="block text-white/60 hover:text-white transition-colors font-medium text-sm">About</Link>
-          <p className="pt-2 text-brand-orange font-bold font-display text-lg">sales@bakevault.com.ng</p>
+          <p className="pt-2 text-brand-orange font-bold font-display text-lg">sales@bakevault.com</p>
         </div>
       </div>
     </div>

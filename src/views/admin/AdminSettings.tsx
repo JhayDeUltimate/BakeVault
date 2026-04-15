@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // pages/admin/AdminSettings.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-import { useCategories } from '@/hooks'
-import { createProduct } from '@/lib/api'
+import React, { useEffect, useState } from 'react'
+import { getSettings, upsertSetting } from '@/lib/api'
 
 export function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({})

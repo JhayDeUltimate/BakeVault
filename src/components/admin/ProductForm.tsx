@@ -1,7 +1,7 @@
-import { useProducts }   from '@/hooks'
-import { getProducts }   from '@/lib/api'
+import React, { useState } from 'react'
+import { useCategories } from '@/hooks'
+import ImageUpload from '@/components/admin/ImageUpload'
 import type { DBProductWithCategory } from '@/lib/database.types'
-import ImageUpload        from '@/components/admin/ImageUpload'
 
 interface Props {
   initial?:   DBProductWithCategory | null

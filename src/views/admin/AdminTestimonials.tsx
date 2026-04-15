@@ -1,6 +1,6 @@
-import { useCategories } from '@/hooks'
-import { createProduct } from '@/lib/api'
-import type { DBProductWithCategory } from '@/lib/database.types'
+import React, { useEffect, useState } from 'react'
+import { getTestimonials, createTestimonial, updateTestimonial, deleteTestimonial } from '@/lib/api'
+import type { DBTestimonial } from '@/lib/database.types'
 
 export function AdminTestimonials() {
   const [testimonials, setTestimonials] = useState<DBTestimonial[]>([])

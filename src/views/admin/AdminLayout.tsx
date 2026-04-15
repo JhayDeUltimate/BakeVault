@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks'
+import BrandLogo from '@/components/ui/BrandLogo'
 
 const NAV = [
   { to: 'dashboard',    label: 'Dashboard',    d: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -30,12 +31,8 @@ export default function AdminLayout() {
     <aside className="w-60 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full">
       <div className="px-4 py-5 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="bg-orange-500 text-white p-1.5 rounded-lg">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          </div>
-          <span className="font-bold text-gray-800">BakeVault Admin</span>
+          <BrandLogo iconClassName="w-8 h-8 p-1.5" textClassName="text-lg text-gray-800" />
+          <span className="font-bold text-gray-800">Admin</span>
         </div>
       </div>
 
@@ -82,7 +79,8 @@ export default function AdminLayout() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="font-bold text-gray-800">BakeVault Admin</span>
+          <BrandLogo iconClassName="w-8 h-8 p-1" textClassName="text-lg text-gray-800" />
+          <span className="font-bold text-gray-800">Admin</span>
         </div>
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />

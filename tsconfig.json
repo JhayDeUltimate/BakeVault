@@ -10,9 +10,11 @@
     "noEmit": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "vite-env.d.ts"]
 }

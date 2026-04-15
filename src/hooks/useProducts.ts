@@ -31,6 +31,11 @@ export function useProducts(options: Options = {}) {
   useEffect(() => {
     fetch()
   }, [fetch, options.categoryId, options.search, options.featuredOnly, options.includeUnavailable])
+  
+  useEffect(() => {
+    window.addEventListener('focus', fetch)
+    return () => window.removeEventListener('focus', fetch)
+  }, [fetch])
 
   return { products, loading, error, refetch: fetch }
 }

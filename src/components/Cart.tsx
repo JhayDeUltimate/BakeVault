@@ -19,7 +19,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
   async function handleCheckout() {
     const orderText   = items.map(item => `• ${item.name} (Qty: ${item.quantity})`).join('\n')
-    const message     = `Hello BakeVault! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
+    const message     = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
     const encoded     = encodeURIComponent(message)
 
     // Log to Supabase (non-blocking — failure must not stop WhatsApp)
