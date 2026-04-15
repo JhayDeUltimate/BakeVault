@@ -1,20 +1,20 @@
 'use client'
 
 import React, { useEffect, useState } from 'react';
-import { Product } from '../../types';
+import type { DBProductWithCategory } from '../../lib/database.types';
+
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=1200';
 
 interface HeroSectionProps {
-  products: Product[];
-  onAddToCart: (product: Product) => void;
+  products:    DBProductWithCategory[];
+  onAddToCart: (product: DBProductWithCategory) => void;
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    if (products.length <= 1) {
-      return undefined;
-    }
+    if (products.length <= 1) return undefined;
 
     const timer = window.setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % products.length);
@@ -23,9 +23,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
     return () => window.clearInterval(timer);
   }, [products.length]);
 
-  if (products.length === 0) {
-    return null;
-  }
+  // Reset to slide 0 if products change (e.g. after an image update)
+  useEffect(() => {
+    setCurrentSlide(0);
+  }, [products]);
+
+  if (products.length === 0) return null;
 
   return (
     <section className="relative h-[400px] sm:h-[700px] overflow-hidden bg-brand-darkGray">
@@ -35,8 +38,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
         >
           <div className="absolute inset-0">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-brand-darkGray/35"></div>
+            <img
+              src={product.image_url ?? FALLBACK_IMAGE}
+              alt={product.name}
+              className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
+            />
+            <div className="absolute inset-0 bg-brand-darkGray/35" />
           </div>
 
           <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-start text-white">
@@ -46,7 +54,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
                   Featured Product
                 </span>
               </div>
-              <h1 className="text-xl sm:text-5xl lg:text-6xl font-extrabold mb-2 sm:mb-6 leading-tight font-display">{product.name}</h1>
+              <h1 className="text-xl sm:text-5xl lg:text-6xl font-extrabold mb-2 sm:mb-6 leading-tight font-display">
+                {product.name}
+              </h1>
               <p className="text-white/90 text-[10px] sm:text-lg mb-4 sm:mb-10 leading-relaxed font-medium line-clamp-2 sm:line-clamp-none">
                 {product.description}
               </p>
@@ -62,6 +72,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
           </div>
         </div>
       ))}
+
       <div className="absolute bottom-4 sm:bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
         {products.map((product, index) => (
           <button
@@ -69,7 +80,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
             onClick={() => setCurrentSlide(index)}
             className={`h-1 sm:h-2 rounded-full transition-all duration-300 ${index === currentSlide ? 'w-6 sm:w-12 bg-brand-orange' : 'w-1.5 sm:w-2 bg-white/40'}`}
             aria-label={`Go to slide ${index + 1}`}
-          ></button>
+          />
         ))}
       </div>
     </section>
@@ -77,4 +88,3 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
 };
 
 export default HeroSection;
-

@@ -24,8 +24,10 @@ export default function ImageUpload({ currentUrl, onUpload, onError }: Props) {
       const url = await uploadProductImage(file)
       onUpload(url)
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Upload failed'
+      console.error('[ImageUpload]', msg)
       setPreview(currentUrl)
-      onError?.(err instanceof Error ? err.message : 'Upload failed')
+      onError?.(msg)
     } finally {
       setUploading(false)
     }

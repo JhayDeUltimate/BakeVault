@@ -5,19 +5,22 @@ import AboutSection        from '@/components/sections/AboutSection'
 import HeroSection         from '@/components/sections/HeroSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading      from '@/components/ui/SectionHeading'
-import { CATEGORIES, PRODUCTS, TESTIMONIALS } from '@/constants'
+import { CATEGORIES, TESTIMONIALS } from '@/constants'
 import { useCart }         from '@/lib/cart-context'
+import { useProducts }     from '@/hooks'
 
 export default function HomePage() {
   const { addToCart } = useCart()
   const navigate      = useNavigate()
 
-  const heroProducts     = useMemo(() => PRODUCTS.filter(p => p.description && p.id.length < 5).slice(0, 4), [])
-  const featuredProducts = useMemo(() => PRODUCTS.slice(0, 4), [])
+  const { products: featuredFromDB } = useProducts({ featuredOnly: true })
+
+  const heroProducts     = useMemo(() => featuredFromDB.filter(p => p.description).slice(0, 4), [featuredFromDB])
+  const featuredProducts = useMemo(() => featuredFromDB.slice(0, 4), [featuredFromDB])
 
   return (
     <>
-      <HeroSection products={heroProducts} onAddToCart={addToCart} />
+      <HeroSection products={featuredProducts} onAddToCart={addToCart} />
       <AboutSection />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
