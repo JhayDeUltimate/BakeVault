@@ -8,24 +8,24 @@ import type { DBCategory } from '@/lib/database.types'
 
 export default function CatalogPage() {
   const { addToCart } = useCart()
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
-  const [searchQuery,        setSearchQuery]         = useState('')
+  const [categoryId, setCategoryId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   // FIX: pull live products from Supabase instead of the hardcoded constants
   // array — admin changes are now reflected immediately.
   const { products: rawProducts, loading: productsLoading } = useProducts({
-    categoryId: selectedCategoryId,
-    search:     searchQuery,
+    categoryId,
+    search,
   })
   const { categories, loading: categoriesLoading } = useCategories()
 
   const products   = useMemo(() => rawProducts.map(mapDBProduct), [rawProducts])
-  const isFiltering = selectedCategoryId !== null || searchQuery.trim() !== ''
+  const isFiltering = categoryId !== null || search.trim() !== ''
   const loading     = productsLoading || categoriesLoading
 
   function clearFilters() {
-    setSelectedCategoryId(null)
-    setSearchQuery('')
+    setCategoryId(null)
+    setSearch('')
   }
 
   return (
@@ -41,8 +41,8 @@ export default function CatalogPage() {
         <input
           type="text"
           placeholder="Search ingredient vault..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
           className="w-full bg-white border-2 border-orange-100 rounded-2xl px-6 py-4 pl-14 focus:outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all shadow-sm font-medium h-12 sm:h-14"
         />
         <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -73,9 +73,9 @@ export default function CatalogPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* All products tile */}
             <button
-              onClick={() => setSelectedCategoryId(null)}
+              onClick={() => setCategoryId(null)}
               className={`border rounded-[24px] p-6 text-center transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 ${
-                selectedCategoryId === null
+                categoryId === null
                   ? 'bg-brand-brown border-brand-brown text-white'
                   : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
               }`}
@@ -88,9 +88,9 @@ export default function CatalogPage() {
             {(categories as DBCategory[]).map(cat => (
               <button
                 key={cat.id}
-                onClick={() => setSelectedCategoryId(cat.id)}
+                onClick={() => setCategoryId(cat.id)}
                 className={`border rounded-[24px] p-6 text-center transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 ${
-                  selectedCategoryId === cat.id
+                  categoryId === cat.id
                     ? 'bg-brand-brown border-brand-brown text-white'
                     : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
                 }`}
@@ -109,10 +109,10 @@ export default function CatalogPage() {
         <div className="flex items-center justify-between mb-8 border-b-2 border-orange-50 pb-6 gap-4">
           <div>
             <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
-              {searchQuery
-                ? `Results for "${searchQuery}"`
-                : selectedCategoryId
-                  ? (categories.find(c => c.id === selectedCategoryId)?.name ?? 'Products')
+              {search
+                ? `Results for "${search}"`
+                : categoryId
+                  ? (categories.find(c => c.id === categoryId)?.name ?? 'Products')
                   : 'Full Catalog'}
             </h3>
             {!loading && (

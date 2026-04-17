@@ -18,7 +18,7 @@ export default function HomePage() {
 
   // Slides for HeroSection — needs DBProductWithCategory for image_url + description
   const heroSlides = useMemo(
-    () => featuredFromDB.slice(0, 4),
+    () => featuredFromDB.slice(0, 5),
     [featuredFromDB]
   )
 

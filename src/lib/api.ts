@@ -251,7 +251,6 @@ const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 export async function uploadProductImage(file: File): Promise<string> {
-  // FIX: validate on the client before wasting a round-trip to storage
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
     throw new Error(`Unsupported file type "${file.type}". Please upload a JPEG, PNG, or WebP image.`)
   }
@@ -259,24 +258,68 @@ export async function uploadProductImage(file: File): Promise<string> {
     throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 5 MB.`)
   }
 
-  const ext  = file.name.split('.').pop() ?? 'jpg'
+  const ext = file.name.split('.').pop() ?? 'jpg'
   const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
   const { error } = await supabase.storage
     .from('bakevault-images')
     .upload(path, file, { cacheControl: '3600', upsert: false })
+
   if (error) throw new Error(error.message)
 
-  const { data } = supabase.storage.from('bakevault-images').getPublicUrl(path)
-  return data.publicUrl
+  // Return the storage path (works for both public and private buckets)
+  return path
 }
 
-export async function deleteProductImage(imageUrl: string): Promise<void> {
-  const marker = '/bakevault-images/'
-  const idx = imageUrl.indexOf(marker)
-  if (idx === -1) return
+export async function deleteProductImage(imagePathOrUrl: string): Promise<void> {
+  if (!imagePathOrUrl) return
 
-  const path = imageUrl.slice(idx + marker.length)
+  // If it's already a storage path like "products/....jpg"
+  let path = imagePathOrUrl
+
+  // Backward compatibility: if a full URL was stored, try to extract the object path.
+  if (/^https?:\/\//i.test(imagePathOrUrl)) {
+    try {
+      const u = new URL(imagePathOrUrl)
+      // Supabase public URL format typically: /storage/v1/object/public/<bucket>/<path>
+      // Signed URL format: /storage/v1/object/sign/<bucket>/<path>
+      const parts = u.pathname.split('/')
+      const bucketIdx = parts.findIndex(p => p === 'public' || p === 'sign')
+      if (bucketIdx !== -1) {
+        // bucket name is next segment
+        const bucket = parts[bucketIdx + 1]
+        if (bucket === 'bakevault-images') {
+          path = parts.slice(bucketIdx + 2).join('/')
+        }
+      }
+      // Strip any accidental leading slashes
+      path = path.replace(/^\/+/, '')
+    } catch {
+      // If URL parsing fails, do nothing (avoid deleting wrong objects)
+      return
+    }
+  }
+
+  // Safety: only allow deletes inside expected prefix
+  if (!path.startsWith('products/')) return
+
   const { error } = await supabase.storage.from('bakevault-images').remove([path])
   if (error) console.error('[BakeVault] Failed to delete image:', error.message)
+}
+
+export async function getProductImageUrl(imagePathOrUrl: string): Promise<string> {
+  // If it's already a full URL, keep it (backward compatible)
+  if (/^https?:\/\//i.test(imagePathOrUrl)) return imagePathOrUrl
+
+  // If bucket is public, you can still use getPublicUrl:
+  // const { data } = supabase.storage.from('bakevault-images').getPublicUrl(imagePathOrUrl)
+  // return data.publicUrl
+
+  // For private buckets: signed URL
+  const { data, error } = await supabase.storage
+    .from('bakevault-images')
+    .createSignedUrl(imagePathOrUrl, 60 * 60) // 1 hour
+
+  if (error) throw new Error(error.message)
+  return data.signedUrl
 }
