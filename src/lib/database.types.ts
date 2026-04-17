@@ -13,7 +13,7 @@ export interface Database {
         Row: {
           id: string; name: string; slug: string; description: string | null
           category_id: string | null; image_url: string | null
-          image_urls: Json | null  // array of all image URLs; index 0 = primary
+          image_urls: Json | null
           is_available: boolean; is_featured: boolean; price_type: string
           display_order: number; created_at: string; updated_at: string
         }
@@ -50,9 +50,25 @@ export interface Database {
         Relationships: []
       }
       product_requests: {
-        Row: { id: string; product_name: string; product_size: string | null; quantity: number | null; notes: string | null; status: string; created_at: string }
-        Insert: { id?: string; product_name: string; product_size?: string | null; quantity?: number | null; notes?: string | null; status?: string; created_at?: string }
+        Row: {
+          id: string; product_name: string; product_size: string | null
+          quantity: number | null; notes: string | null
+          contact_info: string | null       // ← NEW: email, phone, or WhatsApp
+          status: string; created_at: string
+        }
+        Insert: {
+          id?: string; product_name: string; product_size?: string | null
+          quantity?: number | null; notes?: string | null
+          contact_info?: string | null
+          status?: string; created_at?: string
+        }
         Update: { status?: string }
+        Relationships: []
+      }
+      analytics_events: {
+        Row: { id: string; event_type: string; event_data: Json; session_id: string | null; page: string | null; created_at: string }
+        Insert: { id?: string; event_type: string; event_data?: Json; session_id?: string | null; page?: string | null; created_at?: string }
+        Update: Record<string, never>
         Relationships: []
       }
     }
@@ -63,9 +79,10 @@ export interface Database {
   }
 }
 
-export type DBCategory        = Database['public']['Tables']['categories']['Row']
-export type DBProduct         = Database['public']['Tables']['products']['Row']
-export type DBEnquiry         = Database['public']['Tables']['enquiries']['Row']
-export type DBTestimonial     = Database['public']['Tables']['testimonials']['Row']
-export type DBProductRequest  = Database['public']['Tables']['product_requests']['Row']
+export type DBCategory           = Database['public']['Tables']['categories']['Row']
+export type DBProduct            = Database['public']['Tables']['products']['Row']
+export type DBEnquiry            = Database['public']['Tables']['enquiries']['Row']
+export type DBTestimonial        = Database['public']['Tables']['testimonials']['Row']
+export type DBProductRequest     = Database['public']['Tables']['product_requests']['Row']
+export type DBAnalyticsEvent     = Database['public']['Tables']['analytics_events']['Row']
 export type DBProductWithCategory = DBProduct & { categories: DBCategory | null }

@@ -25,7 +25,6 @@ export default function ProductAssistant({ productName, productDescription }: Pr
     setMessages(next)
     setLoading(true)
 
-    // Scroll to bottom
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
 
     try {
@@ -33,16 +32,36 @@ export default function ProductAssistant({ productName, productDescription }: Pr
 
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
+          mode:           'chat',
           messages:       apiMessages,
           productContext: { name: productName, description: productDescription },
         },
       })
 
-      if (error) throw error
+      // supabase-js throws on network failures but returns { data, error } for HTTP errors.
+      // Our edge function always returns 200, so `error` here means a network/relay issue.
+      if (error) {
+        // Try to read the body — FunctionsHttpError has context
+        let errMsg = 'Connection failed. Please check your internet and try again.'
+        try {
+          const body = await (error as { context?: Response }).context?.json?.()
+          if (body?.error) errMsg = body.error
+        } catch { /* ignore */ }
+        setMessages(prev => [...prev, { role: 'assistant', text: errMsg }])
+        return
+      }
+
+      // Our function always returns 200 — check for application-level error
+      if (data?.error) {
+        setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ ${data.error}` }])
+        return
+      }
+
       const reply = data?.text ?? 'Sorry, I could not get a response. Please try again.'
       setMessages(prev => [...prev, { role: 'assistant', text: reply }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Something went wrong. Please try again.' }])
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unexpected error'
+      setMessages(prev => [...prev, { role: 'assistant', text: `Error: ${msg}` }])
     } finally {
       setLoading(false)
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
@@ -62,17 +81,20 @@ export default function ProductAssistant({ productName, productDescription }: Pr
         className="w-full flex items-center justify-between px-4 py-3 bg-orange-50 hover:bg-orange-100 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-brand-orange rounded-full flex items-center justify-center">
+          <div className="w-7 h-7 bg-brand-orange rounded-full flex items-center justify-center shrink-0">
             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/>
             </svg>
           </div>
           <div className="text-left">
             <p className="text-sm font-bold text-brand-darkGray">Ask about this product</p>
-            <p className="text-[10px] text-brand-darkGray/50">AI assistant · General product info only</p>
+            <p className="text-[10px] text-brand-darkGray/50">AI assistant · Powered by Claude</p>
           </div>
         </div>
-        <svg className={`w-4 h-4 text-brand-darkGray/40 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className={`w-4 h-4 text-brand-darkGray/40 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -83,8 +105,12 @@ export default function ProductAssistant({ productName, productDescription }: Pr
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-xs text-brand-darkGray/40">Ask me anything about <strong className="text-brand-darkGray/70">{productName}</strong></p>
-                <p className="text-[10px] text-brand-darkGray/30 mt-1">e.g. "What is this used for?" · "What are alternatives?"</p>
+                <p className="text-xs text-brand-darkGray/40">
+                  Ask me anything about <strong className="text-brand-darkGray/70">{productName}</strong>
+                </p>
+                <p className="text-[10px] text-brand-darkGray/30 mt-1">
+                  e.g. "What is this used for?" · "What are alternatives?"
+                </p>
               </div>
             )}
             {messages.map((m, i) => (
@@ -128,8 +154,8 @@ export default function ProductAssistant({ productName, productDescription }: Pr
               type="button"
               onClick={send}
               disabled={loading || !input.trim()}
-              className="w-8 h-8 bg-brand-orange hover:bg-brand-brown text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 shrink-0"
               aria-label="Send"
+              className="w-8 h-8 bg-brand-orange hover:bg-brand-brown text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

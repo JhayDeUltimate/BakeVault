@@ -1,6 +1,8 @@
 import React from 'react'
 import type { CartItem } from '../types'
 import { logEnquiry } from '../lib/api'
+import { trackEvent } from '../lib/analytics'
+import { useCart } from '../lib/cart-context'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER?.replace(/\D/g, '') ?? '2349064652679'
 
@@ -13,6 +15,8 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, onRemove }) => {
+  const { clearCart } = useCart()
+
   if (!isOpen) return null
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
@@ -22,14 +26,20 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
     const message   = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
     const encoded   = encodeURIComponent(message)
 
-    // FIX: Fire-and-forget — open WhatsApp immediately; DB logging happens in
-    // the background. A network hiccup must never block the customer's order.
+    // Fire-and-forget DB logging — must never block WhatsApp
     logEnquiry(
       items.map(i => ({ product_id: i.id, product_name: i.name, category: i.category, quantity: i.quantity })),
       message
     )
+    trackEvent('cart_checkout', { item_count: totalItems })
 
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, '_blank')
+  }
+
+  function handleClearAll() {
+    if (!window.confirm('Remove all items from your bag?')) return
+    trackEvent('cart_cleared', { item_count: totalItems })
+    clearCart()
   }
 
   return (
@@ -39,11 +49,15 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
       <div className="fixed inset-y-0 right-0 max-w-full flex">
         <div className="w-screen max-w-md">
           <div className="h-full flex flex-col bg-white shadow-2xl">
+
             {/* Header */}
             <div className="flex-1 py-8 overflow-y-auto px-6 sm:px-8">
               <div className="flex items-start justify-between">
-                <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">Your Shopping Bag</h2>
-                <button onClick={onClose} className="ml-3 p-2 text-brand-darkGray/40 hover:text-brand-orange transition-colors" aria-label="Close cart">
+                <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
+                  Your Shopping Bag
+                </h2>
+                <button onClick={onClose} aria-label="Close cart"
+                  className="ml-3 p-2 text-brand-darkGray/40 hover:text-brand-orange transition-colors">
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -82,11 +96,18 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                           </div>
                           <div className="flex-1 flex items-end justify-between text-sm">
                             <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
-                              <button onClick={() => onUpdateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm" aria-label="Decrease quantity">-</button>
+                              <button onClick={() => onUpdateQuantity(item.id, -1)} aria-label="Decrease quantity"
+                                className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                -
+                              </button>
                               <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
-                              <button onClick={() => onUpdateQuantity(item.id,  1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm" aria-label="Increase quantity">+</button>
+                              <button onClick={() => onUpdateQuantity(item.id, 1)} aria-label="Increase quantity"
+                                className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                +
+                              </button>
                             </div>
-                            <button type="button" onClick={() => onRemove(item.id)} className="font-bold text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
+                            <button type="button" onClick={() => onRemove(item.id)}
+                              className="font-bold text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
                               Remove
                             </button>
                           </div>
@@ -99,15 +120,16 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
             </div>
 
             {/* Footer */}
-            <div className="bg-brand-cream/30 border-t border-orange-100 py-8 px-6 sm:px-8">
-              <div className="flex justify-between text-lg font-extrabold text-brand-darkGray font-display">
+            <div className="bg-brand-cream/30 border-t border-orange-100 py-6 px-6 sm:px-8">
+              <div className="flex justify-between items-center text-lg font-extrabold text-brand-darkGray font-display">
                 <p>Order Summary</p>
                 <p>{totalItems} Items</p>
               </div>
               <p className="mt-2 text-xs text-brand-darkGray/50 leading-relaxed font-medium">
                 Final delivery costs and wholesale discounts will be confirmed via WhatsApp.
               </p>
-              <div className="mt-8">
+
+              <div className="mt-5 space-y-3">
                 <button
                   onClick={handleCheckout}
                   disabled={items.length === 0}
@@ -118,13 +140,22 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                   </svg>
                   GET PRICE VIA WHATSAPP
                 </button>
-              </div>
-              <div className="mt-6 flex justify-center">
-                <button type="button" onClick={onClose} className="text-brand-brown font-extrabold hover:text-brand-orange transition-colors underline decoration-2 underline-offset-4 text-sm">
-                  Keep Browsing Vault
-                </button>
+
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={onClose}
+                    className="text-brand-brown font-extrabold hover:text-brand-orange transition-colors underline decoration-2 underline-offset-4 text-sm">
+                    Keep Browsing
+                  </button>
+                  {items.length > 0 && (
+                    <button type="button" onClick={handleClearAll}
+                      className="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-widest transition-colors">
+                      Clear All
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useCategories } from '@/hooks'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
+import { supabase } from '@/lib/supabase'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
 interface Props {
@@ -15,7 +16,7 @@ export interface ProductFormData {
   description:   string
   category_id:   string
   image_url:     string
-  image_urls:    string[]   // all images including primary at index 0
+  image_urls:    string[]
   is_available:  boolean
   is_featured:   boolean
   price_type:    string
@@ -30,94 +31,64 @@ function parseImageUrls(raw: unknown, fallback: string): string[] {
 
 export default function ProductForm({ initial, onSave, onCancel }: Props) {
   const { categories } = useCategories()
-
   const initialImageUrls = parseImageUrls(initial?.image_urls, initial?.image_url ?? '')
 
-  const [form, setForm]         = useState<ProductFormData>({
+  const [form, setForm] = useState<ProductFormData>({
     name:          initial?.name          ?? '',
     description:   initial?.description   ?? '',
     category_id:   initial?.category_id   ?? '',
-    image_url:     initial?.image_url      ?? '',
+    image_url:     initial?.image_url     ?? '',
     image_urls:    initialImageUrls,
     is_available:  initial?.is_available  ?? true,
     is_featured:   initial?.is_featured   ?? false,
     price_type:    initial?.price_type    ?? 'wholesale',
     display_order: initial?.display_order ?? 0,
   })
-  const [saving,     setSaving]     = useState(false)
-  const [analyzing,  setAnalyzing]  = useState(false)
-  const [error,      setError]      = useState<string | null>(null)
+  const [saving,    setSaving]    = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [error,     setError]     = useState<string | null>(null)
 
   function set<K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  /** Sync primary image_url with the first element of image_urls */
-  function handleImageUrlsChange(urls: string[]) {
-    set('image_urls', urls)
-    set('image_url', urls[0] ?? '')
-  }
-
-  /** Primary image upload → also update image_urls[0] */
   function handlePrimaryUpload(url: string) {
     set('image_url', url)
     set('image_urls', [url, ...form.image_urls.filter(u => u !== form.image_url)])
   }
 
-  // ─── AI image analysis ──────────────────────────────────────────────────────
-  async function analyzeWithAI() {
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-    if (!apiKey) {
-      setError('VITE_ANTHROPIC_API_KEY is not set in .env.local — AI analysis unavailable.')
-      return
-    }
-    if (!form.image_url) {
-      setError('Upload a product photo first, then click Analyze.')
-      return
-    }
+  function handleImageUrlsChange(urls: string[]) {
+    set('image_urls', urls)
+    set('image_url', urls[0] ?? '')
+  }
 
+  async function analyzeWithAI() {
+    if (!form.image_url?.trim()) {
+      setError('Upload or paste an image URL first, then click AI Analyze.')
+      return
+    }
     try {
       setAnalyzing(true)
       setError(null)
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 500,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'url', url: form.image_url } },
-              {
-                type: 'text',
-                text: [
-                  'You are helping a wholesale baking supplies store in Lagos, Nigeria.',
-                  'Analyze this product image and return ONLY valid JSON with exactly two keys: "name" and "description".',
-                  '"name": The specific product name (include brand, weight, and variant if visible).',
-                  '"description": 2-3 sentences about the product\'s baking uses and key features.',
-                  'Example: {"name":"Havana Active Dry Yeast 500g","description":"A premium instant dry yeast ideal for rapid bread-making. Works reliably in tropical climates and delivers consistent rise for artisan loaves and rolls."}'
-                ].join(' '),
-              },
-            ],
-          }],
-        }),
+      const { data, error: fnErr } = await supabase.functions.invoke('ai-assistant', {
+        body: { mode: 'analyze', imageUrl: form.image_url },
       })
 
-      const aiData = await res.json()
-      if (!res.ok) throw new Error(aiData.error?.message ?? 'AI API error')
+      if (fnErr) {
+        let msg = 'AI analyze failed. Make sure the edge function is deployed with --no-verify-jwt.'
+        try {
+          const body = await (fnErr as { context?: Response }).context?.json?.()
+          if (body?.error) msg = body.error
+        } catch { /* ignore */ }
+        setError(msg)
+        return
+      }
 
-      const raw   = aiData.content?.[0]?.text ?? ''
-      const clean = raw.replace(/```json|```/g, '').trim()
-      const parsed = JSON.parse(clean)
+      if (data?.error) { setError(data.error); return }
 
-      if (parsed.name)        set('name',        parsed.name)
-      if (parsed.description) set('description', parsed.description)
+      if (data?.name)        set('name',        data.name)
+      if (data?.description) set('description', data.description)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI analysis failed')
     } finally {
@@ -127,10 +98,7 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.image_url?.trim()) {
-      setError('Please upload a product photo before saving.')
-      return
-    }
+    if (!form.image_url?.trim()) { setError('Please upload a product photo before saving.'); return }
     try {
       setSaving(true); setError(null)
       await onSave({
@@ -152,16 +120,18 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">{error}</div>}
+      {error && (
+        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200 leading-snug">
+          {error}
+        </div>
+      )}
 
-      {/* Name */}
       <div>
         <label className={label}>Product Name *</label>
         <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
           placeholder="e.g. Havana Active Baking Powder" className={input} required />
       </div>
 
-      {/* Category + Price */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={label}>Category</label>
@@ -180,7 +150,6 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
         </div>
       </div>
 
-      {/* Description */}
       <div>
         <label className={label}>Description</label>
         <textarea value={form.description} onChange={e => set('description', e.target.value)}
@@ -188,22 +157,17 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
           className={input + ' resize-none'} />
       </div>
 
-      {/* Primary image + AI analysis */}
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className={label.replace('mb-1', '')}>Product Photo *</label>
-          <button
-            type="button"
-            onClick={analyzeWithAI}
-            disabled={analyzing || !form.image_url}
-            title={!form.image_url ? 'Upload a photo first' : 'Use AI to suggest name & description'}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {analyzing ? (
-              <><div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" /> Analyzing…</>
-            ) : (
-              <><span>✨</span> AI Analyze</>
-            )}
+          <button type="button" onClick={analyzeWithAI}
+            disabled={analyzing || !form.image_url?.trim()}
+            title={!form.image_url?.trim() ? 'Upload or paste image URL first' : 'AI suggests name & description'}
+            className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            {analyzing
+              ? <><div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" /> Analyzing…</>
+              : <><span>✨</span> AI Analyze</>
+            }
           </button>
         </div>
         <ImageUpload
@@ -213,24 +177,23 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
           onError={msg => setError(msg)}
         />
         <div className="mt-2">
-          <input type="url" value={form.image_url} onChange={e => { set('image_url', e.target.value); set('image_urls', [e.target.value, ...form.image_urls.slice(1)]) }}
-            placeholder="…or paste an image URL"
+          <input type="url" value={form.image_url}
+            onChange={e => { set('image_url', e.target.value); set('image_urls', [e.target.value, ...form.image_urls.slice(1)]) }}
+            placeholder="…or paste a Supabase Storage or external image URL"
             className={input + ' text-xs'} />
         </div>
       </div>
 
-      {/* Additional images */}
       <div>
         <label className={label}>Additional Photos (up to 4 more)</label>
         <MultiImageUpload
-          urls={form.image_urls.slice(1)}   // exclude primary
+          urls={form.image_urls.slice(1)}
           max={4}
           onChange={extras => handleImageUrlsChange([form.image_url, ...extras].filter(Boolean))}
           onError={msg => setError(msg)}
         />
       </div>
 
-      {/* Display Order */}
       <div>
         <label className={label}>Display Order</label>
         <input type="number" min={0} value={form.display_order}
@@ -239,12 +202,11 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
         <p className="text-xs text-gray-400 mt-1">Lower = shows first</p>
       </div>
 
-      {/* Toggles */}
       <div className="flex gap-6">
         {([['is_available', 'Available for purchase'], ['is_featured', 'Featured in hero']] as const).map(([key, text]) => (
           <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
             <div onClick={() => set(key, !form[key])}
-              className={`w-11 h-6 rounded-full transition-colors relative ${form[key] ? 'bg-orange-500' : 'bg-gray-300'}`}>
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${form[key] ? 'bg-orange-500' : 'bg-gray-300'}`}>
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form[key] ? 'translate-x-5' : ''}`} />
             </div>
             <span className="text-sm text-gray-700">{text}</span>
@@ -252,7 +214,6 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
         ))}
       </div>
 
-      {/* Actions */}
       <div className="flex gap-3 pt-2">
         <button type="submit" disabled={saving}
           className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50">

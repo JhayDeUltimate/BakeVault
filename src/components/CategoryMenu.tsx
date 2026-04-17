@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { CATEGORIES } from '@/constants'
 
 interface CategoryMenuProps {
@@ -9,8 +9,15 @@ interface CategoryMenuProps {
 
 const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
   const location = useLocation()
+  const navigate = useNavigate()
 
   if (!isOpen) return null
+
+  function goToCategory(categoryName: string) {
+    onClose()
+    // Pass the category name as a search param so CatalogPage can filter
+    navigate(`/catalog?cat=${encodeURIComponent(categoryName)}`)
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -20,47 +27,57 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
           <div className="h-full flex flex-col bg-white shadow-2xl">
             <div className="flex-1 py-8 overflow-y-auto px-6">
               <div className="flex items-start justify-between mb-8">
-                <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">Browse Vault</h2>
-                <button onClick={onClose} className="p-2 text-brand-darkGray/40 hover:text-brand-orange">
+                <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
+                  Browse Vault
+                </h2>
+                <button onClick={onClose} aria-label="Close menu"
+                  className="p-2 text-brand-darkGray/40 hover:text-brand-orange">
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="space-y-3">
-                <div className="space-y-2 pb-5 border-b border-orange-100">
-                  {[{ to: '/', label: 'Home' }, { to: '/catalog', label: 'Catalog' }, { to: '/about', label: 'About' }].map(link => (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      onClick={onClose}
-                      className={`block w-full text-left px-6 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
-                        location.pathname === link.to
+              <div className="space-y-2">
+                {/* Page links */}
+                <div className="space-y-2 pb-4 border-b border-orange-100">
+                  {[
+                    { to: '/',        label: 'Home'    },
+                    { to: '/catalog', label: 'Catalog' },
+                    { to: '/about',   label: 'About'   },
+                  ].map(link => (
+                    <Link key={link.to} to={link.to} onClick={onClose}
+                      className={`block w-full text-left px-5 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
+                        location.pathname === link.to && !location.search
                           ? 'bg-brand-orange text-white border-brand-orange shadow-lg'
                           : 'bg-white text-brand-darkGray border-orange-50 hover:bg-orange-50'
-                      }`}
-                    >
+                      }`}>
                       {link.label}
                     </Link>
                   ))}
                 </div>
 
-                <p className="px-2 pt-2 text-[10px] font-black uppercase tracking-widest text-brand-brown/60">Categories</p>
+                {/* Category links */}
+                <p className="px-1 pt-3 text-[10px] font-black uppercase tracking-widest text-brand-brown/60">
+                  Shop by Category
+                </p>
                 {CATEGORIES.map(category => (
-                  <Link
+                  <button
                     key={category}
-                    to="/catalog"
-                    onClick={onClose}
-                    className="block w-full text-left px-6 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border bg-white text-brand-darkGray border-orange-50 hover:bg-brand-brown hover:text-white hover:border-brand-brown"
+                    type="button"
+                    onClick={() => goToCategory(category)}
+                    className="block w-full text-left px-5 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border bg-white text-brand-darkGray border-orange-50 hover:bg-brand-brown hover:text-white hover:border-brand-brown"
                   >
                     {category}
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
-            <div className="bg-brand-cream/30 p-6 border-t border-orange-100">
-              <p className="text-[10px] text-center text-brand-darkGray/40 font-bold uppercase tracking-widest">BakeVault Lagos</p>
+
+            <div className="bg-brand-cream/30 p-5 border-t border-orange-100">
+              <p className="text-[10px] text-center text-brand-darkGray/40 font-bold uppercase tracking-widest">
+                BakeVault Lagos
+              </p>
             </div>
           </div>
         </div>

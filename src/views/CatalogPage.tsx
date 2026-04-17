@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import ProductCard          from '@/components/ProductCard'
 import ProductModal         from '@/components/ProductModal'
 import ProductRequestModal  from '@/components/ProductRequestModal'
@@ -6,27 +7,79 @@ import SectionHeading       from '@/components/ui/SectionHeading'
 import { useCart }          from '@/lib/cart-context'
 import { useProducts, useCategories } from '@/hooks'
 import { mapDBProduct }     from '@/lib/utils'
+import { trackEvent }       from '@/lib/analytics'
 import type { DBProductWithCategory, DBCategory } from '@/lib/database.types'
 
 export default function CatalogPage() {
-  const { addToCart }  = useCart()
-  const [categoryId,   setCategoryId]   = useState<string | null>(null)
-  const [search,       setSearch]       = useState('')
-  const [selectedRaw,  setSelectedRaw]  = useState<DBProductWithCategory | null>(null)
-  const [showRequest,  setShowRequest]  = useState(false)
+  const { addToCart }   = useCart()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Category can come from:
+  // 1. ?cat=CATEGORY_NAME  (from mobile menu)
+  // 2. Local state via the category grid buttons
+  const [categoryId,  setCategoryId]  = useState<string | null>(null)
+  const [search,      setSearch]      = useState('')
+  const [selectedRaw, setSelectedRaw] = useState<DBProductWithCategory | null>(null)
+  const [showRequest, setShowRequest] = useState(false)
+  const [catExpanded, setCatExpanded] = useState(true)
+
+  const productsRef = useRef<HTMLDivElement>(null)
 
   const { products: rawProducts, loading: productsLoading } = useProducts({ categoryId, search })
   const { categories, loading: categoriesLoading }          = useCategories()
 
-  const products    = useMemo(() => rawProducts.map(mapDBProduct), [rawProducts])
-  // map id → raw DB product for modal
-  const rawByIdMap  = useMemo(() => new Map(rawProducts.map(p => [p.id, p])), [rawProducts])
-  const isFiltering = categoryId !== null || search.trim() !== ''
-  const loading     = productsLoading || categoriesLoading
+  const products   = useMemo(() => rawProducts.map(mapDBProduct), [rawProducts])
+  const rawByIdMap = useMemo(() => new Map(rawProducts.map(p => [p.id, p])), [rawProducts])
+  const loading    = productsLoading || categoriesLoading
+
+  // ── Resolve ?cat=NAME → categoryId once categories are loaded ──────────────
+  useEffect(() => {
+    const catName = searchParams.get('cat')
+    if (!catName || categories.length === 0) return
+
+    const match = (categories as DBCategory[]).find(
+      c => c.name.toLowerCase() === catName.toLowerCase()
+    )
+    if (match) {
+      setCategoryId(match.id)
+      setCatExpanded(false)
+      // Clean the URL param so the page doesn't re-trigger on re-renders
+      setSearchParams({}, { replace: true })
+      // Scroll to products
+      setTimeout(() => productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    }
+  }, [categories, searchParams, setSearchParams])
+
+  // Track page view once
+  useEffect(() => { trackEvent('page_view', { page: '/catalog' }) }, [])
+
+  function selectCategory(id: string | null) {
+    setCategoryId(id)
+    if (id !== null) {
+      setCatExpanded(false)
+      setTimeout(() => productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+    } else {
+      setCatExpanded(true)
+    }
+  }
+
+  function clearFilters() {
+    setCategoryId(null)
+    setSearch('')
+    setCatExpanded(true)
+  }
 
   function openDetails(p: ReturnType<typeof mapDBProduct>) {
-    setSelectedRaw(rawByIdMap.get(p.id) ?? null)
+    const raw = rawByIdMap.get(p.id) ?? null
+    setSelectedRaw(raw)
+    if (raw) trackEvent('product_view', { product_id: raw.id, product_name: raw.name, category: raw.categories?.name ?? '' })
   }
+
+  const activeCategoryName = categoryId
+    ? (categories as DBCategory[]).find(c => c.id === categoryId)?.name ?? ''
+    : ''
+
+  const isFiltering = categoryId !== null || search.trim() !== ''
 
   return (
     <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
@@ -36,47 +89,102 @@ export default function CatalogPage() {
       {/* Search */}
       <div className="max-w-2xl mx-auto mt-10 sm:mt-16 relative">
         <input type="text" placeholder="Search ingredient vault..."
-          value={search} onChange={e => setSearch(e.target.value)}
+          value={search}
+          onChange={e => { setSearch(e.target.value); if (e.target.value) setCatExpanded(false) }}
           className="w-full bg-white border-2 border-orange-100 rounded-2xl px-6 py-4 pl-14 focus:outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all shadow-sm font-medium h-12 sm:h-14" />
         <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg className="h-5 w-5 text-brand-darkGray/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+        {search && (
+          <button onClick={() => { setSearch(''); setCatExpanded(true) }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-darkGray/40 hover:text-brand-orange transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Categories */}
       <section className="mt-12 sm:mt-16">
-        <div className="flex items-center justify-between mb-8 gap-4">
-          <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">Browse Categories</h3>
-          {isFiltering && <button onClick={() => { setCategoryId(null); setSearch('') }} className="text-brand-brown font-bold text-xs sm:text-sm hover:text-brand-orange transition-colors">Clear Filters</button>}
-        </div>
-        {categoriesLoading ? (
-          <div className="flex gap-4 flex-wrap">{[...Array(5)].map((_, i) => <div key={i} className="h-16 w-36 rounded-[24px] bg-orange-50 animate-pulse" />)}</div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            <button onClick={() => setCategoryId(null)}
-              className={`border rounded-[24px] p-6 text-center transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 ${!categoryId ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'}`}>
-              <span className="text-xs sm:text-sm font-extrabold font-display uppercase tracking-wider">All Products</span>
-            </button>
-            {(categories as DBCategory[]).map(cat => (
-              <button key={cat.id} onClick={() => setCategoryId(cat.id)}
-                className={`border rounded-[24px] p-6 text-center transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 ${categoryId === cat.id ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'}`}>
-                <span className="text-xs sm:text-sm font-extrabold font-display uppercase tracking-wider">{cat.name}</span>
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
+            Browse Categories
+          </h3>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Active category badge */}
+            {categoryId && (
+              <span className="inline-flex items-center gap-1.5 bg-brand-brown text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                {activeCategoryName}
+                <button onClick={clearFilters} aria-label="Clear filter"
+                  className="hover:opacity-70 transition-opacity">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            )}
+            {isFiltering && !categoryId && (
+              <button onClick={clearFilters}
+                className="text-brand-brown font-bold text-xs sm:text-sm hover:text-brand-orange transition-colors">
+                Clear Filters
               </button>
-            ))}
+            )}
+            {/* Expand / collapse categories toggle */}
+            <button onClick={() => setCatExpanded(e => !e)}
+              className="flex items-center gap-1 text-xs text-brand-darkGray/50 hover:text-brand-orange transition-colors font-bold"
+              aria-label={catExpanded ? 'Collapse categories' : 'Expand categories'}>
+              <svg className={`w-4 h-4 transition-transform ${catExpanded ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+              {catExpanded ? 'Collapse' : 'Show all'}
+            </button>
           </div>
+        </div>
+
+        {catExpanded && (
+          categoriesLoading ? (
+            <div className="flex gap-3 flex-wrap">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-14 w-32 rounded-2xl bg-orange-50 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <button onClick={() => selectCategory(null)}
+                className={`border rounded-2xl px-4 py-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
+                  !categoryId ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
+                }`}>
+                <span className="text-xs font-extrabold font-display uppercase tracking-wider">All Products</span>
+              </button>
+              {(categories as DBCategory[]).map(cat => (
+                <button key={cat.id} onClick={() => selectCategory(cat.id)}
+                  className={`border rounded-2xl px-4 py-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
+                    categoryId === cat.id ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
+                  }`}>
+                  <span className="text-xs font-extrabold font-display uppercase tracking-wider">{cat.name}</span>
+                </button>
+              ))}
+            </div>
+          )
         )}
       </section>
 
       {/* Products */}
-      <section className="mt-16 sm:mt-20">
-        <div className="flex items-center justify-between mb-8 border-b-2 border-orange-50 pb-6 gap-4">
+      <section className="mt-10 sm:mt-14" ref={productsRef}>
+        <div className="flex items-center justify-between mb-6 border-b-2 border-orange-50 pb-4 gap-4">
           <div>
             <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
-              {search ? `Results for "${search}"` : categoryId ? (categories.find(c => c.id === categoryId)?.name ?? 'Products') : 'Full Catalog'}
+              {search ? `Results for "${search}"` : categoryId ? activeCategoryName : 'Full Catalog'}
             </h3>
-            {!loading && <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-2">{products.length} product{products.length === 1 ? '' : 's'} found</p>}
+            {!loading && (
+              <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-1">
+                {products.length} product{products.length === 1 ? '' : 's'} found
+              </p>
+            )}
           </div>
         </div>
 
@@ -85,32 +193,48 @@ export default function CatalogPage() {
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-white rounded-[24px] border border-orange-100 overflow-hidden">
                 <div className="aspect-square bg-orange-50 animate-pulse" />
-                <div className="p-5 space-y-3"><div className="h-4 bg-orange-50 rounded animate-pulse" /><div className="h-8 bg-orange-50 rounded animate-pulse" /></div>
+                <div className="p-5 space-y-3">
+                  <div className="h-4 bg-orange-50 rounded animate-pulse" />
+                  <div className="h-8 bg-orange-50 rounded animate-pulse" />
+                </div>
               </div>
             ))}
           </div>
         ) : products.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
             {products.map(product => (
-              <ProductCard key={product.id} product={product} onAddToCart={addToCart} onViewDetails={openDetails} />
+              <ProductCard key={product.id} product={product}
+                onAddToCart={p => {
+                  addToCart(p)
+                  trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
+                }}
+                onViewDetails={openDetails} />
             ))}
           </div>
         ) : (
           <div className="bg-white border border-orange-100 rounded-[32px] px-6 py-12 text-center shadow-sm">
             <p className="text-brand-darkGray text-lg font-bold font-display">No products matched that search.</p>
-            <p className="text-brand-darkGray/60 text-sm font-medium mt-3">Try another product name or clear the current filters.</p>
+            <p className="text-brand-darkGray/60 text-sm font-medium mt-3">
+              Try another product name or clear the current filters.
+            </p>
           </div>
         )}
       </section>
 
-      {/* Product request banner */}
+      {/* Product request */}
       <section className="mt-16 sm:mt-20">
         <div className="bg-white border border-orange-100 rounded-[32px] px-6 sm:px-10 py-8 text-center shadow-sm">
-          <h3 className="text-lg sm:text-xl font-extrabold text-brand-darkGray font-display mb-2">Can't find what you're looking for?</h3>
-          <p className="text-sm text-brand-darkGray/60 mb-5">Submit a product request and we'll look into sourcing it for you.</p>
+          <h3 className="text-lg sm:text-xl font-extrabold text-brand-darkGray font-display mb-2">
+            Can't find what you're looking for?
+          </h3>
+          <p className="text-sm text-brand-darkGray/60 mb-5">
+            Submit a product request and we'll look into sourcing it for you.
+          </p>
           <button onClick={() => setShowRequest(true)}
             className="inline-flex items-center gap-2 bg-brand-darkGray hover:bg-brand-orange text-white font-bold px-8 py-3 rounded-2xl transition-all active:scale-95 text-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
             Request a Product
           </button>
         </div>
@@ -121,7 +245,11 @@ export default function CatalogPage() {
         <ProductModal
           product={selectedRaw}
           onClose={() => setSelectedRaw(null)}
-          onAddToCart={p => { addToCart(p); setSelectedRaw(null) }}
+          onAddToCart={p => {
+            addToCart(p)
+            trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
+            setSelectedRaw(null)
+          }}
         />
       )}
       {showRequest && <ProductRequestModal onClose={() => setShowRequest(false)} />}
