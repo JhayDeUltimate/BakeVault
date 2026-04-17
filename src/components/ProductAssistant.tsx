@@ -1,0 +1,143 @@
+import React, { useRef, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+
+interface Message { role: 'user' | 'assistant'; text: string }
+
+interface Props {
+  productName:        string
+  productDescription: string
+}
+
+export default function ProductAssistant({ productName, productDescription }: Props) {
+  const [open,     setOpen]     = useState(false)
+  const [input,    setInput]    = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading,  setLoading]  = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  async function send() {
+    const text = input.trim()
+    if (!text || loading) return
+    setInput('')
+
+    const userMsg: Message = { role: 'user', text }
+    const next = [...messages, userMsg]
+    setMessages(next)
+    setLoading(true)
+
+    // Scroll to bottom
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+
+    try {
+      const apiMessages = next.map(m => ({ role: m.role, content: m.text }))
+
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          messages:       apiMessages,
+          productContext: { name: productName, description: productDescription },
+        },
+      })
+
+      if (error) throw error
+      const reply = data?.text ?? 'Sorry, I could not get a response. Please try again.'
+      setMessages(prev => [...prev, { role: 'assistant', text: reply }])
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Something went wrong. Please try again.' }])
+    } finally {
+      setLoading(false)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    }
+  }
+
+  function handleKey(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+  }
+
+  return (
+    <div className="border border-orange-100 rounded-2xl overflow-hidden">
+      {/* Toggle header */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-orange-50 hover:bg-orange-100 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-brand-orange rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/>
+            </svg>
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-bold text-brand-darkGray">Ask about this product</p>
+            <p className="text-[10px] text-brand-darkGray/50">AI assistant · General product info only</p>
+          </div>
+        </div>
+        <svg className={`w-4 h-4 text-brand-darkGray/40 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="flex flex-col bg-white" style={{ height: 320 }}>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            {messages.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-xs text-brand-darkGray/40">Ask me anything about <strong className="text-brand-darkGray/70">{productName}</strong></p>
+                <p className="text-[10px] text-brand-darkGray/30 mt-1">e.g. "What is this used for?" · "What are alternatives?"</p>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+                  m.role === 'user'
+                    ? 'bg-brand-orange text-white rounded-br-sm'
+                    : 'bg-orange-50 text-brand-darkGray rounded-bl-sm border border-orange-100'
+                }`}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-orange-50 border border-orange-100 px-3 py-2 rounded-2xl rounded-bl-sm">
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className="w-1.5 h-1.5 bg-brand-orange/50 rounded-full animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-orange-100 px-3 py-2 flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Ask a question…"
+              disabled={loading}
+              className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-orange/30 disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={send}
+              disabled={loading || !input.trim()}
+              className="w-8 h-8 bg-brand-orange hover:bg-brand-brown text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 shrink-0"
+              aria-label="Send"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
