@@ -1,42 +1,108 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
+// ── Fallback: email allowlist from .env ───────────────────────────────────────
+// Used when the profiles table hasn't been set up yet, or as a backup.
+// After running migration 002_admin_rls.sql and promoting your user, this env
+// var can be removed — the profiles table becomes the source of truth.
 function parseAdminEmails(raw: string | undefined): Set<string> {
   return new Set(
-    (raw ?? '')
-      .split(',')
-      .map(s => s.trim().toLowerCase())
-      .filter(Boolean)
+    (raw ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
   )
 }
-
 const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
 
+// ── Profiles table role check ─────────────────────────────────────────────────
+/**
+ * Checks the `profiles` table for an admin role.
+ * - Returns true if role = 'admin'
+ * - Returns false on any error (fail closed — never accidentally grants access)
+ * - Has a 4-second timeout to prevent the admin page from spinning forever
+ *   if Supabase is slow or the table doesn't exist yet.
+ */
+async function fetchIsAdmin(uid: string): Promise<boolean> {
+  try {
+    const timeout = new Promise<false>(resolve => setTimeout(() => resolve(false), 4000))
+    const query = supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', uid)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) return false
+        // Type assertion needed: profiles isn't in generated types yet
+        return (data as { role: string }).role === 'admin'
+      })
+
+    return await Promise.race([query, timeout])
+  } catch {
+    return false
+  }
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user,    setUser]    = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  /** Determines admin status using profiles table with env-var fallback */
+  async function resolveAdmin(u: User): Promise<boolean> {
+    // 1. Try profiles table (secure server-side check)
+    const profileAdmin = await fetchIsAdmin(u.id)
+    if (profileAdmin) return true
+
+    // 2. Fall back to VITE_ADMIN_EMAILS (works before migration is applied)
+    if (ADMIN_EMAILS.size > 0 && u.email) {
+      return ADMIN_EMAILS.has(u.email.toLowerCase())
+    }
+
+    return false
+  }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
+    let cancelled = false
+
+    async function init() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (cancelled) return
+
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+
+        if (currentUser) {
+          const admin = await resolveAdmin(currentUser)
+          if (!cancelled) setIsAdmin(admin)
+        }
+      } catch {
+        // On any unexpected error, fail safely — don't leave loading = true
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    init()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (cancelled) return
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+
+      if (currentUser) {
+        const admin = await resolveAdmin(currentUser)
+        if (!cancelled) setIsAdmin(admin)
+      } else {
+        setIsAdmin(false)
+      }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const isAdmin = useMemo(() => {
-    const email = user?.email?.toLowerCase() ?? ''
-    if (!email) return false
-    // If no allowlist configured, default to false (secure-by-default)
-    if (ADMIN_EMAILS.size === 0) return false
-    return ADMIN_EMAILS.has(email)
-  }, [user])
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -45,6 +111,7 @@ export function useAuth() {
 
   async function signOut() {
     await supabase.auth.signOut()
+    setIsAdmin(false)
   }
 
   return { user, loading, signIn, signOut, isAdmin }

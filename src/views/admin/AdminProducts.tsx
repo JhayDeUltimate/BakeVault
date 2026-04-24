@@ -9,28 +9,28 @@ type SortKey = 'name' | 'category' | 'updated_at' | 'created_at' | 'is_available
 type SortDir = 'asc' | 'desc'
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'name',         label: 'Name (A–Z)' },
-  { key: 'category',     label: 'Category'   },
-  { key: 'is_available', label: 'Available'  },
-  { key: 'is_featured',  label: 'Hero'       },
+  { key: 'name',         label: 'Name (A–Z)'   },
+  { key: 'category',     label: 'Category'     },
+  { key: 'is_available', label: 'Available'    },
+  { key: 'is_featured',  label: 'Hero'         },
   { key: 'updated_at',   label: 'Last Updated' },
-  { key: 'created_at',   label: 'Date Added' },
+  { key: 'created_at',   label: 'Date Added'   },
 ]
 
 export default function AdminProducts() {
   const { products, loading, error, refetch } = useProducts({ includeUnavailable: true })
-  const [modal,   setModal]   = useState<Modal>(null)
-  const [search,  setSearch]  = useState('')
-  const [saving,  setSaving]  = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<SortKey>('name')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [modal,      setModal]    = useState<Modal>(null)
+  const [search,     setSearch]   = useState('')
+  const [saving,     setSaving]   = useState<string | null>(null)
+  const [sortKey,    setSortKey]  = useState<SortKey>('name')
+  const [sortDir,    setSortDir]  = useState<SortDir>('asc')
+  const [deleteError,setDeleteError] = useState<string | null>(null)
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     } else {
       setSortKey(key)
-      // Default direction: desc for dates, asc for everything else
       setSortDir(key === 'updated_at' || key === 'created_at' ? 'desc' : 'asc')
     }
   }
@@ -43,12 +43,12 @@ export default function AdminProducts() {
     return base.sort((a, b) => {
       let va: string | number = '', vb: string | number = ''
       switch (sortKey) {
-        case 'name':         va = a.name.toLowerCase();                    vb = b.name.toLowerCase();                    break
+        case 'name':         va = a.name.toLowerCase();                     vb = b.name.toLowerCase();                     break
         case 'category':     va = (a.categories?.name ?? '').toLowerCase(); vb = (b.categories?.name ?? '').toLowerCase(); break
-        case 'updated_at':   va = a.updated_at;                            vb = b.updated_at;                            break
-        case 'created_at':   va = a.created_at;                            vb = b.created_at;                            break
-        case 'is_available': va = a.is_available ? 1 : 0;                  vb = b.is_available ? 1 : 0;                  break
-        case 'is_featured':  va = a.is_featured  ? 1 : 0;                  vb = b.is_featured  ? 1 : 0;                  break
+        case 'updated_at':   va = a.updated_at;                             vb = b.updated_at;                             break
+        case 'created_at':   va = a.created_at;                             vb = b.created_at;                             break
+        case 'is_available': va = a.is_available ? 1 : 0;                   vb = b.is_available ? 1 : 0;                   break
+        case 'is_featured':  va = a.is_featured  ? 1 : 0;                   vb = b.is_featured  ? 1 : 0;                   break
       }
       if (va < vb) return sortDir === 'asc' ? -1 : 1
       if (va > vb) return sortDir === 'asc' ?  1 : -1
@@ -66,20 +66,31 @@ export default function AdminProducts() {
     if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return
     try {
       setSaving(product.id)
-      const urls = Array.isArray(product.image_urls) ? product.image_urls as string[] : product.image_url ? [product.image_url] : []
+      setDeleteError(null)
+      const urls = Array.isArray(product.image_urls)
+        ? product.image_urls as string[]
+        : product.image_url ? [product.image_url] : []
       await Promise.all(urls.map(u => deleteProductImage(u)))
       await deleteProduct(product.id)
       refetch()
-    } catch (e) { alert(e instanceof Error ? e.message : 'Delete failed') }
-    finally     { setSaving(null) }
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Delete failed. Please try again.')
+    } finally {
+      setSaving(null)
+    }
   }
 
   async function toggleAvailable(product: DBProductWithCategory) {
-    await updateProduct(product.id, { is_available: !product.is_available }); refetch()
+    await updateProduct(product.id, { is_available: !product.is_available })
+    refetch()
   }
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>
-  if (error)   return <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">{error}</div>
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  )
+  if (error) return <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">{error}</div>
 
   return (
     <div className="space-y-5 max-w-6xl">
@@ -100,10 +111,25 @@ export default function AdminProducts() {
         </button>
       </div>
 
+      {/* Inline delete error */}
+      {deleteError && (
+        <div className="flex items-center justify-between bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">
+          <span>{deleteError}</span>
+          <button
+            onClick={() => setDeleteError(null)}
+            className="ml-4 text-red-400 hover:text-red-600 transition-colors shrink-0"
+            aria-label="Dismiss error"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Search + Sort controls row */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          {/* Search */}
           <div className="relative w-full sm:w-64">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,14 +139,8 @@ export default function AdminProducts() {
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" />
           </div>
-
-          {/* Divider */}
           <div className="hidden sm:block h-6 w-px bg-gray-200" />
-
-          {/* Sort label */}
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">Sort by:</span>
-
-          {/* Sort buttons */}
           <div className="flex flex-wrap gap-2">
             {SORT_OPTIONS.map(opt => {
               const isActive = sortKey === opt.key
@@ -198,9 +218,13 @@ export default function AdminProducts() {
                       </button>
                       <button onClick={() => handleDelete(p)} disabled={saving === p.id}
                         className="text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40" title="Delete">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        {saving === p.id ? (
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-red-400 rounded-full animate-spin" />
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </td>

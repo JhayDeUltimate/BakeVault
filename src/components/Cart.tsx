@@ -3,8 +3,7 @@ import type { CartItem } from '../types'
 import { logEnquiry } from '../lib/api'
 import { trackEvent } from '../lib/analytics'
 import { useCart } from '../lib/cart-context'
-
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER?.replace(/\D/g, '') ?? '2349064652679'
+import { WHATSAPP_NUMBER } from '../constants'
 
 interface CartProps {
   isOpen:           boolean
@@ -19,9 +18,18 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
   if (!isOpen) return null
 
+  if (!WHATSAPP_NUMBER) {
+    console.warn('[BakeVault] VITE_WHATSAPP_NUMBER is not set. WhatsApp checkout will not work.')
+  }
+
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
 
   function handleCheckout() {
+    if (!WHATSAPP_NUMBER) {
+      alert('WhatsApp checkout is not configured. Please contact the store directly.')
+      return
+    }
+
     const orderText = items.map(item => `• ${item.name} (Qty: ${item.quantity})`).join('\n')
     const message   = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
     const encoded   = encodeURIComponent(message)
@@ -132,7 +140,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
               <div className="mt-5 space-y-3">
                 <button
                   onClick={handleCheckout}
-                  disabled={items.length === 0}
+                  disabled={items.length === 0 || !WHATSAPP_NUMBER}
                   className="w-full flex justify-center items-center px-8 py-4 rounded-2xl shadow-lg text-base font-bold text-white bg-green-600 hover:bg-green-700 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed gap-3 uppercase"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">

@@ -1,8 +1,8 @@
 import { supabase } from './supabase'
-import type {
-  Database, Json, DBProductWithCategory, DBCategory,
-  DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent,
-} from './database.types'
+import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent } from './database.types'
+
+// Re-export from image.ts so existing imports from @/lib/api still work
+export { getProductImages } from './image'
 
 export function toSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
@@ -197,23 +197,13 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
   const marker = '/bakevault-images/'
   const idx = imageUrl.indexOf(marker)
   if (idx === -1) return
-  const path = imageUrl.slice(idx + marker.length)
+  const path = imageUrl.slice(idx + marker.length).split('?')[0] // strip query params
   if (!path.startsWith('products/')) return
   const { error } = await supabase.storage.from('bakevault-images').remove([path])
   if (error) console.error('[BakeVault] Failed to delete image:', error.message)
 }
 
-export function getProductImages(p: { image_url?: string | null; image_urls?: unknown }): string[] {
-  const extras = Array.isArray(p.image_urls)
-    ? (p.image_urls as string[]).filter(u => typeof u === 'string' && u.length > 0)
-    : []
-  if (extras.length > 0) return extras
-  if (p.image_url) return [p.image_url]
-  return []
-}
-
 // ─── Analytics ────────────────────────────────────────────────────────────────
-
 export interface AnalyticsChartPoint {
   date:          string
   page_views:    number
@@ -234,7 +224,6 @@ export async function getAnalyticsSummary(days = 30): Promise<{
   totals:      Record<string, number>
 }> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
-
   const { data, error } = await supabase
     .from('analytics_events')
     .select('event_type, event_data, created_at')
@@ -244,7 +233,6 @@ export async function getAnalyticsSummary(days = 30): Promise<{
   if (error) throw new Error(error.message)
   const events = data ?? []
 
-  // Build chart data — one point per day
   const buckets = new Map<string, AnalyticsChartPoint>()
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
@@ -253,31 +241,26 @@ export async function getAnalyticsSummary(days = 30): Promise<{
     buckets.set(key, { date: label, page_views: 0, product_views: 0, add_to_cart: 0, checkouts: 0 })
   }
 
-  // Count totals per event type
   const totals: Record<string, number> = {}
-  // Top products by add_to_cart
   const productCounts = new Map<string, { name: string; count: number }>()
 
   for (const e of events) {
-    const key   = e.created_at.slice(0, 10)
+    const key    = e.created_at.slice(0, 10)
     const bucket = buckets.get(key)
     totals[e.event_type] = (totals[e.event_type] ?? 0) + 1
 
     if (bucket) {
-      if (e.event_type === 'page_view')    bucket.page_views    += 1
-      if (e.event_type === 'product_view') bucket.product_views += 1
-      if (e.event_type === 'add_to_cart')  bucket.add_to_cart   += 1
-      if (e.event_type === 'cart_checkout') bucket.checkouts    += 1
+      if (e.event_type === 'page_view')     bucket.page_views    += 1
+      if (e.event_type === 'product_view')  bucket.product_views += 1
+      if (e.event_type === 'add_to_cart')   bucket.add_to_cart   += 1
+      if (e.event_type === 'cart_checkout') bucket.checkouts     += 1
     }
 
     if (e.event_type === 'add_to_cart') {
       const d = e.event_data as { product_id?: string; product_name?: string }
       if (d?.product_id) {
         const existing = productCounts.get(d.product_id)
-        productCounts.set(d.product_id, {
-          name:  d.product_name ?? 'Unknown',
-          count: (existing?.count ?? 0) + 1,
-        })
+        productCounts.set(d.product_id, { name: d.product_name ?? 'Unknown', count: (existing?.count ?? 0) + 1 })
       }
     }
   }

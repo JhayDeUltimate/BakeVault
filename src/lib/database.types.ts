@@ -3,6 +3,12 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row:    { id: string; role: string }
+        Insert: { id: string; role?: string }
+        Update: { role?: string }
+        Relationships: []
+      }
       categories: {
         Row: { id: string; name: string; slug: string; display_order: number; created_at: string }
         Insert: { id?: string; name: string; slug: string; display_order?: number; created_at?: string }
@@ -53,7 +59,7 @@ export interface Database {
         Row: {
           id: string; product_name: string; product_size: string | null
           quantity: number | null; notes: string | null
-          contact_info: string | null       // ← NEW: email, phone, or WhatsApp
+          contact_info: string | null
           status: string; created_at: string
         }
         Insert: {
@@ -79,10 +85,11 @@ export interface Database {
   }
 }
 
-export type DBCategory           = Database['public']['Tables']['categories']['Row']
-export type DBProduct            = Database['public']['Tables']['products']['Row']
-export type DBEnquiry            = Database['public']['Tables']['enquiries']['Row']
-export type DBTestimonial        = Database['public']['Tables']['testimonials']['Row']
-export type DBProductRequest     = Database['public']['Tables']['product_requests']['Row']
-export type DBAnalyticsEvent     = Database['public']['Tables']['analytics_events']['Row']
+export type DBProfile         = Database['public']['Tables']['profiles']['Row']
+export type DBCategory        = Database['public']['Tables']['categories']['Row']
+export type DBProduct         = Database['public']['Tables']['products']['Row']
+export type DBEnquiry         = Database['public']['Tables']['enquiries']['Row']
+export type DBTestimonial     = Database['public']['Tables']['testimonials']['Row']
+export type DBProductRequest  = Database['public']['Tables']['product_requests']['Row']
+export type DBAnalyticsEvent  = Database['public']['Tables']['analytics_events']['Row']
 export type DBProductWithCategory = DBProduct & { categories: DBCategory | null }

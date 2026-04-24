@@ -25,22 +25,32 @@ interface EventData {
 
 /**
  * Track a user-visible event.
- * Failures are silent — analytics must never break the app.
+ * Failures are always silent — analytics must never break the app.
+ *
+ * Uses void + an async IIFE to avoid the PromiseLike.catch() TS error that
+ * occurs when chaining .catch() directly onto a Supabase insert (which returns
+ * PromiseLike<void>, not Promise<void>).
  */
 export function trackEvent(type: AnalyticsEventType, data: EventData = {}): void {
   const page = window.location.pathname
 
-  // Fire-and-forget
-  supabase
-    .from('analytics_events')
-    .insert({
-      event_type: type,
-      event_data: { ...data, user_agent: navigator.userAgent },
-      session_id: SESSION_ID,
-      page,
-    })
-    .then(({ error }) => {
-      if (error) console.debug('[analytics] insert failed (non-critical):', error.message)
-    })
-    .catch(() => { /* silently ignore network errors */ })
+  // Fire-and-forget using an async IIFE so we get a real Promise with .catch()
+  void (async () => {
+    try {
+      const { error } = await supabase
+        .from('analytics_events')
+        .insert({
+          event_type: type,
+          event_data: { ...data, user_agent: navigator.userAgent },
+          session_id: SESSION_ID,
+          page,
+        })
+      if (error) {
+        // Log at debug level only — analytics errors should never be noisy
+        console.debug('[analytics] insert failed (non-critical):', error.message)
+      }
+    } catch {
+      // Silently ignore network errors — analytics is best-effort
+    }
+  })()
 }

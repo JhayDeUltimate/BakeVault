@@ -7,9 +7,11 @@ interface Options {
   search?:             string
   featuredOnly?:       boolean
   includeUnavailable?: boolean
-  /** Whether to re-fetch when the browser window regains focus.
-   *  Default: false — prevents admin pages from reloading on every tab-switch. */
-  refetchOnFocus?:     boolean
+  /**
+   * Re-fetch when the browser window regains focus.
+   * Default: false — prevents admin pages from reloading on every tab-switch.
+   */
+  refetchOnFocus?: boolean
 }
 
 export function useProducts(options: Options = {}) {
@@ -17,6 +19,7 @@ export function useProducts(options: Options = {}) {
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState<string | null>(null)
 
+  // Keep a ref so the fetch callback never goes stale without re-creating itself
   const optionsRef = useRef(options)
   optionsRef.current = options
 
@@ -31,18 +34,26 @@ export function useProducts(options: Options = {}) {
     }
   }, [])
 
+  // Re-fetch whenever any filter option changes
   useEffect(() => {
     fetch()
-  }, [fetch, options.categoryId, options.search, options.featuredOnly, options.includeUnavailable])
+  }, [
+    fetch,
+    options.categoryId,
+    options.search,
+    options.featuredOnly,
+    options.includeUnavailable,
+  ])
 
-  // Only re-fetch on window focus when explicitly requested.
-  // Keeping this off by default prevents admin pages from refreshing every time
-  // the user switches browser tabs for a few seconds.
+  // Attach/detach the focus listener whenever refetchOnFocus changes.
+  // This effect is correctly gated on refetchOnFocus so toggling it at
+  // runtime works without leaving orphaned listeners.
+  const { refetchOnFocus } = options
   useEffect(() => {
-    if (!options.refetchOnFocus) return
+    if (!refetchOnFocus) return
     window.addEventListener('focus', fetch)
     return () => window.removeEventListener('focus', fetch)
-  }, [fetch, options.refetchOnFocus])
+  }, [fetch, refetchOnFocus])
 
   return { products, loading, error, refetch: fetch }
 }

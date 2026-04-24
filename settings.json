@@ -1,0 +1,15 @@
+{
+  "files.autoSave": "afterDelay",
+  "editor.wordWrap": "off",
+
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.unstable": false,
+
+  // ── TypeScript: disable regular TS checks inside Deno folders ─────────────
+  // Prevents the standard TS language server from reporting Deno errors.
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

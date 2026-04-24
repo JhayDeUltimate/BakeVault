@@ -1,5 +1,27 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { CartItem, Product } from './types'
+
+const CART_STORAGE_KEY = 'bakevault:cart'
+
+function loadCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed as CartItem[]
+  } catch {
+    return []
+  }
+}
+
+function saveCart(items: CartItem[]): void {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+  } catch {
+    // localStorage may be unavailable in private browsing; fail silently
+  }
+}
 
 interface CartContextType {
   items:             CartItem[]
@@ -19,9 +41,14 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items,            setItems]            = useState<CartItem[]>([])
+  const [items,            setItems]            = useState<CartItem[]>(loadCart)
   const [isCartOpen,       setIsCartOpen]       = useState(false)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    saveCart(items)
+  }, [items])
 
   function addToCart(product: Product) {
     setItems(prev => {
