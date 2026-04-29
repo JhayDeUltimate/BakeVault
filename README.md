@@ -114,7 +114,9 @@ The application expects the following tables in Supabase:
 - `analytics_events`
 - `profiles`
 
-Migrations live in `supabase/migrations/`. Product images are stored in a Supabase Storage bucket named `bakevault-images` under a `products/` prefix.
+This repository does not include Supabase SQL migrations. Create the database schema in your Supabase project (see the expected tables listed above), or import migrations from the original project if you have them.
+
+Product images are stored in a Supabase Storage bucket named `bakevault-images` under a `products/` prefix.
 
 > **Note on image optimisation:** Supabase image transformation (`/render/image/`) requires the Pro plan. The current configuration returns original URLs unchanged and relies on browser-native lazy loading. To enable resizing, see the commented block in `src/lib/image.ts`.
 

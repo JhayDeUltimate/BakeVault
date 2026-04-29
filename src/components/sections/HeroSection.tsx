@@ -30,7 +30,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
         return (
           <div
             key={product.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
           >
             <div className="absolute inset-0">
               <img
