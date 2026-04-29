@@ -250,6 +250,10 @@ export default function CatalogPage() {
             trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
             setSelectedRaw(null)
           }}
+          onViewProduct={p => {
+            setSelectedRaw(p)
+            trackEvent('product_view', { product_id: p.id, product_name: p.name, category: p.categories?.name ?? '' })
+          }}
         />
       )}
       {showRequest && <ProductRequestModal onClose={() => setShowRequest(false)} />}

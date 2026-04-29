@@ -1,21 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const GEMINI_MODEL   = 'gemini-2.5-flash'
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
-const TAVILY_API_URL = 'https://api.tavily.com/search'
+
+const GEMINI_MODEL = 'gemini-1.5-flash'
+
+// FIX #1: Must be v1beta — `systemInstruction` and `tools` do not exist in v1.
+const GEMINI_API_URL =
+  `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`
 
 const MAX_MESSAGES     = 40
-const FETCH_TIMEOUT_MS = 25_000   // 25s — Deno edge functions time out at 30s
-const MAX_IMAGE_BYTES  = 8 * 1024 * 1024
+const FETCH_TIMEOUT_MS = 25_000  // 25s — Deno edge functions time out at 30s
+const MAX_IMAGE_BYTES  = 8 * 1024 * 1024  // 8 MB hard cap on image downloads
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
+// Include production domain; add yours before deploying.
 const ALLOWED_ORIGINS = new Set([
   'http://localhost:3000',
   'http://localhost:5173',
-  // Add your production domain(s) here before deploying, e.g.:
+  // ADD YOUR PRODUCTION DOMAIN(S) HERE, e.g.:
   // 'https://bakevault.com.ng',
+  // 'https://www.bakevault.com.ng',
 ])
 
 function corsHeaders(origin: string | null): Record<string, string> {
@@ -37,49 +42,39 @@ function respond(body: unknown, origin: string | null, status = 200): Response {
 
 // ── Prompts ───────────────────────────────────────────────────────────────────
 
-const CHAT_SYSTEM = (name: string, description: string, searchContext: string) => `
+const CHAT_SYSTEM = (name: string, description: string) => `
 You are a helpful product assistant for BakeVault, a wholesale baking supplies store in Lagos, Nigeria.
 
 Current product:
 - Name: ${sanitizeForPrompt(name) || 'unknown'}
 - Description: ${sanitizeForPrompt(description) || 'No description provided.'}
 
-${searchContext
-  ? `CURRENT WEB INFORMATION ABOUT THIS PRODUCT:\n${searchContext}\n\nUse the above to give accurate, grounded answers.`
-  : ''}
-
 WHAT YOU CAN DO:
 Answer questions about what this product is, how it is used in baking, alternatives, and storage tips.
 
 WHAT YOU CANNOT DO (always be honest):
-You do NOT know BakeVault's current prices, stock levels, or delivery schedules.
-For pricing and ordering, direct users to contact BakeVault via WhatsApp.
+- You do NOT know BakeVault's current prices, stock levels, or delivery schedules. Direct users to contact BakeVault via WhatsApp for this.
+- You do NOT know, and must NEVER guess, the expiry date, best-before date, production date, manufacture date, or batch number of any product in store. These change with every batch and delivery. If asked anything about expiry or production dates, tell the user clearly that this information varies by batch and they must contact BakeVault directly on WhatsApp to confirm the date on the specific stock currently available.
 
 Keep responses short and practical. Plain text only — no markdown, no bullet symbols.
 `.trim()
 
-// Step 1 of analyze: just get the product name from the image — nothing else.
-const ANALYZE_IDENTIFY_PROMPT = `
-Look at this baking product image. Identify the product name, including brand if visible on the packaging.
-Return ONLY the product name as a single line of plain text. No explanation, no punctuation, nothing else.
-`.trim()
-
-// Step 3 of analyze: full JSON output enriched with search results.
-const ANALYZE_FINAL_SYSTEM = (searchContext: string) => `
+const ANALYZE_SYSTEM = `
 You are a product catalog assistant for BakeVault, a wholesale baking supplies store in Lagos, Nigeria.
-Given a product image and web research, return ONLY valid JSON with exactly two string keys — no preamble, no markdown:
-{"name":"Full product name including brand, weight and variant if visible on packaging","description":"2-3 sentences about baking uses and key features"}
-
-${searchContext ? `WEB RESEARCH ABOUT THIS PRODUCT:\n${searchContext}` : ''}
+Given a product image, return ONLY valid JSON with exactly two string keys — no preamble, no markdown, no code fences:
+{
+  "name": "Full product name including brand, exact weight or volume, and variant or flavour if visible on the packaging",
+  "description": "Write 4 to 6 detailed sentences covering all of the following: (1) what the product is and its primary category (e.g. leavening agent, preservative, flavour essence, margarine, yogurt starter, food colouring, etc.); (2) its specific baking and food production uses — be concrete, e.g. 'used to leaven bread and cakes', 'added to yogurt to culture milk', 'mixed into icings and cream fillings for flavour'; (3) key quality features visible or implied by the brand and packaging, such as concentration level, purity, country of origin, or certifications; (4) ideal user — whether it suits home bakers, small cake studios, or large commercial bakeries; (5) any notable packaging details such as available sizes, resealable closures, or bulk format. Write in clear, professional catalog English. Do not include expiry dates, prices, or health claims."
+}
 `.trim()
 
 // ── Prompt injection guard ────────────────────────────────────────────────────
 
 function sanitizeForPrompt(input: string): string {
   return input
-    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
-    .replace(/\n\s*(ignore|forget|disregard|system:|assistant:|user:)/gi, '')
-    .slice(0, 1000)
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '') // control chars
+    .replace(/\n\s*(ignore|forget|disregard|system:|assistant:|user:)/gi, '') // jailbreak prefixes
+    .slice(0, 1000) // hard length cap — nothing legitimate needs more
 }
 
 // ── Gemini types ──────────────────────────────────────────────────────────────
@@ -98,67 +93,26 @@ interface GeminiErrorBody {
   error?: { message?: string; code?: number; status?: string }
 }
 
-// ── Tavily search ─────────────────────────────────────────────────────────────
-
-interface TavilyResult {
-  title:   string
-  url:     string
-  content: string
-}
-
-async function searchTavily(apiKey: string, query: string): Promise<string> {
-  const controller = new AbortController()
-  const timeout    = setTimeout(() => controller.abort(), 8_000) // shorter timeout for search
-
-  try {
-    const res = await fetch(TAVILY_API_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key:        apiKey,
-        query:          query,
-        search_depth:   'basic',
-        max_results:    5,
-        include_answer: false,
-      }),
-      signal: controller.signal,
-    })
-
-    if (!res.ok) {
-      console.warn(`[tavily] search failed: ${res.status}`)
-      return ''
-    }
-
-    const data = await res.json() as { results?: TavilyResult[] }
-    if (!data.results?.length) return ''
-
-    // Format as plain-text context paragraphs for Gemini
-    return data.results
-      .slice(0, 4)
-      .map(r => `[${r.title}]\n${r.content}`)
-      .join('\n\n')
-
-  } catch (err) {
-    // Search failure is non-fatal. Gemini will still answer from training knowledge.
-    console.warn('[tavily] search error (non-fatal):', err instanceof Error ? err.message : String(err))
-    return ''
-  } finally {
-    clearTimeout(timeout)
-  }
-}
-
 // ── Gemini API call ───────────────────────────────────────────────────────────
 
 async function callGemini(
-  apiKey:   string,
-  system:   string,
-  contents: GeminiContent[],
+  apiKey:    string,
+  system:    string,
+  contents:  GeminiContent[],
+  useSearch: boolean,
 ): Promise<Response> {
-  const body = {
+  const body: Record<string, unknown> = {
     systemInstruction: { parts: [{ text: system }] },
     contents,
     generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+  }
 
+  if (useSearch) {
+    body.tools = [{
+      google_search_retrieval: {
+        dynamic_retrieval_config: { mode: 'MODE_DYNAMIC', dynamic_threshold: 0.3 },
+      },
+    }]
   }
 
   const controller = new AbortController()
@@ -188,22 +142,28 @@ function extractText(data: Record<string, unknown>): string {
 
 // ── SSRF-safe image fetcher ───────────────────────────────────────────────────
 
+//Block private/link-local IP ranges to prevent SSRF attacks.
+
 function isPrivateHost(hostname: string): boolean {
+  // Reject literal private IPs and metadata endpoints
   const BLOCKED = [
     /^127\./,
     /^10\./,
     /^172\.(1[6-9]|2\d|3[01])\./,
     /^192\.168\./,
-    /^169\.254\./,
-    /^::1$/,
-    /^fc00:/i,
-    /^fe80:/i,
+    /^169\.254\./,     // AWS / Azure / GCP metadata
+    /^::1$/,           // IPv6 loopback
+    /^fc00:/i,         // IPv6 ULA
+    /^fe80:/i,         // IPv6 link-local
     /^localhost$/i,
   ]
   return BLOCKED.some(re => re.test(hostname))
 }
 
-async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string }> {
+async function fetchImageAsBase64(
+  url: string,
+): Promise<{ data: string; mimeType: string }> {
+  // Must be http(s) and not a private host
   const parsed = new URL(url)
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     throw new Error('imageUrl must use http or https.')
@@ -225,8 +185,11 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
     clearTimeout(timeout)
   }
 
-  if (!res.ok) throw new Error(`Image fetch failed: ${res.status} ${res.statusText}`)
+  if (!res.ok) {
+    throw new Error(`Image fetch failed: ${res.status} ${res.statusText}`)
+  }
 
+  // FIX #6: Cap download size to prevent memory exhaustion on large images.
   const contentLength = Number(res.headers.get('content-length') ?? '0')
   if (contentLength > MAX_IMAGE_BYTES) {
     throw new Error(`Image too large (${(contentLength / 1024 / 1024).toFixed(1)} MB). Max 8 MB.`)
@@ -235,6 +198,7 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
   const mimeType = (res.headers.get('content-type') ?? 'image/jpeg').split(';')[0].trim()
   const buffer   = await res.arrayBuffer()
 
+  // Double-check actual size in case server omitted Content-Length
   if (buffer.byteLength > MAX_IMAGE_BYTES) {
     throw new Error(`Image too large (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB). Max 8 MB.`)
   }
@@ -258,13 +222,11 @@ serve(async (req: Request) => {
   }
 
   const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-  const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY')
-
   if (!GEMINI_API_KEY) {
-    return respond({ error: 'GEMINI_API_KEY is not configured. Run: supabase secrets set GEMINI_API_KEY=your-key' }, origin)
-  }
-  if (!TAVILY_API_KEY) {
-    return respond({ error: 'TAVILY_API_KEY is not configured. Run: supabase secrets set TAVILY_API_KEY=your-key' }, origin)
+    return respond({
+      error:
+        'GEMINI_API_KEY is not configured. Run: supabase secrets set GEMINI_API_KEY=your-key',
+    }, origin)
   }
 
   let body: Record<string, unknown> = {}
@@ -288,45 +250,23 @@ serve(async (req: Request) => {
     try {
       const { data: imageData, mimeType } = await fetchImageAsBase64(imageUrl)
 
-      // Step 1: Ask Gemini to identify the product name from the image alone.
-      const identifyContents: GeminiContent[] = [{
+      const contents: GeminiContent[] = [{
         role:  'user',
         parts: [
           { inline_data: { mime_type: mimeType, data: imageData } },
-          { text: ANALYZE_IDENTIFY_PROMPT },
+          { text: 'Analyze this baking product image and return the JSON as specified.' },
         ],
       }]
 
-      const identifyRes  = await callGemini(GEMINI_API_KEY, 'You are a product identification assistant.', identifyContents)
-      const identifyData = await identifyRes.json() as Record<string, unknown>
-      const productName  = identifyRes.ok
-        ? extractText(identifyData).split('\n')[0].trim()
-        : ''
+      const res        = await callGemini(GEMINI_API_KEY, ANALYZE_SYSTEM, contents, false)
+      const geminiData = await res.json() as Record<string, unknown>
 
-      // Step 2: Search Tavily for that product name to get enriched info.
-      const searchQuery   = productName
-        ? `${productName} baking ingredient uses storage tips`
-        : 'baking ingredient product information'
-      const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
-
-      // Step 3: Call Gemini again with image + search context → final structured JSON.
-      const finalContents: GeminiContent[] = [{
-        role:  'user',
-        parts: [
-          { inline_data: { mime_type: mimeType, data: imageData } },
-          { text: 'Analyze this baking product image and return the JSON as instructed.' },
-        ],
-      }]
-
-      const finalRes  = await callGemini(GEMINI_API_KEY, ANALYZE_FINAL_SYSTEM(searchContext), finalContents)
-      const finalData = await finalRes.json() as Record<string, unknown>
-
-      if (!finalRes.ok) {
-        const errMsg = (finalData as GeminiErrorBody)?.error?.message ?? `Gemini ${finalRes.status}`
+      if (!res.ok) {
+        const errMsg = (geminiData as GeminiErrorBody)?.error?.message ?? `Gemini ${res.status}`
         return respond({ error: errMsg }, origin)
       }
 
-      const raw   = extractText(finalData)
+      const raw   = extractText(geminiData)
       const clean = raw.replace(/```json|```/g, '').trim()
 
       let parsed: { name?: string; description?: string } = {}
@@ -337,7 +277,6 @@ serve(async (req: Request) => {
       }
 
       return respond({ name: parsed.name ?? '', description: parsed.description ?? '' }, origin)
-
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Analyze failed'
       console.error('[ai-assistant analyze]', msg)
@@ -353,6 +292,7 @@ serve(async (req: Request) => {
     return respond({ error: 'Conversation too long. Please start a new chat.' }, origin, 400)
   }
 
+  // Validate each message has the expected shape before sending to Gemini
   const invalidMsg = messages.find(
     m => typeof m.role !== 'string' || typeof m.content !== 'string',
   )
@@ -360,22 +300,16 @@ serve(async (req: Request) => {
     return respond({ error: 'Each message must have string role and content fields.' }, origin, 400)
   }
 
-  const name        = productCtx?.name        ?? ''
-  const description = productCtx?.description ?? ''
-
-  // Step 1: Search for the product + user's latest question.
-  const lastUserMsg   = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
-  const searchQuery   = `${name} ${lastUserMsg} baking`.slice(0, 200)
-  const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
-
-  // Step 2: Call Gemini with enriched system prompt — no tools needed.
   const contents: GeminiContent[] = messages.map(m => ({
     role:  m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }))
 
+  const name        = productCtx?.name        ?? ''
+  const description = productCtx?.description ?? ''
+
   try {
-    const res        = await callGemini(GEMINI_API_KEY, CHAT_SYSTEM(name, description, searchContext), contents)
+    const res        = await callGemini(GEMINI_API_KEY, CHAT_SYSTEM(name, description), contents, true)
     const geminiData = await res.json() as Record<string, unknown>
 
     if (!res.ok) {
@@ -387,7 +321,6 @@ serve(async (req: Request) => {
     return respond({
       text: text || 'Sorry, I could not generate a response. Please try again.',
     }, origin)
-
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Chat failed'
     console.error('[ai-assistant chat]', msg)

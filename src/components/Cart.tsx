@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { CartItem } from '../types'
 import { logEnquiry } from '../lib/api'
 import { trackEvent } from '../lib/analytics'
@@ -13,8 +13,11 @@ interface CartProps {
   onRemove:         (id: string) => void
 }
 
+type PricePref = 'piece' | 'carton'
+
 const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, onRemove }) => {
   const { clearCart } = useCart()
+  const [pricePrefs, setPricePrefs] = useState<Record<string, PricePref>>({})
 
   if (!isOpen) return null
 
@@ -24,15 +27,30 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
 
+  function getPref(id: string): PricePref {
+    return pricePrefs[id] ?? 'piece'
+  }
+
+  function setPref(id: string, pref: PricePref) {
+    setPricePrefs(prev => ({ ...prev, [id]: pref }))
+  }
+
   function handleCheckout() {
     if (!WHATSAPP_NUMBER) {
       alert('WhatsApp checkout is not configured. Please contact the store directly.')
       return
     }
 
-    const orderText = items.map(item => `• ${item.name} (Qty: ${item.quantity})`).join('\n')
-    const message   = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
-    const encoded   = encodeURIComponent(message)
+    const orderText = items
+      .map(item => {
+        const pref = getPref(item.id)
+        const prefLabel = pref === 'piece' ? 'Per Piece' : 'Per Carton'
+        return `• ${item.name} (Qty: ${item.quantity}) — Pricing needed: ${prefLabel}`
+      })
+      .join('\n')
+
+    const message = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
+    const encoded = encodeURIComponent(message)
 
     // Fire-and-forget DB logging — must never block WhatsApp
     logEnquiry(
@@ -48,6 +66,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
     if (!window.confirm('Remove all items from your bag?')) return
     trackEvent('cart_cleared', { item_count: totalItems })
     clearCart()
+    setPricePrefs({})
   }
 
   return (
@@ -86,38 +105,63 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                 ) : (
                   <ul className="divide-y divide-orange-50">
                     {items.map(item => (
-                      <li key={item.id} className="py-6 flex group">
-                        <div className="flex-shrink-0 w-24 h-24 bg-brand-cream border border-orange-50 rounded-2xl overflow-hidden">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-full h-full object-center object-cover group-hover:scale-110 transition-transform"
-                            onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=200' }}
-                          />
-                        </div>
-                        <div className="ml-6 flex-1 flex flex-col">
-                          <div>
+                      <li key={item.id} className="py-6 flex flex-col gap-3 group">
+                        {/* Product row */}
+                        <div className="flex gap-4">
+                          <div className="flex-shrink-0 w-24 h-24 bg-brand-cream border border-orange-50 rounded-2xl overflow-hidden">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-center object-cover group-hover:scale-110 transition-transform"
+                              onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=200' }}
+                            />
+                          </div>
+                          <div className="flex-1 flex flex-col min-w-0">
                             <div className="flex justify-between text-sm font-bold text-brand-darkGray font-display">
-                              <h3>{item.name}</h3>
+                              <h3 className="truncate pr-2">{item.name}</h3>
                             </div>
                             <p className="mt-1 text-xs font-bold text-brand-brown tracking-wide">{item.category}</p>
-                          </div>
-                          <div className="flex-1 flex items-end justify-between text-sm">
-                            <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
-                              <button onClick={() => onUpdateQuantity(item.id, -1)} aria-label="Decrease quantity"
-                                className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
-                                -
-                              </button>
-                              <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
-                              <button onClick={() => onUpdateQuantity(item.id, 1)} aria-label="Increase quantity"
-                                className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
-                                +
+
+                            <div className="flex-1 flex items-end justify-between text-sm mt-2">
+                              <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
+                                <button onClick={() => onUpdateQuantity(item.id, -1)} aria-label="Decrease quantity"
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                  -
+                                </button>
+                                <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
+                                <button onClick={() => onUpdateQuantity(item.id, 1)} aria-label="Increase quantity"
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                  +
+                                </button>
+                              </div>
+                              <button type="button" onClick={() => onRemove(item.id)}
+                                className="font-bold text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
+                                Remove
                               </button>
                             </div>
-                            <button type="button" onClick={() => onRemove(item.id)}
-                              className="font-bold text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
-                              Remove
-                            </button>
+                          </div>
+                        </div>
+
+                        {/* Price preference toggle */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-brand-darkGray/50 uppercase tracking-wider">
+                            Price for:
+                          </span>
+                          <div className="flex rounded-lg overflow-hidden border border-orange-200 bg-brand-cream">
+                            {(['piece', 'carton'] as const).map(type => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => setPref(item.id, type)}
+                                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider transition-colors ${
+                                  getPref(item.id) === type
+                                    ? 'bg-brand-orange text-white'
+                                    : 'text-brand-darkGray/50 hover:text-brand-darkGray'
+                                }`}
+                              >
+                                {type}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       </li>

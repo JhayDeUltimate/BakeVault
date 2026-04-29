@@ -1,19 +1,36 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { DBProductWithCategory } from '@/lib/database.types'
 import { getProductImages, optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
 import { mapDBProduct } from '@/lib/utils'
+import { useProducts } from '@/hooks'
 import ProductAssistant from './ProductAssistant'
 
 interface Props {
-  product:     DBProductWithCategory
-  onClose:     () => void
-  onAddToCart: (p: ReturnType<typeof mapDBProduct>) => void
+  product:         DBProductWithCategory
+  onClose:         () => void
+  onAddToCart:     (p: ReturnType<typeof mapDBProduct>) => void
+  onViewProduct?:  (p: DBProductWithCategory) => void
 }
 
-export default function ProductModal({ product, onClose, onAddToCart }: Props) {
-  const images = getProductImages(product)
+export default function ProductModal({ product, onClose, onAddToCart, onViewProduct }: Props) {
+  const images  = getProductImages(product)
   const [slide, setSlide] = useState(0)
-  const mapped = mapDBProduct(product)
+  const mapped  = mapDBProduct(product)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Fetch similar products (same category, exclude current)
+  const { products: allCategoryProducts } = useProducts({
+    categoryId: product.category_id ?? null,
+  })
+  const similarProducts = allCategoryProducts
+    .filter(p => p.id !== product.id)
+    .slice(0, 4)
+
+  // Scroll to top and reset slide when product changes
+  useEffect(() => {
+    setSlide(0)
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [product.id])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -34,8 +51,10 @@ export default function ProductModal({ product, onClose, onAddToCart }: Props) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-brand-darkGray/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white w-full sm:max-w-2xl max-h-[95vh] overflow-y-auto rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col">
-
+      <div
+        ref={scrollRef}
+        className="relative bg-white w-full sm:max-w-2xl max-h-[95vh] overflow-y-auto rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col"
+      >
         {/* Close */}
         <button onClick={onClose} aria-label="Close"
           className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/10 hover:bg-black/20 text-white rounded-full flex items-center justify-center transition-colors">
@@ -122,6 +141,44 @@ export default function ProductModal({ product, onClose, onAddToCart }: Props) {
           </button>
 
           <ProductAssistant productName={product.name} productDescription={product.description ?? ''} />
+
+          {/* Similar Products — only shown when there are other products in this category */}
+          {onViewProduct && similarProducts.length > 0 && (
+            <div className="pt-2">
+              <h3 className="text-[10px] font-black text-brand-darkGray/40 uppercase tracking-widest mb-3">
+                Similar Products
+              </h3>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                {similarProducts.map(similar => (
+                  <button
+                    key={similar.id}
+                    type="button"
+                    onClick={() => onViewProduct(similar)}
+                    className="flex-shrink-0 w-28 bg-brand-cream/60 border border-orange-100 rounded-2xl overflow-hidden hover:border-brand-orange hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="aspect-square overflow-hidden bg-orange-50">
+                      <img
+                        src={similar.image_url ?? FALLBACK_IMAGE}
+                        alt={similar.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        decoding="async"
+                        onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
+                      />
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[10px] font-bold text-brand-darkGray line-clamp-2 leading-tight">
+                        {similar.name}
+                      </p>
+                      <p className="text-[9px] text-brand-orange font-bold mt-1 uppercase tracking-wide">
+                        View →
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
