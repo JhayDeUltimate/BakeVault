@@ -10,13 +10,14 @@ export function toSlug(name: string): string {
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 export async function getProducts(filters?: {
-  categoryId?: string | null; search?: string; featuredOnly?: boolean; includeUnavailable?: boolean
+  categoryId?: string | null; search?: string; featuredOnly?: boolean; includeUnavailable?: boolean; limit?: number
 }): Promise<DBProductWithCategory[]> {
   let query = supabase.from('products').select('*, categories(*)').order('display_order', { ascending: true })
   if (!filters?.includeUnavailable) query = query.eq('is_available', true)
   if (filters?.featuredOnly)        query = query.eq('is_featured', true)
   if (filters?.categoryId)          query = query.eq('category_id', filters.categoryId)
   if (filters?.search?.trim())      query = query.ilike('name', `%${filters.search.trim()}%`)
+  if (filters?.limit)               query = query.limit(filters.limit)
   const { data, error } = await query
   if (error) throw new Error(error.message)
   return (data ?? []) as DBProductWithCategory[]
@@ -51,7 +52,10 @@ export async function updateProduct(
     is_available: boolean; is_featured: boolean; price_type: string; display_order: number
   }>
 ): Promise<DBProductWithCategory> {
-  const payload: Database['public']['Tables']['products']['Update'] = { ...updates }
+  const payload: Database['public']['Tables']['products']['Update'] = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  }
   if (updates.name) payload.slug = toSlug(updates.name)
   if (updates.image_urls !== undefined) payload.image_urls = (updates.image_urls ?? []) as Json
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
@@ -184,8 +188,13 @@ const MAX_SIZE     = 5 * 1024 * 1024
 export async function uploadProductImage(file: File): Promise<string> {
   if (!ALLOWED_MIME.has(file.type)) throw new Error(`Unsupported type "${file.type}". Use JPEG, PNG, or WebP.`)
   if (file.size > MAX_SIZE) throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`)
-  const ext  = file.name.split('.').pop() ?? 'jpg'
-  const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const MIME_TO_EXT: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png':  'png',
+    'image/webp': 'webp',
+  }
+  const ext  = MIME_TO_EXT[file.type] ?? 'jpg'
+  const path = `products/${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage.from('bakevault-images').upload(path, file, { cacheControl: '3600', upsert: false })
   if (error) throw new Error(error.message)
   const { data } = supabase.storage.from('bakevault-images').getPublicUrl(path)

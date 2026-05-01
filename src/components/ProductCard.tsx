@@ -53,6 +53,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
             <button
               type="button"
               onClick={() => onViewDetails!(product)}
+              aria-label={`Read description for ${product.name}`}
               className="text-[9px] sm:text-[10px] text-brand-brown/70 hover:text-brand-orange transition-colors font-medium underline underline-offset-2"
             >
               Read description

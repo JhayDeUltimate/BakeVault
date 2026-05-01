@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           <Link to="/" className="flex-shrink-0 group">
-            <BrandLogo iconClassName="group-hover:bg-brand-orange" textClassName="group-hover:text-brand-orange" />
+            <BrandLogo iconClassName="h-10 w-auto group-hover:opacity-80 transition-opacity" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">

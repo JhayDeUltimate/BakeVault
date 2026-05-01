@@ -1,3 +1,5 @@
+// src/components/ui/BrandLogo.tsx 
+
 import React from 'react'
 
 interface BrandLogoProps {
@@ -9,25 +11,25 @@ interface BrandLogoProps {
 
 const BrandLogo: React.FC<BrandLogoProps> = ({
   className = '',
-  iconClassName = '',
+  iconClassName = 'w-10 h-10',
   textClassName = '',
   hideText = true,
 }) => {
   return (
-    <div className={['flex items-center gap-3', className].filter(Boolean).join(' ')}>
-      <div
-        className={['w-40 h-40 p-1.5']
-          .filter(Boolean)
-          .join(' ')}
-      >
-        <img src="/logo.svg" alt="BakeVault" className="w-full h-full object-contain" />
+    <div className={['flex items-center gap-2', className].filter(Boolean).join(' ')}>
+      <div className={[iconClassName].filter(Boolean).join(' ')}>
+        <img
+          src="/logo.svg"
+          alt="BakeVault"
+          className="w-full h-full object-contain"
+        />
       </div>
 
       {!hideText && (
         <span
           className={[
-            'font-extrabold text-4xl tracking-tighter font-display transition-colors',
-            textClassName || 'text-brand-darkGray',
+            'font-extrabold tracking-tighter font-display transition-colors',
+            textClassName || 'text-brand-darkGray text-xl',
           ]
             .filter(Boolean)
             .join(' ')}

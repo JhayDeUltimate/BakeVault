@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
@@ -265,7 +266,7 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-bold text-gray-800">Recent Enquiries</h2>
-          <a href="/admin/enquiries" className="text-sm text-orange-500 hover:text-orange-600">View all →</a>
+          <Link to="/admin/enquiries" className="text-sm text-orange-500 hover:text-orange-600">View all →</Link>
         </div>
         {recent.length === 0 ? (
           <div className="px-6 py-8 text-center text-sm text-gray-400">No enquiries yet.</div>

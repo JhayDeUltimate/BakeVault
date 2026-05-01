@@ -88,7 +88,7 @@ export default function ProductAssistant({ productName, productDescription }: Pr
           </div>
           <div className="text-left">
             <p className="text-sm font-bold text-brand-darkGray">Ask about this product</p>
-            <p className="text-[10px] text-brand-darkGray/50">AI assistant · Powered by Claude</p>
+            <p className="text-[10px] text-brand-darkGray/50">AI assistant · Powered by Gemini</p>
           </div>
         </div>
         <svg

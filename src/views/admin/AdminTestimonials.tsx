@@ -36,13 +36,23 @@ export function AdminTestimonials() {
 
   async function handleDelete(t: DBTestimonial) {
     if (!window.confirm(`Delete testimonial from ${t.customer_name}?`)) return
-    await deleteTestimonial(t.id)
-    setTestimonials(prev => prev.filter(x => x.id !== t.id))
+    try {
+      setError(null)
+      await deleteTestimonial(t.id)
+      setTestimonials(prev => prev.filter(x => x.id !== t.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed')
+    }
   }
 
   async function toggleVisible(t: DBTestimonial) {
-    const updated = await updateTestimonial(t.id, { is_visible: !t.is_visible })
-    setTestimonials(prev => prev.map(x => x.id === t.id ? updated : x))
+    try {
+      setError(null)
+      const updated = await updateTestimonial(t.id, { is_visible: !t.is_visible })
+      setTestimonials(prev => prev.map(x => x.id === t.id ? updated : x))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Visibility update failed')
+    }
   }
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>

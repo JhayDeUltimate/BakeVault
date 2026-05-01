@@ -25,7 +25,10 @@ export function AdminCategories() {
     if (!name) return
     try {
       setSavingNew(true); setFormError(null)
-      await createCategory(name)
+      const nextOrder = categories.length > 0
+        ? Math.max(...categories.map(c => c.display_order)) + 1
+        : 0
+      await createCategory(name, nextOrder)
       setNewName('')
       await refetch()
       flash(`"${name}" added successfully.`)

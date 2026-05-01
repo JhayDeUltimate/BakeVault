@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks'
 import BrandLogo from '@/components/ui/BrandLogo'
 
@@ -27,7 +27,7 @@ export default function AdminLayout() {
     <aside className="w-60 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full">
       <div className="px-4 py-5 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <BrandLogo iconClassName="w-8 h-8 p-1.5" textClassName="text-lg text-gray-800" />
+          <BrandLogo iconClassName="h-8 w-auto" hideText={false} textClassName="text-base text-gray-800" />
           <span className="font-bold text-gray-800">Admin</span>
         </div>
       </div>
@@ -44,7 +44,7 @@ export default function AdminLayout() {
       <div className="px-4 py-4 border-t border-gray-100 space-y-2">
         <p className="text-xs text-gray-400 truncate">{user?.email}</p>
         <div className="flex gap-2">
-          <a href="/" className="flex-1 text-center text-xs py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors">View Store</a>
+          <Link to="/" className="flex-1 text-center text-xs py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors">View Store</Link>
           <button onClick={handleSignOut} className="flex-1 text-xs py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors">Sign Out</button>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function AdminLayout() {
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-gray-100">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
-          <BrandLogo iconClassName="w-8 h-8 p-1" textClassName="text-lg text-gray-800" />
+          <BrandLogo iconClassName="h-7 w-auto" />
         </div>
         <main className="flex-1 overflow-y-auto p-6"><Outlet /></main>
       </div>

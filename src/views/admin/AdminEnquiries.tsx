@@ -7,14 +7,20 @@ export function AdminEnquiries() {
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState<string | null>(null)
   const [filter,    setFilter]    = useState<'all' | 'sent' | 'responded' | 'fulfilled'>('all')
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
   useEffect(() => {
     getEnquiries().then(setEnquiries).catch(e => setError(e.message)).finally(() => setLoading(false))
   }, [])
 
   async function handleStatus(id: string, status: 'sent' | 'responded' | 'fulfilled') {
-    await updateEnquiryStatus(id, status)
-    setEnquiries(prev => prev.map(e => e.id === id ? { ...e, status } : e))
+    try {
+      setMutationError(null)
+      await updateEnquiryStatus(id, status)
+      setEnquiries(prev => prev.map(e => e.id === id ? { ...e, status } : e))
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : 'Status update failed')
+    }
   }
 
   const visible = filter === 'all' ? enquiries : enquiries.filter(e => e.status === filter)
@@ -30,6 +36,11 @@ export function AdminEnquiries() {
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {mutationError && (
+        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-100">
+          {mutationError}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Enquiries <span className="text-base font-normal text-gray-400">({enquiries.length})</span></h1>
         <div className="flex gap-2 flex-wrap">

@@ -12,10 +12,16 @@ const STATUS_COLORS: Record<string, string> = {
 export default function AdminProductRequests() {
   const { requests, loading, error, refetch } = useProductRequests()
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'fulfilled'>('all')
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
   async function handleStatus(req: DBProductRequest, status: 'pending' | 'reviewed' | 'fulfilled') {
-    await updateProductRequestStatus(req.id, status)
-    refetch()
+    try {
+      setMutationError(null)
+      await updateProductRequestStatus(req.id, status)
+      refetch()
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : 'Status update failed')
+    }
   }
 
   const visible = filter === 'all' ? requests : requests.filter(r => r.status === filter)
@@ -31,6 +37,11 @@ export default function AdminProductRequests() {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {mutationError && (
+        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-100">
+          {mutationError}
+        </div>
+      )}
       {/* Header + filter tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -93,14 +104,14 @@ export default function AdminProductRequests() {
                   )}
 
                   {/* ── Contact info ── shown prominently so admin can follow up */}
-                  {(r as DBProductRequest & { contact_info?: string | null }).contact_info ? (
+                  {r.contact_info ? (
                     <div className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
                       <svg className="w-3.5 h-3.5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                           d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                       <span className="text-xs font-semibold text-orange-700">
-                        {(r as DBProductRequest & { contact_info?: string | null }).contact_info}
+                        {r.contact_info}
                       </span>
                     </div>
                   ) : (

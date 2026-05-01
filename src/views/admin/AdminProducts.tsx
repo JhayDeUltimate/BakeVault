@@ -25,6 +25,7 @@ export default function AdminProducts() {
   const [sortKey,    setSortKey]  = useState<SortKey>('name')
   const [sortDir,    setSortDir]  = useState<SortDir>('asc')
   const [deleteError,setDeleteError] = useState<string | null>(null)
+  const [toggling,   setToggling]    = useState<string | null>(null)
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -67,9 +68,11 @@ export default function AdminProducts() {
     try {
       setSaving(product.id)
       setDeleteError(null)
-      const urls = Array.isArray(product.image_urls)
-        ? product.image_urls as string[]
-        : product.image_url ? [product.image_url] : []
+      const rawUrls = Array.isArray(product.image_urls) ? product.image_urls : []
+      const urls = [
+        ...rawUrls.filter((u): u is string => typeof u === 'string'),
+        ...(product.image_url && !rawUrls.includes(product.image_url) ? [product.image_url] : []),
+      ]
       await Promise.all(urls.map(u => deleteProductImage(u)))
       await deleteProduct(product.id)
       refetch()
@@ -81,8 +84,17 @@ export default function AdminProducts() {
   }
 
   async function toggleAvailable(product: DBProductWithCategory) {
-    await updateProduct(product.id, { is_available: !product.is_available })
-    refetch()
+    if (toggling === product.id) return
+    try {
+      setToggling(product.id)
+      setDeleteError(null)
+      await updateProduct(product.id, { is_available: !product.is_available })
+      refetch()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Toggle failed')
+    } finally {
+      setToggling(null)
+    }
   }
 
   if (loading) return (
@@ -195,8 +207,11 @@ export default function AdminProducts() {
                   <td className="px-4 py-3 text-sm text-gray-500">{p.categories?.name ?? '—'}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => toggleAvailable(p)}
+                      disabled={toggling === p.id}
                       aria-label={p.is_available ? 'Mark unavailable' : 'Mark available'}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${p.is_available ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      className={`relative w-9 h-5 rounded-full transition-colors ${
+                        toggling === p.id ? 'opacity-50 cursor-not-allowed' : ''
+                      } ${p.is_available ? 'bg-green-500' : 'bg-gray-300'}`}>
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${p.is_available ? 'translate-x-4' : ''}`} />
                     </button>
                   </td>

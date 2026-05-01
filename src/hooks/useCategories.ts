@@ -7,17 +7,23 @@ export function useCategories() {
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState<string | null>(null)
 
-  const fetch = useCallback(async () => {
+  const fetch = useCallback(async (signal?: { cancelled: boolean }) => {
     try {
       setLoading(true); setError(null)
-      setCategories(await getCategories())
+      const data = await getCategories()
+      if (!signal?.cancelled) setCategories(data)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load categories')
+      if (!signal?.cancelled) setError(e instanceof Error ? e.message : 'Failed to load categories')
     } finally {
-      setLoading(false)
+      if (!signal?.cancelled) setLoading(false)
     }
   }, [])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => {
+    const signal = { cancelled: false }
+    fetch(signal)
+    return () => { signal.cancelled = true }
+  }, [fetch])
+
   return { categories, loading, error, refetch: fetch }
 }

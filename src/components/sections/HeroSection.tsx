@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type { DBProductWithCategory } from '../../lib/database.types'
 import { optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
 
@@ -7,18 +7,31 @@ interface HeroSectionProps {
   onAddToCart: (product: DBProductWithCategory) => void
 }
 
+const SLIDE_INTERVAL_MS = 5000
+
 const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const timerRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    if (products.length <= 1) return undefined
-    const timer = window.setInterval(() => {
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (products.length <= 1) return
+    timerRef.current = window.setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % products.length)
-    }, 5000)
-    return () => window.clearInterval(timer)
+    }, SLIDE_INTERVAL_MS)
   }, [products.length])
 
+  useEffect(() => {
+    startTimer()
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [startTimer])
+
   useEffect(() => { setCurrentSlide(0) }, [products])
+
+  function goToSlide(index: number) {
+    setCurrentSlide(index)
+    startTimer()   // reset timer on manual navigation
+  }
 
   if (products.length === 0) return null
 
@@ -56,7 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
                   {product.name}
                 </h1>
                 <p className="text-white/90 text-[10px] sm:text-lg mb-4 sm:mb-10 leading-relaxed font-medium line-clamp-2 sm:line-clamp-none">
-                  {product.description}
+                  {product.description?.split('\n')[0]}
                 </p>
                 <div className="flex animate-fadeInUp delay-200">
                   <button
@@ -76,7 +89,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
         {products.map((product, index) => (
           <button
             key={product.id}
-            onClick={() => setCurrentSlide(index)}
+            onClick={() => goToSlide(index)}
             aria-label={`Go to slide ${index + 1}`}
             className={`h-1 sm:h-2 rounded-full transition-all duration-300 ${index === currentSlide ? 'w-6 sm:w-12 bg-brand-orange' : 'w-1.5 sm:w-2 bg-white/40'}`}
           />

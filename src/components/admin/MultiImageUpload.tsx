@@ -39,7 +39,7 @@ export default function MultiImageUpload({ urls, onChange, onError, max = 4 }: P
     if (!trimmed.startsWith('http')) { onError?.('Please enter a valid URL starting with http.'); return }
     if (urls.length >= max) { onError?.(`Maximum ${max} additional photos allowed.`); return }
     // Avoid duplicates
-    if (urls.includes(trimmed)) { setUrlInput(''); return }
+    if (urls.includes(trimmed)) { onError?.('This image URL is already in the gallery.'); setUrlInput(''); return }
     onChange([...urls, trimmed])
     setUrlInput('')
   }

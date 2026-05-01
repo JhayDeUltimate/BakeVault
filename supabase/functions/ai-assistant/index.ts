@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const GEMINI_MODEL   = 'gemini-2.5-flash'
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+// Models in priority order — if the primary is rate-limited, fall back automatically.
+// Verified against the API key's model list (gemini-1.5-flash is deprecated/unavailable).
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
+const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models'
 const TAVILY_API_URL = 'https://api.tavily.com/search'
 
 const MAX_MESSAGES     = 40
@@ -11,12 +12,21 @@ const MAX_IMAGE_BYTES  = 8 * 1024 * 1024
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
-const ALLOWED_ORIGINS = new Set([
-  'http://localhost:3000',
-  'http://localhost:5173',
-  // Add your production domain(s) here before deploying, e.g.:
-  // 'https://bakevault.com.ng',
-])
+// Read allowed origins from an env var so no code change is needed per deployment.
+// Set in Supabase: supabase secrets set ALLOWED_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"
+function buildAllowedOrigins(): Set<string> {
+  const fromEnv = Deno.env.get('ALLOWED_ORIGINS') ?? ''
+  const envOrigins = fromEnv.split(',').map((s: string) => s.trim()).filter(Boolean)
+
+  return new Set([
+    'http://localhost:3000',
+    'http://localhost:5173',
+    ...envOrigins,
+  ])
+}
+
+// Build once at cold-start, not per-request
+const ALLOWED_ORIGINS = buildAllowedOrigins()
 
 function corsHeaders(origin: string | null): Record<string, string> {
   const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : ''
@@ -68,7 +78,18 @@ Return ONLY the product name as a single line of plain text. No explanation, no 
 const ANALYZE_FINAL_SYSTEM = (searchContext: string) => `
 You are a product catalog assistant for BakeVault, a wholesale baking supplies store in Lagos, Nigeria.
 Given a product image and web research, return ONLY valid JSON with exactly two string keys — no preamble, no markdown:
-{"name":"Full product name including brand, weight and variant if visible on packaging","description":"2-3 sentences about baking uses and key features"}
+{"name":"Full product name including brand, weight and variant if visible on packaging","description":"Structured description"}
+
+DESCRIPTION FORMAT — follow this structure exactly:
+Line 1: A single sentence summarizing what the product is and its primary use.
+Line 2: (blank line)
+Line 3: "Key Features:"
+Lines 4+: Each feature on its own line, prefixed with "• " (bullet). List 3-6 concise features.
+
+Example description value:
+"Premium leavening agent for light and airy baked goods.\n\nKey Features:\n• Double-acting formula for consistent rise\n• Ideal for cakes, cookies, and pastries\n• Aluminium-free formulation\n• 1LB (454g) pack size"
+
+Use \n for newlines inside the JSON string. Do NOT use markdown. Do NOT wrap in code fences.
 
 ${searchContext ? `WEB RESEARCH ABOUT THIS PRODUCT:\n${searchContext}` : ''}
 `.trim()
@@ -147,7 +168,7 @@ async function searchTavily(apiKey: string, query: string): Promise<string> {
   }
 }
 
-// ── Gemini API call ───────────────────────────────────────────────────────────
+// ── Gemini API call (with model fallback) ─────────────────────────────────────
 
 async function callGemini(
   apiKey:   string,
@@ -158,22 +179,45 @@ async function callGemini(
     systemInstruction: { parts: [{ text: system }] },
     contents,
     generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+  }
+  const payload = JSON.stringify(body)
 
+  for (let i = 0; i < GEMINI_MODELS.length; i++) {
+    const model = GEMINI_MODELS[i]
+    const url   = `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`
+
+    const controller = new AbortController()
+    const timeout    = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+
+    try {
+      const res = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    payload,
+        signal:  controller.signal,
+      })
+
+      // If rate-limited or overloaded and we have more models to try, fall back
+      if ((res.status === 429 || res.status === 503) && i < GEMINI_MODELS.length - 1) {
+        console.warn(`[ai-assistant] ${model} returned ${res.status}, falling back to ${GEMINI_MODELS[i + 1]}`)
+        continue
+      }
+
+      return res
+    } catch (err) {
+      // On network/timeout error, try next model if available
+      if (i < GEMINI_MODELS.length - 1) {
+        console.warn(`[ai-assistant] ${model} failed (${err instanceof Error ? err.message : 'unknown'}), falling back to ${GEMINI_MODELS[i + 1]}`)
+        continue
+      }
+      throw err
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
-  const controller = new AbortController()
-  const timeout    = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
-
-  try {
-    return await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
-      signal:  controller.signal,
-    })
-  } finally {
-    clearTimeout(timeout)
-  }
+  // Should never reach here, but TypeScript needs it
+  throw new Error('All Gemini models failed')
 }
 
 function extractText(data: Record<string, unknown>): string {

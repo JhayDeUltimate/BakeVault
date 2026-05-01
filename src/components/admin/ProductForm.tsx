@@ -153,7 +153,7 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
       <div>
         <label className={label}>Description</label>
         <textarea value={form.description} onChange={e => set('description', e.target.value)}
-          rows={3} placeholder="What makes this product special? (used in hero slider)"
+          rows={6} placeholder="What makes this product special? AI Analyze generates a structured description."
           className={input + ' resize-none'} />
       </div>
 

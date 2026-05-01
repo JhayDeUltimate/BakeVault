@@ -2,11 +2,18 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
-// ── Fallback: email allowlist from .env ───────────────────────────────────────
-// Used when the profiles table hasn't been set up yet, or as a backup.
-// After running migration 002_admin_rls.sql and promoting your user, this env
-// var can be removed — the profiles table becomes the source of truth.
+/**
+ * SECURITY NOTE: VITE_ADMIN_EMAILS is a development fallback ONLY.
+ * These emails are visible in the client bundle. Remove this env var
+ * and use the profiles table (migration 002_admin_rls.sql) in production.
+ */
 function parseAdminEmails(raw: string | undefined): Set<string> {
+  if (import.meta.env.PROD && raw) {
+    console.warn(
+      '[BakeVault] VITE_ADMIN_EMAILS is set in a production build. ' +
+      'This exposes admin emails in the client bundle. Use the profiles table instead.'
+    )
+  }
   return new Set(
     (raw ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
   )

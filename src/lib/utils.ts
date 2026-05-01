@@ -1,8 +1,6 @@
 import type { DBProductWithCategory } from './database.types'
-import type { Product, Category } from './types'
-
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=1200'
+import type { Product, Category }     from './types'
+import { FALLBACK_IMAGE }             from './image'
 
 export function mapDBProduct(p: DBProductWithCategory): Product {
   return {

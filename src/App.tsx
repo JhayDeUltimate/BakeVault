@@ -15,10 +15,12 @@ import AdminProductRequests      from '@/views/admin/AdminProductRequests'
 import AdminTestimonials         from '@/views/admin/AdminTestimonials'
 import AdminSettings             from '@/views/admin/AdminSettings'
 import ProtectedRoute            from '@/components/admin/ProtectedRoute'
+import ScrollToTop               from '@/components/ScrollToTop'
 
 export default function App() {
   return (
     <CartProvider>
+      <ScrollToTop />
       <Routes>
         {/* Public */}
         <Route element={<PublicLayout />}>

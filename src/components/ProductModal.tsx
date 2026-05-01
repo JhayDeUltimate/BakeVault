@@ -21,6 +21,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
   // Fetch similar products (same category, exclude current)
   const { products: allCategoryProducts } = useProducts({
     categoryId: product.category_id ?? null,
+    limit: 10,
   })
   const similarProducts = allCategoryProducts
     .filter(p => p.id !== product.id)
@@ -124,7 +125,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
           </div>
 
           {product.description ? (
-            <p className="text-sm text-brand-darkGray/70 leading-relaxed">{product.description}</p>
+            <p className="text-sm text-brand-darkGray/70 leading-relaxed whitespace-pre-line">{product.description}</p>
           ) : (
             <div className="space-y-2">
               <div className="h-3 bg-orange-50 rounded animate-pulse w-full" />

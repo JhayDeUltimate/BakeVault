@@ -1,40 +1,48 @@
+// src/hooks/useProducts.ts 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getProducts } from '../lib/api'
 import type { DBProductWithCategory } from '../lib/database.types'
 
 interface Options {
-  categoryId?:         string | null
-  search?:             string
-  featuredOnly?:       boolean
+  categoryId?: string | null
+  search?: string
+  featuredOnly?: boolean
   includeUnavailable?: boolean
-  /**
-   * Re-fetch when the browser window regains focus.
-   * Default: false — prevents admin pages from reloading on every tab-switch.
-   */
+  limit?: number
   refetchOnFocus?: boolean
 }
 
 export function useProducts(options: Options = {}) {
   const [products, setProducts] = useState<DBProductWithCategory[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Keep a ref so the fetch callback never goes stale without re-creating itself
   const optionsRef = useRef(options)
   optionsRef.current = options
 
+  // Monotonically-increasing fetch ID. Only the most recent fetch may update state.
+  const fetchIdRef = useRef(0)
+
   const fetch = useCallback(async () => {
+    const id = ++fetchIdRef.current
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true); setError(null)
-      setProducts(await getProducts(optionsRef.current))
+      const data = await getProducts(optionsRef.current)
+      if (id === fetchIdRef.current) {
+        setProducts(data)
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load products')
+      if (id === fetchIdRef.current) {
+        setError(e instanceof Error ? e.message : 'Failed to load products')
+      }
     } finally {
-      setLoading(false)
+      if (id === fetchIdRef.current) {
+        setLoading(false)
+      }
     }
   }, [])
 
-  // Re-fetch whenever any filter option changes
   useEffect(() => {
     fetch()
   }, [
@@ -45,9 +53,6 @@ export function useProducts(options: Options = {}) {
     options.includeUnavailable,
   ])
 
-  // Attach/detach the focus listener whenever refetchOnFocus changes.
-  // This effect is correctly gated on refetchOnFocus so toggling it at
-  // runtime works without leaving orphaned listeners.
   const { refetchOnFocus } = options
   useEffect(() => {
     if (!refetchOnFocus) return

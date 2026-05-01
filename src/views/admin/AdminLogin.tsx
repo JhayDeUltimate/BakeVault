@@ -33,7 +33,7 @@ export default function AdminLogin() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-2">
-            <BrandLogo iconClassName="w-10 h-10 p-1.5" textClassName="text-2xl text-gray-800" />
+            <BrandLogo iconClassName="h-10 w-auto" hideText={false} textClassName="text-2xl text-gray-800" />
             <span className="text-2xl font-extrabold text-gray-800 tracking-tight">Admin</span>
           </div>
           <p className="text-sm text-gray-500">Sign in to manage store</p>

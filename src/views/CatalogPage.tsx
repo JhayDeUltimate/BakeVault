@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard          from '@/components/ProductCard'
 import ProductModal         from '@/components/ProductModal'
 import ProductRequestModal  from '@/components/ProductRequestModal'
 import SectionHeading       from '@/components/ui/SectionHeading'
+import ScrollToTopButton    from '@/components/ui/ScrollToTopButton'
 import { useCart }          from '@/lib/cart-context'
-import { useProducts, useCategories } from '@/hooks'
+import { useProducts, useCategories, useDebounce } from '@/hooks'
 import { mapDBProduct }     from '@/lib/utils'
 import { trackEvent }       from '@/lib/analytics'
 import type { DBProductWithCategory, DBCategory } from '@/lib/database.types'
@@ -18,14 +19,15 @@ export default function CatalogPage() {
   // 1. ?cat=CATEGORY_NAME  (from mobile menu)
   // 2. Local state via the category grid buttons
   const [categoryId,  setCategoryId]  = useState<string | null>(null)
-  const [search,      setSearch]      = useState('')
+  const [searchInput,  setSearchInput]  = useState('')
+  const debouncedSearch = useDebounce(searchInput, 350)
   const [selectedRaw, setSelectedRaw] = useState<DBProductWithCategory | null>(null)
   const [showRequest, setShowRequest] = useState(false)
   const [catExpanded, setCatExpanded] = useState(true)
 
   const productsRef = useRef<HTMLDivElement>(null)
 
-  const { products: rawProducts, loading: productsLoading } = useProducts({ categoryId, search })
+  const { products: rawProducts, loading: productsLoading } = useProducts({ categoryId, search: debouncedSearch })
   const { categories, loading: categoriesLoading }          = useCategories()
 
   const products   = useMemo(() => rawProducts.map(mapDBProduct), [rawProducts])
@@ -65,9 +67,11 @@ export default function CatalogPage() {
 
   function clearFilters() {
     setCategoryId(null)
-    setSearch('')
+    setSearchInput('')
     setCatExpanded(true)
   }
+
+  const handleCloseModal = useCallback(() => setSelectedRaw(null), [])
 
   function openDetails(p: ReturnType<typeof mapDBProduct>) {
     const raw = rawByIdMap.get(p.id) ?? null
@@ -79,7 +83,7 @@ export default function CatalogPage() {
     ? (categories as DBCategory[]).find(c => c.id === categoryId)?.name ?? ''
     : ''
 
-  const isFiltering = categoryId !== null || search.trim() !== ''
+  const isFiltering = categoryId !== null || searchInput.trim() !== ''
 
   return (
     <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
@@ -89,16 +93,16 @@ export default function CatalogPage() {
       {/* Search */}
       <div className="max-w-2xl mx-auto mt-10 sm:mt-16 relative">
         <input type="text" placeholder="Search ingredient vault..."
-          value={search}
-          onChange={e => { setSearch(e.target.value); if (e.target.value) setCatExpanded(false) }}
+          value={searchInput}
+          onChange={e => { setSearchInput(e.target.value); if (e.target.value) setCatExpanded(false) }}
           className="w-full bg-white border-2 border-orange-100 rounded-2xl px-6 py-4 pl-14 focus:outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all shadow-sm font-medium h-12 sm:h-14" />
         <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg className="h-5 w-5 text-brand-darkGray/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        {search && (
-          <button onClick={() => { setSearch(''); setCatExpanded(true) }}
+        {searchInput && (
+          <button onClick={() => { setSearchInput(''); setCatExpanded(true) }}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-darkGray/40 hover:text-brand-orange transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -178,7 +182,7 @@ export default function CatalogPage() {
         <div className="flex items-center justify-between mb-6 border-b-2 border-orange-50 pb-4 gap-4">
           <div>
             <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
-              {search ? `Results for "${search}"` : categoryId ? activeCategoryName : 'Full Catalog'}
+              {searchInput ? `Results for "${searchInput}"` : categoryId ? activeCategoryName : 'Full Catalog'}
             </h3>
             {!loading && (
               <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-1">
@@ -244,11 +248,11 @@ export default function CatalogPage() {
       {selectedRaw && (
         <ProductModal
           product={selectedRaw}
-          onClose={() => setSelectedRaw(null)}
+          onClose={handleCloseModal}
           onAddToCart={p => {
             addToCart(p)
             trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
-            setSelectedRaw(null)
+            handleCloseModal()
           }}
           onViewProduct={p => {
             setSelectedRaw(p)
@@ -257,6 +261,7 @@ export default function CatalogPage() {
         />
       )}
       {showRequest && <ProductRequestModal onClose={() => setShowRequest(false)} />}
+      <ScrollToTopButton />
     </main>
   )
 }

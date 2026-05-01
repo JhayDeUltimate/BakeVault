@@ -6,20 +6,31 @@ import { getSettings, upsertSetting } from '@/lib/api'
 
 export function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
+  const [original, setOriginal] = useState<Record<string, string>>({})
   const [loading,  setLoading]  = useState(true)
   const [saving,   setSaving]   = useState(false)
   const [saved,    setSaved]    = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
   useEffect(() => {
-    getSettings().then(setSettings).catch(e => setError(e.message)).finally(() => setLoading(false))
+    getSettings()
+      .then(s => { setSettings(s); setOriginal(s) })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     try {
       setSaving(true); setError(null)
-      await Promise.all(Object.entries(settings).map(([k, v]) => upsertSetting(k, v)))
+      const changed = Object.entries(settings).filter(([k, v]) => v !== original[k])
+      if (changed.length === 0) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+        return
+      }
+      await Promise.all(changed.map(([k, v]) => upsertSetting(k, v)))
+      setOriginal({ ...settings })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
