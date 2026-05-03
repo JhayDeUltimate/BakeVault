@@ -17,15 +17,15 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto">
           <SectionHeading
             eyebrow="About"
-            title="Built for bakers who need dependable stock, fast answers, and supply they can trust."
-            description="We help home bakers, cake studios, and growing production teams source premium ingredients without the friction that slows down daily operations."
+            title="Your ingredients. In stock. Delivered today."
+            description="BakeVault supplies baking ingredients to home bakers and professional bakeries across Nigeria. Same-day delivery in Lagos, competitive wholesale pricing, and a team that picks up when you have a question about a product."
           />
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/catalog"
               className="w-full sm:w-auto text-center bg-brand-orange text-white font-extrabold px-8 py-4 rounded-2xl hover:bg-brand-brown transition-all shadow-lg active:scale-95 font-display text-sm uppercase tracking-wide"
             >
-              Browse Catalog
+              Browse the Vault
             </Link>
             {WHATSAPP_URL && (
               <a
@@ -34,7 +34,7 @@ export default function AboutPage() {
                 rel="noreferrer"
                 className="w-full sm:w-auto text-center bg-brand-cream text-brand-darkGray font-extrabold px-8 py-4 rounded-2xl hover:bg-orange-100 transition-all border border-orange-100 font-display text-sm uppercase tracking-wide"
               >
-                Chat on WhatsApp
+                Order on WhatsApp
               </a>
             )}
           </div>

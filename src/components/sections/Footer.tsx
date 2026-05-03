@@ -22,14 +22,14 @@ const Footer: React.FC = () => {
               <img src="/logo.svg" alt="BakeVault" className="h-10 w-auto" />
             </Link>
             <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest">
-              © {new Date().getFullYear()} BakeVault Lagos
+              © {new Date().getFullYear()} BakeVault Lagos · Your Baking Success, Secured
             </p>
           </div>
 
           {/* Connect */}
           <div className="flex flex-col gap-3">
             <h5 className="font-display font-bold text-sm text-brand-orange uppercase tracking-widest mb-2">
-              Connect
+              Find Us
             </h5>
 
             <a
@@ -66,11 +66,12 @@ const Footer: React.FC = () => {
           {/* Links */}
           <div className="flex flex-col gap-3">
             <h5 className="font-display font-bold text-sm text-brand-orange uppercase tracking-widest mb-2">
-              Links
+              Quick Links
             </h5>
             <Link to="/" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Home</Link>
             <Link to="/catalog" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Catalog</Link>
             <Link to="/about" className="text-white/60 hover:text-white transition-colors font-medium text-xs">About</Link>
+            <Link to="/faq" className="text-white/60 hover:text-white transition-colors font-medium text-xs">FAQ</Link>
           </div>
 
         </div>

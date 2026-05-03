@@ -5,6 +5,7 @@ import PublicLayout              from '@/components/PublicLayout'
 import HomePage                  from '@/views/HomePage'
 import CatalogPage               from '@/views/CatalogPage'
 import AboutPage                 from '@/views/AboutPage'
+import FAQPage                   from '@/views/FAQPage'
 import AdminLogin                from '@/views/admin/AdminLogin'
 import AdminLayout               from '@/views/admin/AdminLayout'
 import AdminDashboard            from '@/views/admin/AdminDashboard'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/"        element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/about"   element={<AboutPage />} />
+          <Route path="/faq"     element={<FAQPage />} />
         </Route>
 
         {/* Admin */}

@@ -81,7 +81,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
             <div className="flex-1 py-8 overflow-y-auto px-6 sm:px-8">
               <div className="flex items-start justify-between">
                 <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
-                  Your Shopping Bag
+                  Your Order
                 </h2>
                 <button onClick={onClose} aria-label="Close cart"
                   className="ml-3 p-2 text-brand-darkGray/40 hover:text-brand-orange transition-colors">
@@ -100,7 +100,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                       </svg>
                     </div>
-                    <p className="text-brand-darkGray/60 font-medium italic">Your cart is feeling a bit light.</p>
+                    <p className="text-brand-darkGray/60 font-medium italic">Nothing added yet. Browse the vault and add what you need.</p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-orange-50">
@@ -145,7 +145,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                         {/* Price preference toggle */}
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-bold text-brand-darkGray/50 uppercase tracking-wider">
-                            Price for:
+                            I want pricing for:
                           </span>
                           <div className="flex rounded-lg overflow-hidden border border-orange-200 bg-brand-cream">
                             {(['piece', 'carton'] as const).map(type => (
@@ -159,7 +159,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                                     : 'text-brand-darkGray/50 hover:text-brand-darkGray'
                                 }`}
                               >
-                                {type}
+                                {type === 'piece' ? 'Per piece' : 'Per carton'}
                               </button>
                             ))}
                           </div>
@@ -174,11 +174,11 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
             {/* Footer */}
             <div className="bg-brand-cream/30 border-t border-orange-100 py-6 px-6 sm:px-8">
               <div className="flex justify-between items-center text-lg font-extrabold text-brand-darkGray font-display">
-                <p>Order Summary</p>
+                <p>Your Request Summary</p>
                 <p>{totalItems} Items</p>
               </div>
               <p className="mt-2 text-xs text-brand-darkGray/50 leading-relaxed font-medium">
-                Final delivery costs and wholesale discounts will be confirmed via WhatsApp.
+                Prices and delivery costs are confirmed by our team via WhatsApp. Orders above ₦50,000 qualify for wholesale discounts.
               </p>
 
               <div className="mt-5 space-y-3">
@@ -190,13 +190,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.389l-1.071 3.914 4.024-1.056c.915.541 1.983.853 3.12.853 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767z" />
                   </svg>
-                  GET PRICE VIA WHATSAPP
+                  Request a Quote on WhatsApp
                 </button>
 
                 <div className="flex items-center justify-between">
                   <button type="button" onClick={onClose}
                     className="text-brand-brown font-extrabold hover:text-brand-orange transition-colors underline decoration-2 underline-offset-4 text-sm">
-                    Keep Browsing
+                    Continue Browsing
                   </button>
                   {items.length > 0 && (
                     <button type="button" onClick={handleClearAll}

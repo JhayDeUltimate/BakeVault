@@ -45,9 +45,9 @@ export default function HomePage() {
           {/* Category grid — desktop only */}
           <section className="hidden lg:block">
             <SectionHeading
-              eyebrow="Browse Fast"
-              title="Find ingredients by category"
-              description="Jump into the part of the vault you need most and head straight to the full catalog."
+              eyebrow="Start Here"
+              title="Find what you need, fast"
+              description="Pick a category and go straight to the products. Everything is in stock or marked clearly if not."
             />
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-12">
               {CATEGORIES.map(category => (
@@ -69,10 +69,10 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-8 sm:mb-10 border-b-2 border-orange-50 pb-6 gap-4">
               <div>
                 <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
-                  Featured Essentials
+                  What Bakers Keep Reordering
                 </h3>
                 <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-2">
-                  The best-selling staples bakers keep reordering.
+                  Tried, tested, and trusted by Lagos bakers.
                 </p>
               </div>
               <Link

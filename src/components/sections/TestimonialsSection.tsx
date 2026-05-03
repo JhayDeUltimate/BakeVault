@@ -18,7 +18,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
     <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-brand-cream border-t border-orange-100">
       <div className="max-w-lg mx-auto overflow-hidden">
         <h3 className="text-center text-sm sm:text-lg font-black text-brand-darkGray/40 font-display mb-6 uppercase tracking-[0.2em]">
-          The Bakers' Circle
+          What Our Bakers Say
         </h3>
         <div className="relative h-[180px] sm:h-[220px]">
           {testimonials.map((t, idx) => (

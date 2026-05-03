@@ -12,9 +12,9 @@ const AboutSection: React.FC<AboutSectionProps> = ({ withBorder = true }) => {
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
           <div className="lg:w-1/2 text-center lg:text-left">
             <SectionHeading
-              eyebrow="Lagos' Trusted Partner"
-              title="Empowering Nigeria's Finest Bakers"
-              description="Based in the heart of Lagos, BakeVault is more than just a supplier. We are a community-driven hub dedicated to sourcing the world's most reliable ingredients."
+              eyebrow="About BakeVault"
+              title="Built around one problem: Nigerian bakers deserve a supplier they can actually count on."
+              description="Based in Lagos, BakeVault stocks baking ingredients and delivers them the same day across the city. For bakers who can't afford a supplier to let them down."
               align="left"
             />
           </div>

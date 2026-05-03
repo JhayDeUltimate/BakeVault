@@ -63,9 +63,9 @@ export default function ProductRequestModal({ onClose }: Props) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-2">Request Received!</h2>
+            <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-2">Got it.</h2>
             <p className="text-sm text-brand-darkGray/60 mb-6">
-              We'll look into sourcing this product. We'll reach out via the contact you provided, or check back with us on WhatsApp.
+              We'll look into it and get back to you at the contact you provided. If you didn't leave contact info, you can always follow up with us on WhatsApp.
             </p>
             <button onClick={onClose}
               className="w-full bg-brand-orange text-white font-bold py-3 rounded-2xl hover:bg-brand-brown transition-all">
@@ -74,9 +74,9 @@ export default function ProductRequestModal({ onClose }: Props) {
           </div>
         ) : (
           <>
-            <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-1">Request a Product</h2>
+            <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-1">Can't find it? Request it.</h2>
             <p className="text-xs text-brand-darkGray/50 mb-6">
-              Can't find what you need? Let us know and we'll look into sourcing it.
+              Tell us what you're looking for and we'll see if we can source it — retail or bulk. Add your contact info and we'll update you directly.
             </p>
 
             {error && (

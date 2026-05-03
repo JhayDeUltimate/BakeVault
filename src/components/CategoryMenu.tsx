@@ -28,7 +28,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
             <div className="flex-1 py-8 overflow-y-auto px-6">
               <div className="flex items-start justify-between mb-8">
                 <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
-                  Browse Vault
+                  Browse the Vault
                 </h2>
                 <button onClick={onClose} aria-label="Close menu"
                   className="p-2 text-brand-darkGray/40 hover:text-brand-orange">
@@ -45,6 +45,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
                     { to: '/',        label: 'Home'    },
                     { to: '/catalog', label: 'Catalog' },
                     { to: '/about',   label: 'About'   },
+                    { to: '/faq',     label: 'FAQ'     },
                   ].map(link => (
                     <Link key={link.to} to={link.to} onClick={onClose}
                       className={`block w-full text-left px-5 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
@@ -59,7 +60,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
 
                 {/* Category links */}
                 <p className="px-1 pt-3 text-[10px] font-black uppercase tracking-widest text-brand-brown/60">
-                  Shop by Category
+                  Ingredients by Category
                 </p>
                 {CATEGORIES.map(category => (
                   <button

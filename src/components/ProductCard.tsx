@@ -56,7 +56,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
               aria-label={`Read description for ${product.name}`}
               className="text-[9px] sm:text-[10px] text-brand-brown/70 hover:text-brand-orange transition-colors font-medium underline underline-offset-2"
             >
-              Read description
+              See full details
             </button>
           )}
         </div>
@@ -64,11 +64,11 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
         <div className="mt-auto pt-2 sm:pt-4 border-t border-orange-50 space-y-2 sm:space-y-3">
           <div className="hidden sm:flex justify-center gap-2">
             <span className="text-brand-brown font-extrabold text-[9px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">
-              Retail
+              Retail Price
             </span>
             <span className="text-brand-darkGray/20 text-[9px]">|</span>
             <span className="text-brand-brown font-extrabold text-[9px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">
-              Wholesale
+              Wholesale Price
             </span>
           </div>
           <button
@@ -79,7 +79,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
             <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span className="font-bold text-[9px] sm:text-xs">Add to Bag</span>
+            <span className="font-bold text-[9px] sm:text-xs">Add to Order</span>
           </button>
         </div>
       </div>

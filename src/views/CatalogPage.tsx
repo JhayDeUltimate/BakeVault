@@ -87,12 +87,12 @@ export default function CatalogPage() {
 
   return (
     <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
-      <SectionHeading eyebrow="Catalog" title="Browse the ingredient vault"
-        description="Search by product or jump between categories to find the right baking essentials faster." />
+      <SectionHeading eyebrow="The Vault" title="Everything We Stock"
+        description="Search by name or filter by category. Prices on request via WhatsApp — DM us any time." />
 
       {/* Search */}
       <div className="max-w-2xl mx-auto mt-10 sm:mt-16 relative">
-        <input type="text" placeholder="Search ingredient vault..."
+        <input type="text" placeholder="Search by product name or brand..."
           value={searchInput}
           onChange={e => { setSearchInput(e.target.value); if (e.target.value) setCatExpanded(false) }}
           className="w-full bg-white border-2 border-orange-100 rounded-2xl px-6 py-4 pl-14 focus:outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all shadow-sm font-medium h-12 sm:h-14" />
@@ -115,7 +115,7 @@ export default function CatalogPage() {
       <section className="mt-12 sm:mt-16">
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
-            Browse Categories
+            Shop by Category
           </h3>
           <div className="flex items-center gap-3 flex-wrap">
             {/* Active category badge */}
@@ -162,7 +162,7 @@ export default function CatalogPage() {
                 className={`border rounded-2xl px-4 py-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
                   !categoryId ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
                 }`}>
-                <span className="text-xs font-extrabold font-display uppercase tracking-wider">All Products</span>
+                <span className="text-xs font-extrabold font-display uppercase tracking-wider">Show Everything</span>
               </button>
               {(categories as DBCategory[]).map(cat => (
                 <button key={cat.id} onClick={() => selectCategory(cat.id)}
@@ -182,7 +182,7 @@ export default function CatalogPage() {
         <div className="flex items-center justify-between mb-6 border-b-2 border-orange-50 pb-4 gap-4">
           <div>
             <h3 className="text-lg sm:text-2xl font-extrabold text-brand-darkGray font-display tracking-tight uppercase">
-              {searchInput ? `Results for "${searchInput}"` : categoryId ? activeCategoryName : 'Full Catalog'}
+              {searchInput ? `Results for "${searchInput}"` : categoryId ? activeCategoryName : 'All Products'}
             </h3>
             {!loading && (
               <p className="text-brand-darkGray/50 text-xs sm:text-sm font-medium mt-1">
@@ -217,9 +217,9 @@ export default function CatalogPage() {
           </div>
         ) : (
           <div className="bg-white border border-orange-100 rounded-[32px] px-6 py-12 text-center shadow-sm">
-            <p className="text-brand-darkGray text-lg font-bold font-display">No products matched that search.</p>
+            <p className="text-brand-darkGray text-lg font-bold font-display">Nothing came up for that search.</p>
             <p className="text-brand-darkGray/60 text-sm font-medium mt-3">
-              Try another product name or clear the current filters.
+              Try a brand name, ingredient type, or clear the filter and browse by category.
             </p>
           </div>
         )}
@@ -229,10 +229,10 @@ export default function CatalogPage() {
       <section className="mt-16 sm:mt-20">
         <div className="bg-white border border-orange-100 rounded-[32px] px-6 sm:px-10 py-8 text-center shadow-sm">
           <h3 className="text-lg sm:text-xl font-extrabold text-brand-darkGray font-display mb-2">
-            Can't find what you're looking for?
+            Don't see what you need?
           </h3>
           <p className="text-sm text-brand-darkGray/60 mb-5">
-            Submit a product request and we'll look into sourcing it for you.
+            Submit a request and we'll track it down. We source on request for both retail and bulk quantities.
           </p>
           <button onClick={() => setShowRequest(true)}
             className="inline-flex items-center gap-2 bg-brand-darkGray hover:bg-brand-orange text-white font-bold px-8 py-3 rounded-2xl transition-all active:scale-95 text-sm">

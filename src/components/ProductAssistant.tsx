@@ -87,8 +87,8 @@ export default function ProductAssistant({ productName, productDescription }: Pr
             </svg>
           </div>
           <div className="text-left">
-            <p className="text-sm font-bold text-brand-darkGray">Ask about this product</p>
-            <p className="text-[10px] text-brand-darkGray/50">AI assistant · Powered by Gemini</p>
+            <p className="text-sm font-bold text-brand-darkGray">Have a question about this product?</p>
+            <p className="text-[10px] text-brand-darkGray/50">AI product guide · Powered by Gemini</p>
           </div>
         </div>
         <svg
@@ -106,10 +106,10 @@ export default function ProductAssistant({ productName, productDescription }: Pr
             {messages.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-xs text-brand-darkGray/40">
-                  Ask me anything about <strong className="text-brand-darkGray/70">{productName}</strong>
+                  What would you like to know about <strong className="text-brand-darkGray/70">{productName}</strong>?
                 </p>
                 <p className="text-[10px] text-brand-darkGray/30 mt-1">
-                  e.g. "What is this used for?" · "What are alternatives?"
+                  e.g. "What's the recommended usage ratio per batch?" · "Is this suitable for vegan baking?"
                 </p>
               </div>
             )}

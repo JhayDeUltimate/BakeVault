@@ -119,7 +119,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
             </h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[10px] font-bold text-brand-brown bg-brand-brown/5 px-2 py-0.5 rounded-md border border-brand-brown/10 uppercase">
-                {product.price_type === 'retail' ? 'Retail' : product.price_type === 'contact' ? 'Contact for price' : 'Wholesale'}
+                {product.price_type === 'retail' ? 'Available retail' : product.price_type === 'contact' ? 'Enquire for pricing' : 'Wholesale pricing available'}
               </span>
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
             onClick={() => { onAddToCart(mapped); onClose() }}
             className="w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg"
           >
-            Add to Bag
+            Add to Order
           </button>
 
           <ProductAssistant productName={product.name} productDescription={product.description ?? ''} />
@@ -147,7 +147,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
           {onViewProduct && similarProducts.length > 0 && (
             <div className="pt-2">
               <h3 className="text-[10px] font-black text-brand-darkGray/40 uppercase tracking-widest mb-3">
-                Similar Products
+                Also in this category
               </h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                 {similarProducts.map(similar => (

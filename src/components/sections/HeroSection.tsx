@@ -62,7 +62,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
               <div className="max-w-2xl bg-white/5 backdrop-blur-md p-5 sm:p-12 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl animate-fadeInUp">
                 <div className="mb-2 sm:mb-6">
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[8px] sm:text-[10px] font-bold tracking-widest uppercase">
-                    Featured Product
+                    Baker's Pick
                   </span>
                 </div>
                 <h1 className="text-xl sm:text-5xl lg:text-6xl font-extrabold mb-2 sm:mb-6 leading-tight font-display">
@@ -76,7 +76,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
                     onClick={() => onAddToCart(product)}
                     className="w-full sm:w-auto text-center bg-brand-orange text-white font-extrabold px-6 py-3 sm:px-12 sm:py-5 rounded-xl sm:rounded-2xl hover:bg-white hover:text-brand-darkGray transition-all shadow-2xl active:scale-95 font-display text-xs sm:text-lg whitespace-nowrap"
                   >
-                    Add to Bag
+                    Add to Bag — Get a Quote via WhatsApp
                   </button>
                 </div>
               </div>
