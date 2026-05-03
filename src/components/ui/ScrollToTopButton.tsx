@@ -27,7 +27,7 @@ export default function ScrollToTopButton({ threshold = 400 }: { threshold?: num
       onClick={scrollToTop}
       aria-label="Scroll to top"
       className={`
-        fixed bottom-6 right-6 z-40
+        fixed bottom-20 right-4 z-40
         w-12 h-12 rounded-full
         bg-brand-orange/90 backdrop-blur-md
         shadow-lg shadow-brand-orange/25

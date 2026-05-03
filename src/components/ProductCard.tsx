@@ -44,7 +44,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
       <div className="p-3 sm:p-5 flex flex-col flex-grow text-center">
         <div className="mb-2 sm:mb-3">
           <h3
-            className={`text-[11px] sm:text-base font-bold text-brand-darkGray mb-1 leading-tight min-h-[28px] sm:min-h-[44px] line-clamp-2 font-display ${isClickable ? 'cursor-pointer hover:text-brand-orange transition-colors' : ''}`}
+            className={`text-sm sm:text-base font-bold text-brand-darkGray mb-1 leading-tight min-h-[28px] sm:min-h-[44px] line-clamp-2 font-display ${isClickable ? 'cursor-pointer hover:text-brand-orange transition-colors' : ''}`}
             onClick={isClickable ? () => onViewDetails!(product) : undefined}
           >
             {product.name}
@@ -74,12 +74,12 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
           <button
             onClick={() => onAddToCart(product)}
             aria-label={`Add ${product.name} to bag`}
-            className="w-full bg-brand-orange hover:bg-brand-brown text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg shadow-brand-orange/5 active:scale-95"
+            className="w-full bg-brand-orange hover:bg-brand-brown text-white py-3 sm:py-2.5 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg shadow-brand-orange/5 active:scale-95"
           >
             <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span className="font-bold text-[9px] sm:text-xs">Add to Order</span>
+            <span className="font-bold text-xs">Add to Order</span>
           </button>
         </div>
       </div>

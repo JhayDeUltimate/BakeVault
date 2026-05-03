@@ -25,6 +25,11 @@ export default function CatalogPage() {
   const [showRequest, setShowRequest] = useState(false)
   const [catExpanded, setCatExpanded] = useState(true)
 
+  // Default categories to collapsed on mobile to save space
+  useEffect(() => {
+    if (window.innerWidth < 640) setCatExpanded(false)
+  }, [])
+
   const productsRef = useRef<HTMLDivElement>(null)
 
   const { products: rawProducts, loading: productsLoading } = useProducts({ categoryId, search: debouncedSearch })
@@ -142,7 +147,7 @@ export default function CatalogPage() {
             )}
             {/* Expand / collapse categories toggle */}
             <button onClick={() => setCatExpanded(e => !e)}
-              className="flex items-center gap-1 text-xs text-brand-darkGray/50 hover:text-brand-orange transition-colors font-bold"
+              className="flex items-center gap-1 text-xs text-brand-darkGray/50 hover:text-brand-orange transition-colors font-bold py-2 px-3 -mr-3"
               aria-label={catExpanded ? 'Collapse categories' : 'Expand categories'}>
               <svg className={`w-4 h-4 transition-transform ${catExpanded ? 'rotate-180' : ''}`}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,14 +168,14 @@ export default function CatalogPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               <button onClick={() => selectCategory(null)}
-                className={`border rounded-2xl px-4 py-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
+                className={`border rounded-2xl py-3 px-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
                   !categoryId ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
                 }`}>
                 <span className="text-xs font-extrabold font-display uppercase tracking-wider">Show Everything</span>
               </button>
               {(categories as DBCategory[]).map(cat => (
                 <button key={cat.id} onClick={() => selectCategory(cat.id)}
-                  className={`border rounded-2xl px-4 py-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
+                  className={`border rounded-2xl py-3 px-4 text-center transition-all duration-200 shadow-sm hover:shadow-md ${
                     categoryId === cat.id ? 'bg-brand-brown border-brand-brown text-white' : 'bg-white border-orange-100 text-brand-darkGray hover:bg-brand-brown hover:border-brand-brown hover:text-white'
                   }`}>
                   <span className="text-xs font-extrabold font-display uppercase tracking-wider">{cat.name}</span>

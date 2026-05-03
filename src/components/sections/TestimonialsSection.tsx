@@ -20,11 +20,11 @@ export default function TestimonialsSection({ testimonials }: Props) {
         <h3 className="text-center text-sm sm:text-lg font-black text-brand-darkGray/40 font-display mb-6 uppercase tracking-[0.2em]">
           What Our Bakers Say
         </h3>
-        <div className="relative h-[180px] sm:h-[220px]">
+        <div className="relative min-h-[180px] sm:min-h-[220px]">
           {testimonials.map((t, idx) => (
             <div key={t.id}
-              className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
-                idx === current ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+              className={`transition-all duration-700 ease-in-out transform ${
+                idx === current ? 'relative opacity-100 translate-y-0 scale-100' : 'absolute inset-0 opacity-0 translate-y-4 scale-95 pointer-events-none'
               }`}>
               <div className="bg-white p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] border border-orange-100 shadow-sm h-full flex flex-col justify-center text-center">
                 <div className="flex justify-center gap-0.5 text-brand-orange mb-3">

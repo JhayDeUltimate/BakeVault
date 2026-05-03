@@ -13,7 +13,16 @@ export default function ContactPage() {
     return (
         <main className="flex-grow">
             <section className="bg-white border-b border-orange-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-                <div className="max-w-3xl mx-auto text-center">
+                <div className="max-w-3xl mx-auto text-left sm:text-center">
+                    <button
+                        onClick={() => window.history.back()}
+                        className="sm:hidden inline-flex items-center gap-2 text-xs font-bold text-brand-brown uppercase tracking-wider mb-6"
+                    >
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back
+                    </button>
                     <SectionHeading
                         eyebrow="Contact"
                         title="We respond fast. Reach out any time."

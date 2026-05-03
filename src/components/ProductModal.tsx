@@ -136,7 +136,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
 
           <button
             onClick={() => { onAddToCart(mapped); onClose() }}
-            className="w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg"
+            className="hidden sm:block w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg"
           >
             Add to Order
           </button>
@@ -180,6 +180,15 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
               </div>
             </div>
           )}
+        </div>
+        {/* Sticky mobile CTA */}
+        <div className="sticky bottom-0 bg-white border-t border-orange-100 p-4 sm:hidden z-10 rounded-b-[32px]">
+          <button
+            onClick={() => { onAddToCart(mapped); onClose() }}
+            className="w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98]"
+          >
+            Add to Order
+          </button>
         </div>
       </div>
     </div>
