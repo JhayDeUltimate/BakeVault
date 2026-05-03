@@ -26,9 +26,8 @@ export default function AdminLayout() {
   const Sidebar = () => (
     <aside className="w-60 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full">
       <div className="px-4 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <BrandLogo iconClassName="h-8 w-auto" hideText={false} textClassName="text-base text-gray-800" />
-          <span className="font-bold text-gray-800">Admin</span>
+        <div className="flex items-center">
+          <BrandLogo iconClassName="h-8 w-auto" />
         </div>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
