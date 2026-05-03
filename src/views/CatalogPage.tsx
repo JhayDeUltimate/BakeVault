@@ -30,7 +30,11 @@ export default function CatalogPage() {
   const { products: rawProducts, loading: productsLoading } = useProducts({ categoryId, search: debouncedSearch })
   const { categories, loading: categoriesLoading }          = useCategories()
 
-  const products   = useMemo(() => rawProducts.map(mapDBProduct), [rawProducts])
+  const products   = useMemo(() => {
+    return rawProducts
+      .map(mapDBProduct)
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [rawProducts])
   const rawByIdMap = useMemo(() => new Map(rawProducts.map(p => [p.id, p])), [rawProducts])
   const loading    = productsLoading || categoriesLoading
 

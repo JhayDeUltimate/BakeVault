@@ -6,6 +6,12 @@ import HomePage                  from '@/views/HomePage'
 import CatalogPage               from '@/views/CatalogPage'
 import AboutPage                 from '@/views/AboutPage'
 import FAQPage                   from '@/views/FAQPage'
+import HowToOrderPage            from '@/views/HowToOrderPage'
+import DeliveryPage              from '@/views/DeliveryPage'
+import ContactPage               from '@/views/ContactPage'
+import TermsPage                 from '@/views/TermsPage'
+import PrivacyPage               from '@/views/PrivacyPage'
+import ProductPage               from '@/views/ProductPage'
 import AdminLogin                from '@/views/admin/AdminLogin'
 import AdminLayout               from '@/views/admin/AdminLayout'
 import AdminDashboard            from '@/views/admin/AdminDashboard'
@@ -28,7 +34,13 @@ export default function App() {
           <Route path="/"        element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/about"   element={<AboutPage />} />
-          <Route path="/faq"     element={<FAQPage />} />
+          <Route path="/faq"            element={<FAQPage />} />
+          <Route path="/how-to-order"   element={<HowToOrderPage />} />
+          <Route path="/delivery"       element={<DeliveryPage />} />
+          <Route path="/contact"        element={<ContactPage />} />
+          <Route path="/terms"          element={<TermsPage />} />
+          <Route path="/privacy"        element={<PrivacyPage />} />
+          <Route path="/products/:slug" element={<ProductPage />} />
         </Route>
 
         {/* Admin */}

@@ -120,7 +120,7 @@ const FAQ_DATA: FAQCategory[] = [
             {
                 question: 'What should I do if my order arrives with a problem?',
                 answer:
-                    'The moment you notice something wrong — wrong item, damaged packaging, missing product — take clear photos and send them to us on WhatsApp straight away. Don\'t wait. The 24-hour window starts from when your order is delivered. The faster you report it, the faster we fix it.',
+                    'The moment you notice something wrong. Either wrong item, damaged packaging, missing product. Please take clear photos and send them to us on WhatsApp straight away. Don\'t wait. The 24-hour window starts from when your order is delivered. The faster you report it, the faster we fix it.',
             },
         ],
     },

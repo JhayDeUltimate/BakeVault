@@ -4,6 +4,7 @@ import Header          from './Header'
 import Cart            from './Cart'
 import CategoryMenu    from './CategoryMenu'
 import Footer          from './sections/Footer'
+import WhatsAppButton  from './WhatsappButton'
 import { useCart }     from '@/lib/cart-context'
 
 export default function PublicLayout() {
@@ -35,6 +36,7 @@ export default function PublicLayout() {
         isOpen={isCategoriesOpen}
         onClose={closeCategories}
       />
+      <WhatsAppButton />
     </div>
   )
 }
