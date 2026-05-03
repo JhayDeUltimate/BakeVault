@@ -12,7 +12,7 @@ A full-stack storefront for BakeVault, a wholesale baking supplies business in L
 
 ## Project Structure
 
-```
+```text
 src/
   components/
     admin/           # Admin-only form and upload components
@@ -29,12 +29,17 @@ src/
     utils.ts         # DB-to-UI model mapping
   views/
     admin/           # Admin pages (Dashboard, Products, Categories, etc.)
+    *Page.tsx        # Public pages (Home, Catalog, FAQ, Product, Delivery, etc.)
   constants.ts       # Categories, product seed data, WhatsApp config
   index.css          # Global styles and Tailwind theme tokens
 
 supabase/
   functions/
     ai-assistant/    # Deno edge function for Gemini chat and image analysis
+    
+public/
+  sitemap.xml        # XML sitemap for SEO indexing
+  robots.txt         # Search engine crawler instructions
 ```
 
 ## Features
@@ -42,9 +47,11 @@ supabase/
 ### Public Storefront
 
 - **Hero slider** cycles through featured products with a 5-second interval and manual dot navigation.
-- **Catalog page** provides a full product grid with real-time search, category filtering, and a product detail modal with an image carousel.
+- **Catalog & Product Pages**: Full product grid with real-time search, category filtering, and standalone product detail pages (`/products/:slug`) for improved sharing and deep-linking.
 - **Shopping cart** persists to localStorage with quantity controls. Checkout sends an order summary to WhatsApp via `wa.me`.
-- **Product AI assistant** is a per-product chat widget powered by Google Gemini, accessible inside the product detail modal.
+- **Product AI assistant** is a per-product chat widget powered by Google Gemini, helping customers with specific product/usage queries.
+- **Informational Pages**: Dedicated routing for FAQ, How to Order, Delivery Info, Contact, Privacy, and Terms & Conditions.
+- **SEO Optimized**: Fully integrated with Open Graph tags, Twitter Cards, `application/ld+json` structured local business data, `sitemap.xml`, and `robots.txt` mapped to the `bakevault.com.ng` domain.
 - **Product requests** allow customers to submit a form requesting products not currently in the catalog.
 - **Testimonials** are displayed in an auto-rotating carousel sourced from the database.
 
@@ -94,7 +101,7 @@ npm install
 npm run dev
 ```
 
-The dev server runs on `http://localhost:3000`.
+The dev server runs on `http://localhost:5173`.
 
 ```bash
 npm run build    # Production build
