@@ -67,7 +67,7 @@ export default function AdminLayout() {
           </button>
           <BrandLogo iconClassName="h-7 w-auto" />
         </div>
-        <main className="flex-1 overflow-y-auto p-6"><Outlet /></main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6"><Outlet /></main>
       </div>
     </div>
   )

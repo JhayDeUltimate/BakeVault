@@ -164,7 +164,7 @@ export default function AdminDashboard() {
               Tracked events from the public storefront
             </p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             {/* Date range pills */}
             <div className="flex gap-1">
               {([7, 14, 30] as DateRange[]).map(d => (
@@ -218,7 +218,7 @@ export default function AdminDashboard() {
                   No events recorded yet in this period.
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 180 : 240}>
                   <LineChart data={chartData} margin={{ top: 0, right: 16, left: -16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
@@ -271,34 +271,57 @@ export default function AdminDashboard() {
         {recent.length === 0 ? (
           <div className="px-6 py-8 text-center text-sm text-gray-400">No enquiries yet.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-3 text-left">Items</th>
-                <th className="px-6 py-3 text-left">Date</th>
-                <th className="px-6 py-3 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+          <>
+            {/* Mobile */}
+            <div className="sm:hidden divide-y divide-gray-50">
               {recent.map(e => {
-                const items = (e.items as Array<{ product_name: string; quantity: number }>) ?? []
+                const items = (e.items as Array<{product_name: string; quantity: number}>) ?? []
                 return (
-                  <tr key={e.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-3 text-gray-700">
-                      {items.slice(0, 2).map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
+                  <div key={e.id} className="px-5 py-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusColor[e.status] ?? ''}`}>{e.status}</span>
+                      <span className="text-xs text-gray-400">{new Date(e.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      {items.slice(0,2).map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
                       {items.length > 2 && ` +${items.length - 2} more`}
-                    </td>
-                    <td className="px-6 py-3 text-gray-500">{new Date(e.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusColor[e.status] ?? ''}`}>
-                        {e.status}
-                      </span>
-                    </td>
-                  </tr>
+                    </p>
+                  </div>
                 )
               })}
-            </tbody>
-          </table>
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Items</th>
+                    <th className="px-6 py-3 text-left">Date</th>
+                    <th className="px-6 py-3 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {recent.map(e => {
+                    const items = (e.items as Array<{ product_name: string; quantity: number }>) ?? []
+                    return (
+                      <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-3 text-gray-700">
+                          {items.slice(0, 2).map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
+                          {items.length > 2 && ` +${items.length - 2} more`}
+                        </td>
+                        <td className="px-6 py-3 text-gray-500">{new Date(e.created_at).toLocaleDateString()}</td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusColor[e.status] ?? ''}`}>
+                            {e.status}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

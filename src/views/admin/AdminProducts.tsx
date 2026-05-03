@@ -153,7 +153,7 @@ export default function AdminProducts() {
           </div>
           <div className="hidden sm:block h-6 w-px bg-gray-200" />
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">Sort by:</span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
             {SORT_OPTIONS.map(opt => {
               const isActive = sortKey === opt.key
               const arrow = isActive ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
@@ -172,8 +172,57 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Mobile card list */}
+      <div className="sm:hidden space-y-3">
+        {sorted.map(p => (
+          <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div className="flex gap-3">
+              {p.image_url
+                ? <img src={p.image_url} alt={p.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                : <div className="w-14 h-14 rounded-lg bg-orange-100 flex items-center justify-center text-orange-400 text-xs font-bold shrink-0">IMG</div>
+              }
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-gray-800 truncate">{p.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{p.categories?.name ?? '—'}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <button onClick={() => toggleAvailable(p)} disabled={toggling === p.id}
+                    className={`relative w-9 h-5 rounded-full transition-colors ${toggling === p.id ? 'opacity-50' : ''} ${p.is_available ? 'bg-green-500' : 'bg-gray-300'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${p.is_available ? 'translate-x-4' : ''}`} />
+                  </button>
+                  <span className="text-xs text-gray-400">{p.is_available ? 'Available' : 'Hidden'}</span>
+                  {p.is_featured && <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">Hero</span>}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 shrink-0">
+                <button onClick={() => setModal({ mode: 'edit', product: p })}
+                  className="p-2 rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button onClick={() => handleDelete(p)} disabled={saving === p.id}
+                  className="p-2 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 transition-colors disabled:opacity-50">
+                  {saving === p.id ? (
+                    <div className="w-4 h-4 border-2 border-red-200 border-t-red-400 rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {sorted.length === 0 && (
+          <div className="py-12 text-center text-sm text-gray-400 bg-white rounded-xl border border-gray-100">
+            {search ? 'No products match that search.' : 'No products yet — add one!'}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -259,7 +308,7 @@ export default function AdminProducts() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <h2 className="text-lg font-bold text-gray-800">
                 {modal.mode === 'add' ? 'Add Product' : `Edit — ${modal.product.name}`}

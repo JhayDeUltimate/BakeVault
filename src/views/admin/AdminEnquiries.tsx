@@ -43,9 +43,9 @@ export function AdminEnquiries() {
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Enquiries <span className="text-base font-normal text-gray-400">({enquiries.length})</span></h1>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
           {(['all','sent','responded','fulfilled'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${filter === f ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize shrink-0 ${filter === f ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               {f}
             </button>
           ))}
@@ -67,9 +67,9 @@ export function AdminEnquiries() {
                     {items.map((item, i) => <li key={i}>• {item.product_name} × {item.quantity}</li>)}
                   </ul>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  {e.status !== 'responded' && <button onClick={() => handleStatus(e.id, 'responded')} className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors">Mark Responded</button>}
-                  {e.status !== 'fulfilled' && <button onClick={() => handleStatus(e.id, 'fulfilled')} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors">Mark Fulfilled</button>}
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto mt-3 sm:mt-0">
+                  {e.status !== 'responded' && <button onClick={() => handleStatus(e.id, 'responded')} className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors w-full sm:w-auto">Mark Responded</button>}
+                  {e.status !== 'fulfilled' && <button onClick={() => handleStatus(e.id, 'fulfilled')} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors w-full sm:w-auto">Mark Fulfilled</button>}
                 </div>
               </div>
             </div>

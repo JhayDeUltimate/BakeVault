@@ -50,10 +50,10 @@ export default function AdminProductRequests() {
             {requests.length} total · {requests.filter(r => r.status === 'pending').length} pending
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap shrink-0">
           {(['all', 'pending', 'reviewed', 'fulfilled'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize shrink-0 ${
                 filter === f ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}>
               {f}
@@ -120,22 +120,22 @@ export default function AdminProductRequests() {
                 </div>
 
                 {/* Right: action buttons */}
-                <div className="flex gap-2 shrink-0 flex-wrap">
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto mt-3 sm:mt-0">
                   {r.status !== 'reviewed' && (
                     <button onClick={() => handleStatus(r, 'reviewed')}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors">
+                      className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors w-full sm:w-auto">
                       Mark Reviewed
                     </button>
                   )}
                   {r.status !== 'fulfilled' && (
                     <button onClick={() => handleStatus(r, 'fulfilled')}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors">
+                      className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors w-full sm:w-auto">
                       Mark Fulfilled
                     </button>
                   )}
                   {r.status !== 'pending' && (
                     <button onClick={() => handleStatus(r, 'pending')}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 font-medium transition-colors">
+                      className="text-xs px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 font-medium transition-colors w-full sm:w-auto">
                       Reset
                     </button>
                   )}
