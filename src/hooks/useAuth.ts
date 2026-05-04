@@ -121,5 +121,10 @@ export function useAuth() {
     setIsAdmin(false)
   }
 
-  return { user, loading, signIn, signOut, isAdmin }
+  async function signUp(email: string, password: string) {
+    const { error } = await supabase.auth.signUp({ email, password })
+    if (error) throw new Error(error.message)
+  }
+
+  return { user, loading, signIn, signUp, signOut, isAdmin }
 }

@@ -1,14 +1,12 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import AboutSection        from '@/components/sections/AboutSection'
+import AboutSection from '@/components/sections/AboutSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
-import SectionHeading      from '@/components/ui/SectionHeading'
-import { WHATSAPP_URL }    from '@/constants'
+import SectionHeading from '@/components/ui/SectionHeading'
+import { WHATSAPP_URL } from '@/constants'
 import { useTestimonials } from '@/hooks'
 
 export default function AboutPage() {
-  // FIX: use the DB-backed hook instead of the hardcoded TESTIMONIALS constant
-  // so changes made in Admin → Testimonials are immediately reflected here.
   const { testimonials } = useTestimonials(true)
 
   return (
