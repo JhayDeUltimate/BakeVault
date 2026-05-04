@@ -95,13 +95,19 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (cancelled) return
       const currentUser = session?.user ?? null
-      setUser(currentUser)
-
+      
       if (currentUser) {
+        setLoading(true)
+        setUser(currentUser)
         const admin = await resolveAdmin(currentUser)
-        if (!cancelled) setIsAdmin(admin)
+        if (!cancelled) {
+          setIsAdmin(admin)
+          setLoading(false)
+        }
       } else {
+        setUser(null)
         setIsAdmin(false)
+        setLoading(false)
       }
     })
 

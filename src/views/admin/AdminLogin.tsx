@@ -76,30 +76,6 @@ export default function AdminLogin() {
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? 'Signing in…' : 'Sign In'}
               </button>
-              
-              {/* Temporary button to allow creating the admin account in dev */}
-              <button 
-                type="button" 
-                disabled={loading} 
-                onClick={async () => {
-                  if (!email || !password) {
-                    setError('Please enter both email and password to create an account.');
-                    return;
-                  }
-                  try {
-                    setLoading(true); setError(null);
-                    await signUp(email, password);
-                    navigate('/admin/dashboard', { replace: true });
-                  } catch(err) {
-                    setError(err instanceof Error ? err.message : 'Sign up failed');
-                  } finally {
-                    setLoading(false);
-                  }
-                }} 
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider"
-              >
-                Or Create Account
-              </button>
             </div>
           </form>
         </div>
