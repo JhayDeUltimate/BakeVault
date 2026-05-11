@@ -1,4 +1,6 @@
 import { supabase } from './supabase'
+import { logger } from './logger'
+import { SESSION_ID } from './analytics'
 import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent } from './database.types'
 
 // Re-export from image.ts so existing imports from @/lib/api still work
@@ -105,10 +107,49 @@ export async function deleteCategory(id: string): Promise<void> {
 export interface EnquiryItem { product_id: string; product_name: string; category: string; quantity: number }
 
 export async function logEnquiry(items: EnquiryItem[], whatsappMessage: string): Promise<void> {
+  const start = Date.now()
   const { error } = await supabase.from('enquiries').insert({
-    items: items as unknown as Json, whatsapp_message: whatsappMessage, status: 'sent',
+    items: items as unknown as Json,
+    whatsapp_message: whatsappMessage,
+    status: 'sent',
   })
-  if (error) console.error('[BakeVault] Failed to log enquiry:', error.message)
+  if (error) {
+    logger.error('Failed to log enquiry to DB', undefined, {
+      event: 'enquiry.log_failed',
+      reason: error.message,
+      item_count: items.length,
+    })
+    // Fire-and-forget analytics event for enquiry failure
+    void (async () => {
+      try {
+        const { error: ae } = await supabase.from('analytics_events').insert({
+          event_type: 'enquiry.log_failed',
+          event_data: { reason: error.message, item_count: items.length },
+          session_id: typeof window !== 'undefined' ? SESSION_ID : null,
+          page: typeof window !== 'undefined' ? window.location.pathname : null,
+        })
+        if (ae) console.debug('[analytics] enquiry.log_failed insert failed:', ae.message)
+      } catch {}
+    })()
+  } else {
+    logger.info('Enquiry logged', {
+      event:      'enquiry.created',
+      item_count: items.length,
+      duration_ms: Date.now() - start,
+    })
+    // Fire-and-forget analytics event for enquiry success
+    void (async () => {
+      try {
+        const { error: ae } = await supabase.from('analytics_events').insert({
+          event_type: 'enquiry.created',
+          event_data: { item_count: items.length },
+          session_id: typeof window !== 'undefined' ? SESSION_ID : null,
+          page: typeof window !== 'undefined' ? window.location.pathname : null,
+        })
+        if (ae) console.debug('[analytics] enquiry.created insert failed:', ae.message)
+      } catch {}
+    })()
+  }
 }
 
 export async function getEnquiries(): Promise<DBEnquiry[]> {
@@ -185,18 +226,76 @@ export async function updateProductRequestStatus(id: string, status: 'pending' |
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_SIZE     = 5 * 1024 * 1024
 
+
 export async function uploadProductImage(file: File): Promise<string> {
-  if (!ALLOWED_MIME.has(file.type)) throw new Error(`Unsupported type "${file.type}". Use JPEG, PNG, or WebP.`)
-  if (file.size > MAX_SIZE) throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`)
+  if (!ALLOWED_MIME.has(file.type)) {
+    logger.warn('Image upload rejected — unsupported type', {
+      event: 'image.upload_rejected',
+      mime_type: file.type,
+    })
+    throw new Error(`Unsupported type "${file.type}". Use JPEG, PNG, or WebP.`)
+  }
+  if (file.size > MAX_SIZE) {
+    logger.warn('Image upload rejected — too large', {
+      event: 'image.upload_rejected',
+      size_mb: (file.size / 1024 / 1024).toFixed(1),
+    })
+    throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`)
+  }
+
   const MIME_TO_EXT: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/png':  'png',
-    'image/webp': 'webp',
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
   }
   const ext  = MIME_TO_EXT[file.type] ?? 'jpg'
   const path = `products/${crypto.randomUUID()}.${ext}`
-  const { error } = await supabase.storage.from('bakevault-images').upload(path, file, { cacheControl: '3600', upsert: false })
-  if (error) throw new Error(error.message)
+  const start = Date.now()
+
+  const { error } = await supabase.storage
+    .from('bakevault-images')
+    .upload(path, file, { cacheControl: '3600', upsert: false })
+
+  if (error) {
+    logger.error('Image upload to Supabase Storage failed', undefined, {
+      event:    'image.upload_failed',
+      path,
+      reason:   error.message,
+      duration_ms: Date.now() - start,
+    })
+    // Analytics: record upload failure
+    void (async () => {
+      try {
+        const { error: ae } = await supabase.from('analytics_events').insert({
+          event_type: 'image.upload_failed',
+          event_data: { path, reason: error.message, duration_ms: Date.now() - start },
+          session_id: typeof window !== 'undefined' ? SESSION_ID : null,
+          page: typeof window !== 'undefined' ? window.location.pathname : null,
+        })
+        if (ae) console.debug('[analytics] image.upload_failed insert failed:', ae.message)
+      } catch {}
+    })()
+    throw new Error(error.message)
+  }
+
+  logger.info('Image uploaded', {
+    event:    'image.upload_success',
+    path,
+    size_mb:  (file.size / 1024 / 1024).toFixed(2),
+    duration_ms: Date.now() - start,
+  })
+
+  // Analytics: record upload success
+  void (async () => {
+    try {
+      const { error: ae } = await supabase.from('analytics_events').insert({
+        event_type: 'image.upload_success',
+        event_data: { path, size_mb: (file.size / 1024 / 1024).toFixed(2), duration_ms: Date.now() - start },
+        session_id: typeof window !== 'undefined' ? SESSION_ID : null,
+        page: typeof window !== 'undefined' ? window.location.pathname : null,
+      })
+      if (ae) console.debug('[analytics] image.upload_success insert failed:', ae.message)
+    } catch {}
+  })()
+
   const { data } = supabase.storage.from('bakevault-images').getPublicUrl(path)
   return data.publicUrl
 }

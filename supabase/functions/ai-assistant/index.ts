@@ -10,6 +10,20 @@ const MAX_MESSAGES     = 40
 const FETCH_TIMEOUT_MS = 25_000   // 25s — Deno edge functions time out at 30s
 const MAX_IMAGE_BYTES  = 8 * 1024 * 1024
 
+// Structured logger helper for Supabase Edge Function logs
+function log(level: 'INFO' | 'WARN' | 'ERROR', message: string, context: Record<string, unknown> = {}) {
+  // Supabase Edge Function logs go to the Supabase dashboard → Edge Functions → Logs
+  console[level === 'INFO' ? 'log' : level === 'WARN' ? 'warn' : 'error'](
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      service: 'ai-assistant',
+      ...context,
+    })
+  )
+}
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
 // Read allowed origins from an env var so no code change is needed per deployment.
@@ -199,7 +213,7 @@ async function callGemini(
 
       // If rate-limited or overloaded and we have more models to try, fall back
       if ((res.status === 429 || res.status === 503) && i < GEMINI_MODELS.length - 1) {
-        console.warn(`[ai-assistant] ${model} returned ${res.status}, falling back to ${GEMINI_MODELS[i + 1]}`)
+        log('WARN', 'Gemini model rate limited, falling back', { model, status: res.status, next_model: GEMINI_MODELS[i + 1] })
         continue
       }
 
@@ -207,7 +221,7 @@ async function callGemini(
     } catch (err) {
       // On network/timeout error, try next model if available
       if (i < GEMINI_MODELS.length - 1) {
-        console.warn(`[ai-assistant] ${model} failed (${err instanceof Error ? err.message : 'unknown'}), falling back to ${GEMINI_MODELS[i + 1]}`)
+        log('WARN', 'Gemini model failed, falling back', { model, error: err instanceof Error ? err.message : String(err), next_model: GEMINI_MODELS[i + 1] })
         continue
       }
       throw err
@@ -384,7 +398,7 @@ serve(async (req: Request) => {
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Analyze failed'
-      console.error('[ai-assistant analyze]', msg)
+      log('ERROR', 'Analyze mode failed', { error: msg, imageUrl: imageUrl?.slice(0, 80) })
       return respond({ error: msg }, origin)
     }
   }
@@ -434,7 +448,7 @@ serve(async (req: Request) => {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Chat failed'
-    console.error('[ai-assistant chat]', msg)
+    log('ERROR', 'Chat mode failed', { error: msg })
     return respond({ error: msg }, origin)
   }
 })
