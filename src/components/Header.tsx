@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
   const location = useLocation()
 
   const navLinkClass = (path: string) =>
-    ['transition-colors font-bold text-sm uppercase tracking-[0.2em]',
+    ['transition-colors font-bold text-sm uppercase tracking-[0.2em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange rounded px-1',
      location.pathname === path
        ? 'text-brand-orange'
        : 'text-brand-darkGray/60 hover:text-brand-orange'
@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
     <header className="sticky top-0 z-40 w-full bg-white border-b border-orange-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
-          <Link to="/" className="flex-shrink-0 group">
+          <Link to="/" className="flex-shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange rounded">
             <BrandLogo iconClassName="h-10 w-auto group-hover:opacity-80 transition-opacity" />
           </Link>
 

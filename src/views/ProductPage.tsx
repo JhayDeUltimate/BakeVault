@@ -5,6 +5,7 @@ import { mapDBProduct } from '@/lib/utils'
 import { getProductImages, optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
 import { useCart } from '@/lib/cart-context'
 import { trackEvent } from '@/lib/analytics'
+import { Helmet } from 'react-helmet-async'
 import ProductAssistant from '@/components/ProductAssistant'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
@@ -52,6 +53,11 @@ export default function ProductPage() {
 
     return (
         <main className="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+            <Helmet>
+                <title>{product.name} | BakeVault Lagos</title>
+                <meta name="description" content={product.description?.substring(0, 160) ?? `Buy ${product.name} from BakeVault Lagos.`} />
+            </Helmet>
+
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-xs text-brand-darkGray/40 font-bold uppercase tracking-wider mb-8">
                 <button onClick={() => navigate('/catalog')} className="hover:text-brand-orange transition-colors">Catalog</button>

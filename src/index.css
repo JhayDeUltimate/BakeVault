@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap');
-
 @theme {
-  --color-brand-brown:    #D2691E;
-  --color-brand-orange:   #FF6B35;
-  --color-brand-cream:    #FFF8E7;
-  --color-brand-darkGray: #2D3142;
-  --color-brand-teal:     #4ECDC4;
+  --color-brand-brown:         #D2691E;
+  --color-brand-orange:        #FF6B35;
+  --color-brand-cream:         #FFF8E7;
+  --color-brand-darkGray:      #2D3142;
+  --color-brand-teal:          #4ECDC4;
+
+  /* WCAG AA-compliant text variants (≥4.5:1 on white) */
+  --color-brand-orange-text:   #C94E1A;
+  --color-brand-brown-text:    #A0481A;
 
   --font-sans:    'Open Sans', sans-serif;
   --font-display: 'Montserrat', sans-serif;
@@ -28,3 +30,13 @@ body {
 
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
+
+/* Respect user's motion preferences (vestibular safety) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:       0.01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:      0.01ms !important;
+    scroll-behavior:          auto   !important;
+  }
+}

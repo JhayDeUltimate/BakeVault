@@ -17,7 +17,7 @@ export default function WhatsAppButton() {
             target="_blank"
             rel="noreferrer"
             aria-label="Order on WhatsApp"
-            className={`fixed bottom-6 left-4 sm:left-6 z-40 flex items-center gap-2.5 bg-green-500 hover:bg-green-600 text-white font-bold text-xs p-3 sm:px-4 sm:py-3 rounded-full shadow-lg shadow-green-500/30 transition-all duration-500 active:scale-95 hover:scale-105 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+            className={`fixed bottom-8 left-4 sm:left-6 z-40 md:hidden flex items-center gap-2.5 bg-green-500 hover:bg-green-600 text-white font-bold text-xs p-3 sm:px-4 sm:py-3 rounded-full shadow-lg shadow-green-500/30 transition-all duration-500 active:scale-95 hover:scale-105 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
                 }`}
         >
             <div className="flex items-center justify-center">

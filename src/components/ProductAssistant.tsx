@@ -88,7 +88,7 @@ export default function ProductAssistant({ productName, productDescription }: Pr
           </div>
           <div className="text-left">
             <p className="text-sm font-bold text-brand-darkGray">Have a question about this product?</p>
-            <p className="text-[10px] text-brand-darkGray/50">AI product guide · Powered by Gemini</p>
+            <p className="text-xs text-brand-darkGray/50">AI product guide · Powered by Gemini</p>
           </div>
         </div>
         <svg
@@ -108,7 +108,7 @@ export default function ProductAssistant({ productName, productDescription }: Pr
                 <p className="text-xs text-brand-darkGray/40">
                   What would you like to know about <strong className="text-brand-darkGray/70">{productName}</strong>?
                 </p>
-                <p className="text-[10px] text-brand-darkGray/30 mt-1">
+                <p className="text-xs text-brand-darkGray/30 mt-1">
                   e.g. "What's the recommended usage ratio per batch?" · "Is this suitable for vegan baking?"
                 </p>
               </div>
@@ -163,8 +163,8 @@ export default function ProductAssistant({ productName, productDescription }: Pr
                 </svg>
               </button>
             </div>
-            <p className="text-center text-[9px] text-brand-darkGray/40 pb-1.5 px-2">
-              This chatbot is AI and can make mistakes. Please double check responses.
+            <p className="text-center text-xs text-brand-darkGray/60 pb-1.5 px-2">
+              AI assistant — responses may be inaccurate. Always verify critical details.
             </p>
           </div>
         </div>

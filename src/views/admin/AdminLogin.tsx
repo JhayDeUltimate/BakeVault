@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks'
 import BrandLogo from '@/components/ui/BrandLogo'
 
 export default function AdminLogin() {
-  const { signIn, signUp, user } = useAuth()
+  const { signIn, signUp, user, isAdmin, loading: authLoading } = useAuth()
   const navigate         = useNavigate()
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -13,8 +13,11 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
-    if (user) navigate('/admin/dashboard', { replace: true })
-  }, [user, navigate])
+    // Only automatically redirect if they are fully resolved as an admin
+    if (user && isAdmin) {
+      navigate('/admin/dashboard', { replace: true })
+    }
+  }, [user, isAdmin, navigate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -40,8 +43,18 @@ export default function AdminLogin() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">{error}</div>}
+          {user && !isAdmin && !authLoading ? (
+            <div className="text-center space-y-4">
+              <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">
+                You are logged in as <strong>{user.email}</strong>, but this account does not have admin privileges.
+              </div>
+              <button onClick={() => useAuth().signOut()} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors">
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">{error}</div>}
             <div>
               <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@bakevault.com.ng" required autoComplete="email"
@@ -77,7 +90,8 @@ export default function AdminLogin() {
                 {loading ? 'Signing in…' : 'Sign In'}
               </button>
             </div>
-          </form>
+            </form>
+          )}
         </div>
         <p className="text-center text-xs text-gray-400 mt-6">
           <a href="/" className="hover:text-orange-500 transition-colors">← Back to store</a>

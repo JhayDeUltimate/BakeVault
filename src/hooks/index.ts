@@ -1,4 +1,4 @@
-export { useAuth } from './useAuth'
+export { useAuth }          from '@/lib/auth-context'
 export { useCategories } from './useCategories'
 export { useProducts } from './useProducts'
 export { useTestimonials } from './useTestimonials'

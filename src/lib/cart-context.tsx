@@ -50,6 +50,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCart(items)
   }, [items])
 
+  // Lock body scroll when any drawer is open
+  useEffect(() => {
+    document.body.style.overflow = (isCartOpen || isCategoriesOpen) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [isCartOpen, isCategoriesOpen])
+
   function addToCart(product: Product) {
     setItems(prev => {
       const existing = prev.find(i => i.id === product.id)

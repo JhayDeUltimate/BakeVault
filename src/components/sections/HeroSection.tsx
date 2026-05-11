@@ -33,7 +33,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
     startTimer()   // reset timer on manual navigation
   }
 
-  if (products.length === 0) return null
+  if (products.length === 0) return (
+    <section className="relative h-[400px] sm:h-[700px] overflow-hidden bg-brand-darkGray animate-pulse flex items-center justify-center">
+      <div className="text-white/20">
+        <svg className="w-16 h-16 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </div>
+    </section>
+  )
 
   return (
     <section className="relative h-[400px] sm:h-[700px] overflow-hidden bg-brand-darkGray">
@@ -61,7 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
             <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-start text-white">
               <div className="max-w-[calc(100vw-2rem)] sm:max-w-2xl bg-white/5 backdrop-blur-md p-4 sm:p-12 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl animate-fadeInUp">
                 <div className="mb-1.5 sm:mb-6">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[8px] sm:text-[10px] font-bold tracking-widest uppercase">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[11px] sm:text-xs font-bold tracking-widest uppercase">
                     Baker's Pick
                   </span>
                 </div>
@@ -74,9 +82,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
                 <div className="flex animate-fadeInUp delay-200">
                   <button
                     onClick={() => onAddToCart(product)}
-                    className="w-full sm:w-auto text-center bg-brand-orange text-white font-extrabold px-6 py-3 sm:px-12 sm:py-5 rounded-xl sm:rounded-2xl hover:bg-white hover:text-brand-darkGray transition-all shadow-2xl active:scale-95 font-display text-xs sm:text-lg whitespace-nowrap"
+                    className="w-full sm:w-auto text-center bg-brand-orange text-white font-extrabold px-6 py-3 sm:px-12 sm:py-5 rounded-xl sm:rounded-2xl hover:bg-white hover:text-brand-darkGray transition-all shadow-2xl active:scale-95 font-display text-xs sm:text-lg"
                   >
-                    Add to Bag — Get a Quote via WhatsApp
+                    <span className="sm:hidden">Add to Bag</span>
+                    <span className="hidden sm:inline">Add to Bag — Get a Quote via WhatsApp</span>
                   </button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useSettings } from '@/hooks'
+import BrandLogo from '@/components/ui/BrandLogo'
 
 const Footer: React.FC = () => {
   const { settings } = useSettings()
@@ -17,10 +18,10 @@ const Footer: React.FC = () => {
 
           {/* Brand */}
           <div className="sm:col-span-1 flex flex-col items-start gap-4">
-            <Link to="/" className="shrink-0">
-              <img src="/logo.svg" alt="BakeVault" className="h-10 w-auto" />
+            <Link to="/" className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange rounded">
+              <BrandLogo className="h-10 w-auto" />
             </Link>
-            <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest leading-relaxed">
+            <p className="text-white/30 text-xs font-medium uppercase tracking-widest leading-relaxed">
               © {new Date().getFullYear()} BakeVault Lagos<br />
               Your Baking Success, Secured
             </p>

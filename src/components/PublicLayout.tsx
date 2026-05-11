@@ -4,7 +4,7 @@ import Header          from './Header'
 import Cart            from './Cart'
 import CategoryMenu    from './CategoryMenu'
 import Footer          from './sections/Footer'
-import WhatsAppButton  from './WhatsappButton'
+import WhatsAppButton  from './WhatsAppButton'
 import { useCart }     from '@/lib/cart-context'
 
 export default function PublicLayout() {

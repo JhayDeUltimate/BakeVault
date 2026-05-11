@@ -42,10 +42,13 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
                 {/* Page links */}
                 <div className="space-y-2 pb-4 border-b border-orange-100">
                   {[
-                    { to: '/',        label: 'Home'    },
-                    { to: '/catalog', label: 'Catalog' },
-                    { to: '/about',   label: 'About'   },
-                    { to: '/faq',     label: 'FAQ'     },
+                  { to: '/',             label: 'Home'         },
+                    { to: '/catalog',      label: 'Catalog'      },
+                    { to: '/about',        label: 'About'        },
+                    { to: '/faq',          label: 'FAQ'          },
+                    { to: '/how-to-order', label: 'How to Order' },
+                    { to: '/delivery',     label: 'Delivery Info'},
+                    { to: '/contact',      label: 'Contact'      },
                   ].map(link => (
                     <Link key={link.to} to={link.to} onClick={onClose}
                       className={`block w-full text-left px-5 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border ${
@@ -59,7 +62,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Category links */}
-                <p className="px-1 pt-3 text-[10px] font-black uppercase tracking-widest text-brand-brown/60">
+                <p className="px-1 pt-3 text-xs font-black uppercase tracking-widest text-brand-brown-text/60">
                   Ingredients by Category
                 </p>
                 {CATEGORIES.map(category => (
@@ -76,7 +79,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
             </div>
 
             <div className="bg-brand-cream/30 p-5 border-t border-orange-100">
-              <p className="text-[10px] text-center text-brand-darkGray/40 font-bold uppercase tracking-widest">
+              <p className="text-xs text-center text-brand-darkGray/40 font-bold uppercase tracking-widest">
                 BakeVault Lagos
               </p>
             </div>

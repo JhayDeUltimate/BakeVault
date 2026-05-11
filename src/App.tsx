@@ -1,5 +1,6 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider }          from '@/lib/auth-context'
 import { CartProvider }          from '@/lib/cart-context'
 import PublicLayout              from '@/components/PublicLayout'
 import HomePage                  from '@/views/HomePage'
@@ -23,9 +24,12 @@ import AdminTestimonials         from '@/views/admin/AdminTestimonials'
 import AdminSettings             from '@/views/admin/AdminSettings'
 import ProtectedRoute            from '@/components/admin/ProtectedRoute'
 import ScrollToTop               from '@/components/ScrollToTop'
+import ErrorBoundary             from '@/components/ErrorBoundary'
 
 export default function App() {
   return (
+    <ErrorBoundary>
+    <AuthProvider>
     <CartProvider>
       <ScrollToTop />
       <Routes>
@@ -62,5 +66,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </CartProvider>
+    </AuthProvider>
+    </ErrorBoundary>
   )
 }

@@ -18,6 +18,7 @@ type PricePref = 'piece' | 'carton'
 const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, onRemove }) => {
   const { clearCart } = useCart()
   const [pricePrefs, setPricePrefs] = useState<Record<string, PricePref>>({})
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false)
 
   if (!isOpen) return null
 
@@ -49,7 +50,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
       })
       .join('\n')
 
-    const message = `Hello! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
+    const message = `Hello Bakevault! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
     const encoded = encodeURIComponent(message)
 
     // Fire-and-forget DB logging — must never block WhatsApp
@@ -60,6 +61,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
     trackEvent('cart_checkout', { item_count: totalItems })
 
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, '_blank', 'noopener,noreferrer')
+    setCheckoutSuccess(true)
   }
 
   function handleClearAll() {
@@ -125,12 +127,12 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                             <div className="flex-1 flex items-end justify-between text-sm mt-2">
                               <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
                                 <button onClick={() => onUpdateQuantity(item.id, -1)} aria-label="Decrease quantity"
-                                  className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                  className="w-11 h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
                                   -
                                 </button>
                                 <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
                                 <button onClick={() => onUpdateQuantity(item.id, 1)} aria-label="Increase quantity"
-                                  className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                  className="w-11 h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
                                   +
                                 </button>
                               </div>
@@ -144,7 +146,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
                         {/* Price preference toggle */}
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-brand-darkGray/50 uppercase tracking-wider">
+                          <span className="text-xs font-bold text-brand-darkGray/50 uppercase tracking-wider">
                             I want pricing for:
                           </span>
                           <div className="flex rounded-lg overflow-hidden border border-orange-200 bg-brand-cream">
@@ -153,7 +155,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                                 key={type}
                                 type="button"
                                 onClick={() => setPref(item.id, type)}
-                                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider transition-colors ${
+                                className={`px-3 py-1 text-xs font-extrabold uppercase tracking-wider transition-colors ${
                                   getPref(item.id) === type
                                     ? 'bg-brand-orange text-white'
                                     : 'text-brand-darkGray/50 hover:text-brand-darkGray'
@@ -192,6 +194,16 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                   </svg>
                   Request a Quote on WhatsApp
                 </button>
+
+                {checkoutSuccess && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                    <p className="text-sm font-bold text-green-700">✓ WhatsApp opened! Your order details have been sent.</p>
+                    <button type="button" onClick={() => { clearCart(); setPricePrefs({}); setCheckoutSuccess(false) }}
+                      className="mt-2 text-xs font-bold text-green-600 hover:text-green-800 underline transition-colors">
+                      Clear cart &amp; close
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <button type="button" onClick={onClose}

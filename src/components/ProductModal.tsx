@@ -111,14 +111,14 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
         {/* Content */}
         <div className="p-5 sm:p-7 space-y-4">
           <div>
-            <span className="text-[10px] font-bold text-brand-brown uppercase tracking-widest">
+            <span className="text-xs font-bold text-brand-brown-text uppercase tracking-widest">
               {product.categories?.name ?? 'Baking Supply'}
             </span>
             <h2 className="text-xl sm:text-2xl font-extrabold text-brand-darkGray font-display mt-1">
               {product.name}
             </h2>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold text-brand-brown bg-brand-brown/5 px-2 py-0.5 rounded-md border border-brand-brown/10 uppercase">
+              <span className="text-xs font-bold text-brand-brown-text bg-brand-brown/5 px-2 py-0.5 rounded-md border border-brand-brown/10 uppercase">
                 {product.price_type === 'retail' ? 'Available retail' : product.price_type === 'contact' ? 'Enquire for pricing' : 'Wholesale pricing available'}
               </span>
             </div>
@@ -146,7 +146,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
           {/* Similar Products — only shown when there are other products in this category */}
           {onViewProduct && similarProducts.length > 0 && (
             <div className="pt-2">
-              <h3 className="text-[10px] font-black text-brand-darkGray/40 uppercase tracking-widest mb-3">
+              <h3 className="text-xs font-black text-brand-darkGray/40 uppercase tracking-widest mb-3">
                 Also in this category
               </h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
@@ -168,10 +168,10 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
                       />
                     </div>
                     <div className="p-2">
-                      <p className="text-[10px] font-bold text-brand-darkGray line-clamp-2 leading-tight">
+                      <p className="text-xs font-bold text-brand-darkGray line-clamp-2 leading-tight">
                         {similar.name}
                       </p>
-                      <p className="text-[9px] text-brand-orange font-bold mt-1 uppercase tracking-wide">
+                      <p className="text-xs text-brand-orange font-bold mt-1 uppercase tracking-wide">
                         View →
                       </p>
                     </div>

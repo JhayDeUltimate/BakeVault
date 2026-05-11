@@ -34,7 +34,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
           }}
         />
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
-          <span className="bg-white/95 backdrop-blur-md text-[7px] sm:text-[9px] font-bold text-brand-brown px-1.5 py-0.5 sm:px-3 sm:py-1.5 rounded-full uppercase tracking-[0.1em] shadow-sm border border-orange-50">
+          <span className="bg-white/95 backdrop-blur-md text-[11px] sm:text-xs font-bold text-brand-brown-text px-1.5 py-0.5 sm:px-3 sm:py-1.5 rounded-full uppercase tracking-[0.1em] shadow-sm border border-orange-50">
             {product.category}
           </span>
         </div>
@@ -54,7 +54,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
               type="button"
               onClick={() => onViewDetails!(product)}
               aria-label={`Read description for ${product.name}`}
-              className="text-[9px] sm:text-[10px] text-brand-brown/70 hover:text-brand-orange transition-colors font-medium underline underline-offset-2"
+              className="text-xs text-brand-brown-text/70 hover:text-brand-orange transition-colors font-medium underline underline-offset-2"
             >
               See full details
             </button>
@@ -63,12 +63,8 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
 
         <div className="mt-auto pt-2 sm:pt-4 border-t border-orange-50 space-y-2 sm:space-y-3">
           <div className="hidden sm:flex justify-center gap-2">
-            <span className="text-brand-brown font-extrabold text-[9px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">
-              Retail Price
-            </span>
-            <span className="text-brand-darkGray/20 text-[9px]">|</span>
-            <span className="text-brand-brown font-extrabold text-[9px] font-display tracking-tight uppercase bg-brand-brown/5 px-1.5 py-0.5 rounded-md border border-brand-brown/10">
-              Wholesale Price
+            <span className="text-brand-brown-text/60 font-extrabold text-xs font-display tracking-tight uppercase">
+              Price quoted via WhatsApp
             </span>
           </div>
           <button

@@ -34,16 +34,16 @@ export default function TestimonialsSection({ testimonials }: Props) {
                     </svg>
                   ))}
                 </div>
-                <p className="text-brand-darkGray/80 text-xs sm:text-base font-medium italic mb-4 leading-relaxed line-clamp-2">
+                <p className="text-brand-darkGray/80 text-xs sm:text-base font-medium italic mb-4 leading-relaxed line-clamp-4">
                   "{t.quote}"
                 </p>
                 <div className="flex items-center justify-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-brand-orange/10 text-brand-orange flex items-center justify-center font-black text-[10px]">
+                  <div className="w-8 h-8 rounded-full bg-brand-orange/10 text-brand-orange flex items-center justify-center font-black text-xs">
                     {t.initials ?? t.customer_name.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="text-left">
-                    <p className="text-[10px] sm:text-xs font-bold text-brand-darkGray uppercase tracking-widest leading-none mb-1">{t.customer_name}</p>
-                    {t.business_name && <p className="text-[8px] sm:text-[10px] text-brand-brown font-bold uppercase">{t.business_name}</p>}
+                    <p className="text-xs font-bold text-brand-darkGray uppercase tracking-widest leading-none mb-1">{t.customer_name}</p>
+                    {t.business_name && <p className="text-[11px] sm:text-xs text-brand-brown-text font-bold uppercase">{t.business_name}</p>}
                   </div>
                 </div>
               </div>

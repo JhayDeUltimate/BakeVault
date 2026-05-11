@@ -11,6 +11,7 @@ import { useCart }         from '@/lib/cart-context'
 import { useProducts, useTestimonials } from '@/hooks'
 import { mapDBProduct }    from '@/lib/utils'
 import { trackEvent }      from '@/lib/analytics'
+import { Helmet }          from 'react-helmet-async'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
 export default function HomePage() {
@@ -36,6 +37,10 @@ export default function HomePage() {
 
   return (
     <>
+      <Helmet>
+        <title>BakeVault Lagos | Premium Baking Supplies & Ingredients</title>
+        <meta name="description" content="Shop premium baking supplies, ingredients, and tools at wholesale prices in Lagos, Nigeria. Reliable delivery for your baking success." />
+      </Helmet>
       <HeroSection products={heroSlides} onAddToCart={p => addToCart(mapDBProduct(p))} />
       <AboutSection />
 
