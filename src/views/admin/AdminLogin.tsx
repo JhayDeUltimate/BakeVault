@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks'
 import BrandLogo from '@/components/ui/BrandLogo'
@@ -9,6 +10,7 @@ export default function AdminLogin() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState<string | null>(null)
+  const [success,  setSuccess]  = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -27,6 +29,22 @@ export default function AdminLogin() {
       navigate('/admin/dashboard', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleForgotPassword() {
+    if (!email.trim()) { setError('Enter your email above first.'); return }
+    try {
+      setLoading(true); setError(null); setSuccess(null)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/admin/reset-password`,
+      })
+      if (error) throw error
+      setSuccess('Recovery email sent — check your inbox and click the link promptly.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send recovery email.')
     } finally {
       setLoading(false)
     }
@@ -55,6 +73,7 @@ export default function AdminLogin() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">{error}</div>}
+              {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg border border-green-200">{success}</div>}
             <div>
               <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@bakevault.com.ng" required autoComplete="email"
@@ -88,6 +107,10 @@ export default function AdminLogin() {
               <button type="submit" disabled={loading}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? 'Signing in…' : 'Sign In'}
+              </button>
+              <button type="button" onClick={handleForgotPassword}
+                className="w-full text-xs text-gray-400 hover:text-orange-500 transition-colors text-center">
+                Forgot password?
               </button>
             </div>
             </form>

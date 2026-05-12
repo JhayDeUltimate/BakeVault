@@ -77,6 +77,41 @@ export interface Database {
         Update: Record<string, never>
         Relationships: []
       }
+      admin_activity_logs: {
+        Row: {
+          id: string
+          admin_id: string | null
+          admin_email: string | null
+          action: string
+          resource_type: string | null
+          resource_id: string | null
+          details: Json | null
+          session_id: string | null
+          page: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id?: string | null
+          admin_email?: string | null
+          action: string
+          resource_type?: string | null
+          resource_id?: string | null
+          details?: Json | null
+          session_id?: string | null
+          page?: string | null
+          created_at?: string
+        }
+        Update: {
+          action?: string
+          resource_type?: string | null
+          resource_id?: string | null
+          details?: Json | null
+          session_id?: string | null
+          page?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

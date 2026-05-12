@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard          from '@/components/ProductCard'
+import SkeletonProductCard  from '@/components/ui/SkeletonProductCard'
 import ProductModal         from '@/components/ProductModal'
 import ProductRequestModal  from '@/components/ProductRequestModal'
 import SectionHeading       from '@/components/ui/SectionHeading'
@@ -42,6 +43,18 @@ export default function CatalogPage() {
   }, [rawProducts])
   const rawByIdMap = useMemo(() => new Map(rawProducts.map(p => [p.id, p])), [rawProducts])
   const loading    = productsLoading || categoriesLoading
+  const [visibleLoading, setVisibleLoading] = useState<boolean>(loading)
+
+  // Ensure skeleton shows for at least a short time to avoid invisible flashes
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | null = null
+    if (loading) {
+      setVisibleLoading(true)
+    } else {
+      t = setTimeout(() => setVisibleLoading(false), 250)
+    }
+    return () => { if (t) clearTimeout(t) }
+  }, [loading])
 
   // ── Resolve ?cat=NAME → categoryId once categories are loaded ──────────────
   useEffect(() => {
@@ -201,15 +214,11 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        {loading ? (
+        {visibleLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white rounded-[24px] border border-orange-100 overflow-hidden">
-                <div className="aspect-square bg-orange-50 animate-pulse" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 bg-orange-50 rounded animate-pulse" />
-                  <div className="h-8 bg-orange-50 rounded animate-pulse" />
-                </div>
+              <div key={i}>
+                <SkeletonProductCard />
               </div>
             ))}
           </div>

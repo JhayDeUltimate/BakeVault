@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ProductCard         from '@/components/ProductCard'
 import ProductModal        from '@/components/ProductModal'
@@ -6,6 +6,7 @@ import AboutSection        from '@/components/sections/AboutSection'
 import HeroSection         from '@/components/sections/HeroSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading      from '@/components/ui/SectionHeading'
+import SkeletonProductCard from '@/components/ui/SkeletonProductCard'
 import { CATEGORIES }      from '@/constants'
 import { useCart }         from '@/lib/cart-context'
 import { useProducts, useTestimonials } from '@/hooks'
@@ -17,8 +18,16 @@ import type { DBProductWithCategory } from '@/lib/database.types'
 export default function HomePage() {
   const { addToCart }                = useCart()
   const navigate                     = useNavigate()
-  const { products: featuredFromDB } = useProducts({ featuredOnly: true })
+  const { products: featuredFromDB, loading: featuredLoading } = useProducts({ featuredOnly: true })
   const { testimonials }             = useTestimonials(true)
+
+  const [visibleFeaturedLoading, setVisibleFeaturedLoading] = useState<boolean>(featuredLoading)
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | null = null
+    if (featuredLoading) setVisibleFeaturedLoading(true)
+    else t = setTimeout(() => setVisibleFeaturedLoading(false), 250)
+    return () => { if (t) clearTimeout(t) }
+  }, [featuredLoading])
 
   // Modal state for "Read description" on featured cards
   const [selectedRaw, setSelectedRaw] = useState<DBProductWithCategory | null>(null)
@@ -89,17 +98,23 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
-              {featuredProducts.map(product => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={p => {
-                    addToCart(p)
-                    trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
-                  }}
-                  onViewDetails={openDetails}
-                />
-              ))}
+              {visibleFeaturedLoading ? (
+                [...Array(4)].map((_, i) => (
+                  <div key={i}><SkeletonProductCard /></div>
+                ))
+              ) : (
+                featuredProducts.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={p => {
+                      addToCart(p)
+                      trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
+                    }}
+                    onViewDetails={openDetails}
+                  />
+                ))
+              )}
             </div>
           </section>
 

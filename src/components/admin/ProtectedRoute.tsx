@@ -14,6 +14,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!user) return <Navigate to="/admin/login" replace />
-  if (!isAdmin) return <Navigate to="/" replace />
+  // If the user is signed in but lacks admin privileges, send them
+  // to the admin login page so they can sign out or switch accounts.
+  if (!isAdmin) return <Navigate to="/admin/login" replace />
   return <>{children}</>
 }

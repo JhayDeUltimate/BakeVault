@@ -1,7 +1,8 @@
 import { supabase } from './supabase'
 import { logger } from './logger'
 import { SESSION_ID } from './analytics'
-import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent } from './database.types'
+import { logAdminActivity } from './admin-activity'
+import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent, DBAdminActivity } from './database.types'
 
 // Re-export from image.ts so existing imports from @/lib/api still work
 export { getProductImages } from './image'
@@ -43,6 +44,12 @@ export async function createProduct(product: {
     if (error.code === '23505') throw new Error('A product with this name already exists.')
     throw new Error(error.message)
   }
+  void (async () => {
+    try {
+      const created = data as DBProductWithCategory
+      await logAdminActivity({ action: 'product.create', resource_type: 'product', resource_id: created.id, details: { name: product.name, slug } })
+    } catch {}
+  })()
   return data as DBProductWithCategory
 }
 
@@ -62,12 +69,19 @@ export async function updateProduct(
   if (updates.image_urls !== undefined) payload.image_urls = (updates.image_urls ?? []) as Json
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
   if (error) throw new Error(error.message)
+  void (async () => {
+    try {
+      const updated = data as DBProductWithCategory
+      await logAdminActivity({ action: 'product.update', resource_type: 'product', resource_id: updated.id, details: { updates } })
+    } catch {}
+  })()
   return data as DBProductWithCategory
 }
 
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await supabase.from('products').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'product.delete', resource_type: 'product', resource_id: id }) } catch {} })()
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -84,6 +98,7 @@ export async function createCategory(name: string, displayOrder?: number): Promi
     if (error.code === '23505') throw new Error('A category with this name already exists.')
     throw new Error(error.message)
   }
+  void (async () => { try { await logAdminActivity({ action: 'category.create', resource_type: 'category', resource_id: (data as DBCategory).id, details: { name } }) } catch {} })()
   return data
 }
 
@@ -92,6 +107,7 @@ export async function updateCategory(id: string, updates: { name?: string; displ
   if (updates.name) payload.slug = toSlug(updates.name)
   const { data, error } = await supabase.from('categories').update(payload).eq('id', id).select().single()
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'category.update', resource_type: 'category', resource_id: id, details: { updates } }) } catch {} })()
   return data
 }
 
@@ -101,6 +117,7 @@ export async function deleteCategory(id: string): Promise<void> {
     if (error.code === '23503') throw new Error('Cannot delete: this category has products. Move or delete those products first.')
     throw new Error(error.message)
   }
+  void (async () => { try { await logAdminActivity({ action: 'category.delete', resource_type: 'category', resource_id: id }) } catch {} })()
 }
 
 // ─── Enquiries ────────────────────────────────────────────────────────────────
@@ -161,6 +178,7 @@ export async function getEnquiries(): Promise<DBEnquiry[]> {
 export async function updateEnquiryStatus(id: string, status: 'sent' | 'responded' | 'fulfilled'): Promise<void> {
   const { error } = await supabase.from('enquiries').update({ status }).eq('id', id)
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'enquiry.update_status', resource_type: 'enquiry', resource_id: id, details: { status } }) } catch {} })()
 }
 
 // ─── Testimonials ─────────────────────────────────────────────────────────────
@@ -175,18 +193,21 @@ export async function getTestimonials(visibleOnly = true): Promise<DBTestimonial
 export async function createTestimonial(t: { customer_name: string; business_name?: string; initials?: string; quote: string; is_visible?: boolean; display_order?: number }): Promise<DBTestimonial> {
   const { data, error } = await supabase.from('testimonials').insert(t).select().single()
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'testimonial.create', resource_type: 'testimonial', resource_id: (data as DBTestimonial).id, details: { customer_name: t.customer_name } }) } catch {} })()
   return data
 }
 
 export async function updateTestimonial(id: string, updates: Partial<{ customer_name: string; business_name: string | null; initials: string | null; quote: string; is_visible: boolean; display_order: number }>): Promise<DBTestimonial> {
   const { data, error } = await supabase.from('testimonials').update(updates).eq('id', id).select().single()
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'testimonial.update', resource_type: 'testimonial', resource_id: id, details: { updates } }) } catch {} })()
   return data
 }
 
 export async function deleteTestimonial(id: string): Promise<void> {
   const { error } = await supabase.from('testimonials').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'testimonial.delete', resource_type: 'testimonial', resource_id: id }) } catch {} })()
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -199,6 +220,7 @@ export async function getSettings(): Promise<Record<string, string>> {
 export async function upsertSetting(key: string, value: string): Promise<void> {
   const { error } = await supabase.from('settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'setting.upsert', resource_type: 'setting', resource_id: key, details: { value } }) } catch {} })()
 }
 
 // ─── Product Requests ─────────────────────────────────────────────────────────
@@ -220,6 +242,7 @@ export async function getProductRequests(): Promise<DBProductRequest[]> {
 export async function updateProductRequestStatus(id: string, status: 'pending' | 'reviewed' | 'fulfilled'): Promise<void> {
   const { error } = await supabase.from('product_requests').update({ status }).eq('id', id)
   if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'product_request.update_status', resource_type: 'product_request', resource_id: id, details: { status } }) } catch {} })()
 }
 
 // ─── Image Upload ─────────────────────────────────────────────────────────────
@@ -296,6 +319,9 @@ export async function uploadProductImage(file: File): Promise<string> {
     } catch {}
   })()
 
+  // Record admin activity for image upload (best-effort)
+  void (async () => { try { await logAdminActivity({ action: 'image.upload_success', resource_type: 'image', resource_id: path, details: { size_mb: (file.size / 1024 / 1024).toFixed(2), duration_ms: Date.now() - start } }) } catch {} })()
+
   const { data } = supabase.storage.from('bakevault-images').getPublicUrl(path)
   return data.publicUrl
 }
@@ -308,7 +334,11 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
   const path = imageUrl.slice(idx + marker.length).split('?')[0] // strip query params
   if (!path.startsWith('products/')) return
   const { error } = await supabase.storage.from('bakevault-images').remove([path])
-  if (error) console.error('[BakeVault] Failed to delete image:', error.message)
+  if (error) {
+    console.error('[BakeVault] Failed to delete image:', error.message)
+  } else {
+    void (async () => { try { await logAdminActivity({ action: 'image.delete', resource_type: 'image', resource_id: path }) } catch {} })()
+  }
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
@@ -390,4 +420,12 @@ export async function getAnalyticsRawEvents(days = 30): Promise<DBAnalyticsEvent
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
   return data ?? []
+}
+
+// ─── Admin activity logs ────────────────────────────────────────────────────
+export async function getAdminActivityLogs(opts?: { limit?: number }): Promise<DBAdminActivity[]> {
+  const limit = opts?.limit ?? 50
+  const { data, error } = await supabase.from('admin_activity_logs').select('*').order('created_at', { ascending: false }).limit(limit)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as DBAdminActivity[]
 }

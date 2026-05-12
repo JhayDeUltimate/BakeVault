@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { logger } from './logger'
+import { logAdminActivity } from './admin-activity'
 import type { User } from '@supabase/supabase-js'
 
 // ── Admin email helpers ───────────────────────────────────────────────────────
@@ -28,17 +29,18 @@ const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
  * - Returns false on any error (fail-closed — never accidentally grants access)
  * - 4-second timeout prevents infinite spinner if Supabase is slow
  */
+// AFTER — queries admins table, fixed 4000ms timeout
 async function fetchIsAdmin(uid: string): Promise<boolean> {
   try {
-    const timeout = new Promise<false>(resolve => setTimeout(() => resolve(false),))
+    const timeout = new Promise<false>(resolve => setTimeout(() => resolve(false), 4000))
     const query = supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', uid)
-      .single()
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', uid)
+      .maybeSingle()
       .then(({ data, error }) => {
         if (error || !data) return false
-        return (data as { role: string }).role === 'admin'
+        return true
       })
     return await Promise.race([query, timeout])
   } catch {
@@ -115,12 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               event: 'auth_sign_in',
               user_id: currentUser.id,
             })
+            void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch {} })()
           }
         } else {
           setUser(null)
           setIsAdmin(false)
           setLoading(false)
           logger.info('User signed out', { event: 'auth_sign_out' })
+          void (async () => { try { await logAdminActivity({ action: 'auth.sign_out', resource_type: 'auth' }) } catch {} })()
         }
       },
     )

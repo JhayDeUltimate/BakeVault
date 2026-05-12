@@ -14,6 +14,7 @@ import TermsPage                 from '@/views/TermsPage'
 import PrivacyPage               from '@/views/PrivacyPage'
 import ProductPage               from '@/views/ProductPage'
 import AdminLogin                from '@/views/admin/AdminLogin'
+import AdminResetPassword       from '@/views/admin/AdminResetPassword'
 import AdminLayout               from '@/views/admin/AdminLayout'
 import AdminDashboard            from '@/views/admin/AdminDashboard'
 import AdminProducts             from '@/views/admin/AdminProducts'
@@ -22,6 +23,7 @@ import AdminEnquiries            from '@/views/admin/AdminEnquiries'
 import AdminProductRequests      from '@/views/admin/AdminProductRequests'
 import AdminTestimonials         from '@/views/admin/AdminTestimonials'
 import AdminSettings             from '@/views/admin/AdminSettings'
+import AdminActivityLogs         from '@/views/admin/AdminActivityLogs'
 import ProtectedRoute            from '@/components/admin/ProtectedRoute'
 import ScrollToTop               from '@/components/ScrollToTop'
 import ErrorBoundary             from '@/components/ErrorBoundary'
@@ -49,6 +51,7 @@ export default function App() {
 
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/reset-password" element={<AdminResetPassword />} />
         <Route
           path="/admin"
           element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}
@@ -56,6 +59,7 @@ export default function App() {
           <Route index                 element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard"      element={<AdminDashboard />} />
           <Route path="products"       element={<AdminProducts />} />
+          <Route path="activity"       element={<AdminActivityLogs />} />
           <Route path="categories"     element={<AdminCategories />} />
           <Route path="enquiries"      element={<AdminEnquiries />} />
           <Route path="requests"       element={<AdminProductRequests />} />
