@@ -5,7 +5,7 @@ import {
   Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  getProducts, getCategories, getEnquiries,
+  getProducts, getCategories, getEnquiries, getProductsCount, getEnquiriesPage, getEnquiriesCount,
   getAnalyticsSummary, getAnalyticsRawEvents,
   type AnalyticsChartPoint, type TopProduct,
 } from '@/lib/api'
@@ -35,25 +35,36 @@ export default function AdminDashboard() {
   const [analyticsError, setAnalyticsError]     = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
 
-  // Load core stats
+  // Load core stats (use server-side counts + paginated recent enquiries)
   useEffect(() => {
     async function load() {
       try {
-        const [allProducts, categories, enquiries] = await Promise.all([
-          getProducts({ includeUnavailable: true }),
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        const [totalProducts, availableProducts, categories, enquiriesPage, totalEnquiries, enquiriesThisWeek, enquiriesOpen] = await Promise.all([
+          // total products (including unavailable)
+          getProductsCount({ includeUnavailable: true }),
+          // available products only
+          getProductsCount({ includeUnavailable: false }),
           getCategories(),
-          getEnquiries(),
+          // recent enquiries (first page)
+          getEnquiriesPage({ page: 1, pageSize: 5 }),
+          // total enquiries
+          getEnquiriesCount(),
+          // enquiries since weekAgo
+          getEnquiriesCount({ since: weekAgo }),
+          // open enquiries
+          getEnquiriesCount({ status: 'sent' }),
         ])
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
         setStats({
-          totalProducts:     allProducts.length,
-          availableProducts: allProducts.filter(p => p.is_available).length,
+          totalProducts:     totalProducts,
+          availableProducts: availableProducts,
           totalCategories:   categories.length,
-          totalEnquiries:    enquiries.length,
-          enquiriesThisWeek: enquiries.filter(e => new Date(e.created_at) > weekAgo).length,
-          enquiriesOpen:     enquiries.filter(e => e.status === 'sent').length,
+          totalEnquiries:    totalEnquiries,
+          enquiriesThisWeek: enquiriesThisWeek,
+          enquiriesOpen:     enquiriesOpen,
         })
-        setRecent(enquiries.slice(0, 5))
+        setRecent(enquiriesPage.items)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load dashboard')
       } finally {

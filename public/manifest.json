@@ -1,0 +1,20 @@
+{
+  "name": "BakeVault Lagos",
+  "short_name": "BakeVault",
+  "description": "Premium baking supplies and ingredients supplier in Lagos, Nigeria.",
+  "lang": "en-NG",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF8E7",
+  "theme_color": "#FF6B35",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

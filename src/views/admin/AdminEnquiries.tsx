@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { getEnquiries, updateEnquiryStatus } from '@/lib/api'
+import { getEnquiries, updateEnquiryStatus, getEnquiriesPage, getEnquiriesCount } from '@/lib/api'
 import type { DBEnquiry } from '@/lib/database.types'
 
 export function AdminEnquiries() {
@@ -7,11 +7,19 @@ export function AdminEnquiries() {
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState<string | null>(null)
   const [filter,    setFilter]    = useState<'all' | 'sent' | 'responded' | 'fulfilled'>('all')
+  const [page, setPage] = useState<number>(1)
+  const [pageSize] = useState<number>(25)
+  const [total, setTotal] = useState<number>(0)
   const [mutationError, setMutationError] = useState<string | null>(null)
 
   useEffect(() => {
-    getEnquiries().then(setEnquiries).catch(e => setError(e.message)).finally(() => setLoading(false))
-  }, [])
+    setLoading(true); setError(null)
+    const status = filter === 'all' ? undefined : filter
+    getEnquiriesPage({ page, pageSize, status })
+      .then(res => { setEnquiries(res.items); setTotal(res.total) })
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load enquiries'))
+      .finally(() => setLoading(false))
+  }, [page, pageSize, filter])
 
   async function handleStatus(id: string, status: 'sent' | 'responded' | 'fulfilled') {
     try {
@@ -23,7 +31,7 @@ export function AdminEnquiries() {
     }
   }
 
-  const visible = filter === 'all' ? enquiries : enquiries.filter(e => e.status === filter)
+  const visible = enquiries
 
   const badge: Record<string, string> = {
     sent:      'bg-yellow-100 text-yellow-700',
@@ -42,7 +50,7 @@ export function AdminEnquiries() {
         </div>
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">Enquiries <span className="text-base font-normal text-gray-400">({enquiries.length})</span></h1>
+        <h1 className="text-2xl font-bold text-gray-800">Enquiries <span className="text-base font-normal text-gray-400">({total})</span></h1>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
           {(['all','sent','responded','fulfilled'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize shrink-0 ${filter === f ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
@@ -77,7 +85,19 @@ export function AdminEnquiries() {
         })}
         {visible.length === 0 && <div className="text-center py-12 text-sm text-gray-400">No enquiries in this status.</div>}
       </div>
-    </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-500">Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total}</div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Prev</button>
+          <div className="text-sm text-gray-500">Page {page}</div>
+          <button onClick={() => setPage(p => p + 1)} disabled={page * pageSize >= total}
+            className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Next</button>
+        </div>
+      </div>
+      </div>
   )
 }
 

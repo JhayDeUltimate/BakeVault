@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { hasConsent } from './consent'
 
 // One session ID per page-load (memory only — no localStorage required)
 export const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -12,6 +13,7 @@ export type AnalyticsEventType =
   | 'cart_cleared'
   | 'product_request_submitted'
   | 'search'
+  | 'whatsapp_click'
 
 interface EventData {
   product_id?:   string
@@ -32,7 +34,10 @@ interface EventData {
  * PromiseLike<void>, not Promise<void>).
  */
 export function trackEvent(type: AnalyticsEventType, data: EventData = {}): void {
-  const page = window.location.pathname
+  // Respect user consent: do not send analytics without explicit acceptance
+  if (!hasConsent()) return
+
+  const page = typeof window !== 'undefined' ? window.location.pathname : ''
 
   // Fire-and-forget using an async IIFE so we get a real Promise with .catch()
   void (async () => {

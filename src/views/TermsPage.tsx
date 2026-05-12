@@ -73,7 +73,7 @@ Our total liability for any claim arising from a transaction is limited to the v
                     <SectionHeading
                         eyebrow="Legal"
                         title="Terms & Conditions"
-                        description="Last updated: May 2026"
+                        description={settings.terms_last_updated ? `Last updated: ${settings.terms_last_updated}` : 'Last updated: May 2026'}
                     />
                 </div>
             </section>

@@ -57,7 +57,7 @@ We do not sell your personal data to third parties. We do not use your informati
                     <SectionHeading
                         eyebrow="Legal"
                         title="Privacy Policy"
-                        description="Last updated: May 2026"
+                        description={settings.privacy_last_updated ? `Last updated: ${settings.privacy_last_updated}` : 'Last updated: May 2026'}
                     />
                 </div>
             </section>

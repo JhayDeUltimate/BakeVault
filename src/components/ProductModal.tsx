@@ -19,7 +19,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Fetch similar products (same category, exclude current)
-  const { products: allCategoryProducts } = useProducts({
+  const { products: allCategoryProducts, loading: productsLoading } = useProducts({
     categoryId: product.category_id ?? null,
     limit: 10,
   })
@@ -143,40 +143,58 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
 
           <ProductAssistant productName={product.name} productDescription={product.description ?? ''} />
 
-          {/* Similar Products — only shown when there are other products in this category */}
-          {onViewProduct && similarProducts.length > 0 && (
+          {/* Similar Products — show section when loading or when there are other products in this category */}
+          {onViewProduct && (similarProducts.length > 0 || productsLoading) && (
             <div className="pt-2">
               <h3 className="text-xs font-black text-brand-darkGray/40 uppercase tracking-widest mb-3">
                 Also in this category
               </h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-                {similarProducts.map(similar => (
-                  <button
-                    key={similar.id}
-                    type="button"
-                    onClick={() => onViewProduct(similar)}
-                    className="flex-shrink-0 w-28 bg-brand-cream/60 border border-orange-100 rounded-2xl overflow-hidden hover:border-brand-orange hover:shadow-md transition-all text-left group"
-                  >
-                    <div className="aspect-square overflow-hidden bg-orange-50">
-                      <img
-                        src={similar.image_url ?? FALLBACK_IMAGE}
-                        alt={similar.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                        decoding="async"
-                        onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
-                      />
+                {productsLoading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-shrink-0 w-28 bg-brand-cream/60 border border-orange-100 rounded-2xl overflow-hidden text-left group"
+                      aria-hidden
+                    >
+                      <div className="aspect-square overflow-hidden bg-orange-50">
+                        <div className="w-full h-full bg-gradient-to-r from-orange-50 via-orange-100 to-orange-50 animate-pulse" />
+                      </div>
+                      <div className="p-2">
+                        <div className="h-3 bg-orange-50 rounded w-full animate-pulse" />
+                        <div className="h-3 bg-orange-50 rounded w-2/3 mt-2 animate-pulse" />
+                      </div>
                     </div>
-                    <div className="p-2">
-                      <p className="text-xs font-bold text-brand-darkGray line-clamp-2 leading-tight">
-                        {similar.name}
-                      </p>
-                      <p className="text-xs text-brand-orange font-bold mt-1 uppercase tracking-wide">
-                        View →
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                  ))
+                ) : (
+                  similarProducts.map(similar => (
+                    <button
+                      key={similar.id}
+                      type="button"
+                      onClick={() => onViewProduct(similar)}
+                      className="flex-shrink-0 w-28 bg-brand-cream/60 border border-orange-100 rounded-2xl overflow-hidden hover:border-brand-orange hover:shadow-md transition-all text-left group"
+                    >
+                      <div className="aspect-square overflow-hidden bg-orange-50">
+                        <img
+                          src={similar.image_url ?? FALLBACK_IMAGE}
+                          alt={similar.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          decoding="async"
+                          onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
+                        />
+                      </div>
+                      <div className="p-2">
+                        <p className="text-xs font-bold text-brand-darkGray line-clamp-2 leading-tight">
+                          {similar.name}
+                        </p>
+                        <p className="text-xs text-brand-orange font-bold mt-1 uppercase tracking-wide">
+                          View →
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}

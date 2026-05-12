@@ -2,14 +2,35 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { CartItem, Product } from './types'
 
 const CART_STORAGE_KEY = 'bakevault:cart'
+// Expire carts after 7 days by default. Adjust this value if needed.
+const CART_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7
+
+interface StoredCart {
+  items: CartItem[]
+  ts?: number
+}
 
 function loadCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(CART_STORAGE_KEY)
     if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed as CartItem[]
+    const parsed = JSON.parse(raw) as unknown
+
+    // Backwards-compatible: previous versions stored a raw array of items.
+    if (Array.isArray(parsed)) return parsed as CartItem[]
+
+    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as StoredCart).items)) {
+      const stored = parsed as StoredCart
+      if (typeof stored.ts === 'number') {
+        if (Date.now() - stored.ts > CART_EXPIRY_MS) {
+          try { localStorage.removeItem(CART_STORAGE_KEY) } catch {}
+          return []
+        }
+      }
+      return stored.items
+    }
+
+    return []
   } catch {
     return []
   }
@@ -17,7 +38,8 @@ function loadCart(): CartItem[] {
 
 function saveCart(items: CartItem[]): void {
   try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+    const payload: StoredCart = { items, ts: Date.now() }
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload))
   } catch {
     // localStorage may be unavailable in private browsing; fail silently
   }
@@ -62,6 +84,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
       return [...prev, { ...product, quantity: 1 }]
     })
+    // Notify UI listeners (toasts, micro-interactions) about the add-to-cart action
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bakevault:add-to-cart', { detail: { product } }))
+      }
+    } catch {}
   }
 
   function removeFromCart(id: string) {

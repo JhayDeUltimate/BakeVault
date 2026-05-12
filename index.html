@@ -32,42 +32,52 @@
   <meta name="twitter:image" content="https://bakevault.com.ng/og-image.jpg" />
 
   <!-- JSON-LD: LocalBusiness -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      "name": "BakeVault Lagos",
-      "description": "Premium baking supplies and ingredients supplier in Lagos, Nigeria. Wholesale and retail. Same-day delivery.",
-      "url": "https://bakevault.com.ng",
-      "logo": "https://bakevault.com.ng/logo.svg",
-      "image": "https://bakevault.com.ng/og-image.jpg",
-      "telephone": "+2349064652679",
-      "email": "sales@bakevault.com.ng",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Lagos",
-        "addressCountry": "NG"
+  <!-- JSON-LD: LocalBusiness (injected from env at build/runtime) -->
+  <!-- Uses VITE_WHATSAPP_NUMBER and VITE_CONTACT_EMAIL; falls back to current defaults. -->
+  <script type="module">
+    // Vite replaces import.meta.env.* at build time. This creates a JSON-LD block
+    // that matches your runtime config without hardcoding contact details.
+    const phone = import.meta.env.VITE_WHATSAPP_NUMBER || '+2349064652679'
+    const email = import.meta.env.VITE_CONTACT_EMAIL || 'sales@bakevault.com.ng'
+
+    const ld = {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      name: 'BakeVault Lagos',
+      description: 'Premium baking supplies and ingredients supplier in Lagos, Nigeria. Wholesale and retail. Same-day delivery.',
+      url: 'https://bakevault.com.ng',
+      logo: 'https://bakevault.com.ng/logo.svg',
+      image: 'https://bakevault.com.ng/og-image.jpg',
+      telephone: phone,
+      email: email,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Lagos',
+        addressCountry: 'NG'
       },
-      "openingHoursSpecification": [
+      openingHoursSpecification: [
         {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
-          "opens": "08:00",
-          "closes": "18:00"
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'],
+          opens: '08:00',
+          closes: '18:00'
         },
         {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": "Saturday",
-          "opens": "09:00",
-          "closes": "16:00"
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: 'Saturday',
+          opens: '09:00',
+          closes: '16:00'
         }
       ],
-      "sameAs": [
-        "https://instagram.com/bakevaultlagos"
-      ],
-      "priceRange": "₦₦"
+      sameAs: ['https://instagram.com/bakevaultlagos'],
+      priceRange: '₦₦'
     }
-    </script>
+
+    const s = document.createElement('script')
+    s.type = 'application/ld+json'
+    s.text = JSON.stringify(ld)
+    document.head.appendChild(s)
+  </script>
 
   <!-- Google Fonts — preconnect first, then non-blocking stylesheet -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -75,6 +85,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#FF6B35" />
 </head>
 
 <body>

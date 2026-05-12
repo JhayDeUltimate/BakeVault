@@ -1,12 +1,13 @@
 import { supabase } from './supabase'
 import { logger } from './logger'
 import { SESSION_ID } from './analytics'
+import type { Json } from './database.types'
 
 export interface AdminActivityOptions {
   action: string
   resource_type?: string | null
   resource_id?: string | null
-  details?: Record<string, unknown>
+  details?: Json
 }
 
 /**
@@ -27,7 +28,7 @@ export async function logAdminActivity(opts: AdminActivityOptions): Promise<void
       action: opts.action,
       resource_type: opts.resource_type ?? null,
       resource_id: opts.resource_id ?? null,
-      details: opts.details ?? {},
+      details: opts.details ?? null,
       session_id: typeof window !== 'undefined' ? SESSION_ID : null,
       page,
     }
@@ -44,7 +45,7 @@ export async function logAdminActivity(opts: AdminActivityOptions): Promise<void
       try {
         const { error: ae } = await supabase.from('analytics_events').insert({
           event_type: 'admin.activity',
-          event_data: payload,
+          event_data: payload as Json,
           session_id: payload.session_id,
           page: payload.page,
         })

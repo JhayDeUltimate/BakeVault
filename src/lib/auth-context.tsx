@@ -5,11 +5,6 @@ import { logAdminActivity } from './admin-activity'
 import type { User } from '@supabase/supabase-js'
 
 // ── Admin email helpers ───────────────────────────────────────────────────────
-/**
- * SECURITY NOTE: VITE_ADMIN_EMAILS is a development fallback ONLY.
- * These emails are visible in the client bundle. Remove this env var
- * and use the profiles table (migration 002_admin_rls.sql) in production.
- */
 function parseAdminEmails(raw: string | undefined): Set<string> {
   if (import.meta.env.PROD && raw) {
     logger.warn(
@@ -32,7 +27,7 @@ const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
 // AFTER — queries admins table, fixed 4000ms timeout
 async function fetchIsAdmin(uid: string): Promise<boolean> {
   try {
-    const timeout = new Promise<false>(resolve => setTimeout(() => resolve(false), 4000))
+    const timeout = new Promise<false>(resolve => setTimeout(() => resolve(false),4000))
     const query = supabase
       .from('admins')
       .select('user_id')

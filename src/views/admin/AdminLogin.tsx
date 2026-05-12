@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks'
 import BrandLogo from '@/components/ui/BrandLogo'
 
 export default function AdminLogin() {
-  const { signIn, signUp, user, isAdmin, loading: authLoading } = useAuth()
+  const { signIn, signUp, signOut, user, isAdmin, loading: authLoading } = useAuth()
   const navigate         = useNavigate()
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -66,7 +66,7 @@ export default function AdminLogin() {
               <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200">
                 You are logged in as <strong>{user.email}</strong>, but this account does not have admin privileges.
               </div>
-              <button onClick={() => useAuth().signOut()} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors">
+              <button onClick={signOut} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors">
                 Sign Out
               </button>
             </div>

@@ -19,12 +19,13 @@ export default function ProductPage() {
 
     useEffect(() => {
         if (!slug) return
+        const slugStr = slug
 
         async function fetchProduct() {
             const { data, error } = await supabase
                 .from('products')
                 .select('*, categories(*)')
-                .eq('slug', slug)
+                .eq('slug', slugStr)
                 .eq('is_available', true)
                 .single()
 
@@ -51,11 +52,63 @@ export default function ProductPage() {
     const images = getProductImages(product)
     const mapped = mapDBProduct(product)
 
+    // Prefer the first product image for social cards; fall back to a safe image
+    const firstImg = images[0] ?? null
+    const ogImageRaw = optimizeImageUrl(firstImg, IMG.hero)
+    const ogImage = ogImageRaw && /^https?:\/\//i.test(ogImageRaw)
+      ? ogImageRaw
+      : (typeof window !== 'undefined' ? `${window.location.origin}${ogImageRaw}` : ogImageRaw)
+
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
+    const shortDescription = (product.description ?? `Buy ${product.name} from BakeVault Lagos.`).replace(/\s+/g, ' ').substring(0, 197)
+
+        const productJsonLd = {
+            '@context': 'https://schema.org/',
+            '@type': 'Product',
+            name: product.name,
+            image: (ogImage ? [ogImage] : [FALLBACK_IMAGE]),
+            description: shortDescription,
+            sku: product.id,
+            url: pageUrl || undefined,
+            brand: { '@type': 'Brand', name: 'BakeVault' },
+            offers: {
+                '@type': 'Offer',
+                availability: product.is_available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                url: pageUrl || undefined,
+            },
+        }
+
+        const breadcrumbJsonLd = {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: (typeof window !== 'undefined' ? window.location.origin : 'https://bakevault.com.ng') },
+                { '@type': 'ListItem', position: 2, name: 'Catalog', item: (typeof window !== 'undefined' ? `${window.location.origin}/catalog` : '/catalog') },
+                ...(product.categories?.name ? [{ '@type': 'ListItem', position: 3, name: product.categories.name, item: (typeof window !== 'undefined' ? `${window.location.origin}/catalog?cat=${encodeURIComponent(product.categories.name)}` : undefined) }] : []),
+                { '@type': 'ListItem', position: product.categories?.name ? 4 : 3, name: product.name, item: pageUrl || undefined },
+            ].filter(Boolean),
+        }
+
     return (
         <main className="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
             <Helmet>
                 <title>{product.name} | BakeVault Lagos</title>
-                <meta name="description" content={product.description?.substring(0, 160) ?? `Buy ${product.name} from BakeVault Lagos.`} />
+                <meta name="description" content={shortDescription} />
+
+                {/* Open Graph / Social meta */}
+                <meta property="og:title" content={`${product.name} | BakeVault Lagos`} />
+                <meta property="og:description" content={shortDescription} />
+                <meta property="og:type" content="product" />
+                {ogImage && <meta property="og:image" content={ogImage} />}
+                {pageUrl && <meta property="og:url" content={pageUrl} />}
+
+                {/* Twitter card */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={`${product.name} | BakeVault Lagos`} />
+                <meta name="twitter:description" content={shortDescription} />
+                {ogImage && <meta name="twitter:image" content={ogImage} />}
+                <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
+                <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
             </Helmet>
 
             {/* Breadcrumb */}
@@ -96,7 +149,7 @@ export default function ProductPage() {
                     </div>
                     {images.length > 1 && (
                         <div className="flex gap-2 overflow-x-auto pb-1">
-                            {images.map((img, i) => (
+                            {images.map((img: string, i: number) => (
                                 <button key={i} onClick={() => setSlide(i)}
                                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${i === slide ? 'border-brand-orange' : 'border-transparent'}`}>
                                     <img src={optimizeImageUrl(img, IMG.adminThumb)} alt="" className="w-full h-full object-cover"

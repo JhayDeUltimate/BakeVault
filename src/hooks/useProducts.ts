@@ -51,6 +51,7 @@ export function useProducts(options: Options = {}) {
     options.search,
     options.featuredOnly,
     options.includeUnavailable,
+    options.limit,
   ])
 
   const { refetchOnFocus } = options

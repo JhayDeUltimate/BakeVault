@@ -45,8 +45,8 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
     const orderText = items
       .map(item => {
         const pref = getPref(item.id)
-        const prefLabel = pref === 'piece' ? 'Per Piece' : 'Per Carton'
-        return `• ${item.name} (Qty: ${item.quantity}) — Pricing needed: ${prefLabel}`
+        const prefLabel = pref === 'piece' ? 'Single unit pricing' : 'Wholesale carton pricing'
+        return `• ${item.name} (Qty: ${item.quantity}) — Pricing requested: ${prefLabel}`
       })
       .join('\n')
 
@@ -214,7 +214,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                     <button type="button" onClick={handleClearAll}
                       className="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-widest transition-colors">
                       Clear All
-                    </button>
+                    </ button>
                   )}
                 </div>
               </div>

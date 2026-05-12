@@ -175,6 +175,30 @@ export async function getEnquiries(): Promise<DBEnquiry[]> {
   return data ?? []
 }
 
+// Paginated enquiries — returns items + total count
+export async function getEnquiriesPage(options?: { page?: number; pageSize?: number; status?: 'sent' | 'responded' | 'fulfilled' }): Promise<{ items: DBEnquiry[]; total: number }> {
+  const page = options?.page ?? 1
+  const pageSize = options?.pageSize ?? 25
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  let query = supabase.from('enquiries').select('*', { count: 'exact' }).order('created_at', { ascending: false })
+  if (options?.status) query = query.eq('status', options.status)
+  query = query.range(from, to)
+  const { data, error, count } = await query
+  if (error) throw new Error(error.message)
+  return { items: (data ?? []) as DBEnquiry[], total: count ?? 0 }
+}
+
+export async function getEnquiriesCount(filters?: { status?: 'sent' | 'responded' | 'fulfilled'; since?: string }): Promise<number> {
+  let query = supabase.from('enquiries').select('id', { count: 'exact', head: true })
+  if (filters?.status) query = query.eq('status', filters.status)
+  if (filters?.since)  query = query.gte('created_at', filters.since)
+  const { error, count } = await query
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}
+
 export async function updateEnquiryStatus(id: string, status: 'sent' | 'responded' | 'fulfilled'): Promise<void> {
   const { error } = await supabase.from('enquiries').update({ status }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -428,4 +452,52 @@ export async function getAdminActivityLogs(opts?: { limit?: number }): Promise<D
   const { data, error } = await supabase.from('admin_activity_logs').select('*').order('created_at', { ascending: false }).limit(limit)
   if (error) throw new Error(error.message)
   return (data ?? []) as DBAdminActivity[]
+}
+
+// Paginated products — returns items + total count
+export async function getProductsPage(options?: {
+  page?: number
+  pageSize?: number
+  categoryId?: string | null
+  search?: string
+  featuredOnly?: boolean
+  includeUnavailable?: boolean
+  sortKey?: 'name' | 'category' | 'updated_at' | 'created_at' | 'is_available' | 'is_featured'
+  sortDir?: 'asc' | 'desc'
+}): Promise<{ items: DBProductWithCategory[]; total: number }> {
+  const page = options?.page ?? 1
+  const pageSize = options?.pageSize ?? 20
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  let query = supabase.from('products').select('*, categories(*)', { count: 'exact' }).order('display_order', { ascending: true })
+  if (!options?.includeUnavailable) query = query.eq('is_available', true)
+  if (options?.featuredOnly)        query = query.eq('is_featured', true)
+  if (options?.categoryId)          query = query.eq('category_id', options.categoryId)
+  if (options?.search?.trim())      query = query.ilike('name', `%${options.search.trim()}%`)
+
+  // Server-side sorting for simple keys (category sorting handled client-side)
+  if (options?.sortKey && options.sortKey !== 'category') {
+    const orderField = options.sortKey
+    const ascending = options.sortDir !== 'desc'
+    query = query.order(orderField as any, { ascending })
+  }
+
+  query = query.range(from, to)
+  const { data, error, count } = await query
+  if (error) throw new Error(error.message)
+  return { items: (data ?? []) as DBProductWithCategory[], total: count ?? 0 }
+}
+
+export async function getProductsCount(filters?: {
+  categoryId?: string | null; search?: string; featuredOnly?: boolean; includeUnavailable?: boolean
+}): Promise<number> {
+  let query = supabase.from('products').select('id', { count: 'exact', head: true })
+  if (!filters?.includeUnavailable) query = query.eq('is_available', true)
+  if (filters?.featuredOnly)        query = query.eq('is_featured', true)
+  if (filters?.categoryId)          query = query.eq('category_id', filters.categoryId)
+  if (filters?.search?.trim())      query = query.ilike('name', `%${filters.search.trim()}%`)
+  const { error, count } = await query
+  if (error) throw new Error(error.message)
+  return count ?? 0
 }

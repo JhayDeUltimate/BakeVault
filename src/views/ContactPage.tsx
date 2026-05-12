@@ -9,6 +9,37 @@ export default function ContactPage() {
     const email = settings.contact_email || 'sales@bakevault.com.ng'
     const waNumber = settings.whatsapp_number || WHATSAPP_DISPLAY_NUMBER
     const waUrl = waNumber ? `https://wa.me/${waNumber.replace(/\D/g, '')}` : WHATSAPP_URL
+    // Default hours used when no admin setting is present or parsing fails
+    const DEFAULT_HOURS = [
+        { day: 'Monday – Friday', hours: '8:00 AM – 6:00 PM' },
+        { day: 'Saturday', hours: '9:00 AM – 4:00 PM' },
+        { day: 'Sunday', hours: 'Closed' },
+    ]
+
+    function parseBusinessHours(raw?: string) {
+        if (!raw) return DEFAULT_HOURS
+        // Try JSON first
+        try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+                return parsed.map((r: any) => ({ day: String(r.day ?? r.name ?? ''), hours: String(r.hours ?? r.time ?? '') }))
+            }
+        } catch {}
+        // Fallback: newline-separated lines like "Monday – Friday: 8:00 AM – 6:00 PM"
+        const lines = raw.split('\n').map(l => l.trim()).filter(Boolean)
+        if (lines.length > 0) {
+            return lines.map(line => {
+                const pipe = line.split('|')
+                if (pipe.length >= 2) return { day: pipe[0].trim(), hours: pipe.slice(1).join('|').trim() }
+                const parts = line.split(':')
+                if (parts.length >= 2) return { day: parts[0].trim(), hours: parts.slice(1).join(':').trim() }
+                return { day: line, hours: '' }
+            })
+        }
+        return DEFAULT_HOURS
+    }
+
+    const businessHours = parseBusinessHours(settings.business_hours)
 
     return (
         <main className="flex-grow">
@@ -106,19 +137,15 @@ export default function ContactPage() {
                     <h3 className="text-sm font-extrabold text-brand-darkGray font-display uppercase tracking-wider mb-4">
                         Business Hours
                     </h3>
-                    <div className="space-y-2">
-                        {[
-                            { day: 'Monday – Friday', hours: '8:00 AM – 6:00 PM' },
-                            { day: 'Saturday', hours: '9:00 AM – 4:00 PM' },
-                            { day: 'Sunday', hours: 'Closed' },
-                        ].map(row => (
-                            <div key={row.day} className="flex items-center justify-between text-sm">
-                                <span className="text-brand-darkGray/60 font-medium">{row.day}</span>
-                                <span className={`font-bold ${row.hours === 'Closed' ? 'text-red-400' : 'text-brand-darkGray'}`}>
-                                    {row.hours}
-                                </span>
-                            </div>
-                        ))}
+                        <div className="space-y-2">
+                            {businessHours.map(row => (
+                                <div key={row.day} className="flex items-center justify-between text-sm">
+                                    <span className="text-brand-darkGray/60 font-medium">{row.day}</span>
+                                    <span className={`font-bold ${row.hours === 'Closed' ? 'text-red-400' : 'text-brand-darkGray'}`}>
+                                        {row.hours}
+                                    </span>
+                                </div>
+                            ))}
                     </div>
                     <p className="text-xs text-brand-darkGray/40 mt-4 leading-relaxed">
                         Outside business hours, send us a WhatsApp message — we'll respond first thing when we're back.

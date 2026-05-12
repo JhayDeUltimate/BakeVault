@@ -1,6 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { useProducts } from '../../hooks/index'
-import { createProduct, updateProduct, deleteProduct, deleteProductImage } from '../../lib/api'
+import React, { useMemo, useState, useEffect } from 'react'
+import { createProduct, updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import ProductForm, { type ProductFormData } from '../../components/admin/ProductForm'
 import type { DBProductWithCategory } from '../../lib/database.types'
 
@@ -18,7 +17,13 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ]
 
 export default function AdminProducts() {
-  const { products, loading, error, refetch } = useProducts({ includeUnavailable: true })
+  const [products, setProducts] = useState<DBProductWithCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [total, setTotal] = useState<number>(0)
+  const [availableCount, setAvailableCount] = useState<number | null>(null)
+  const [page, setPage] = useState<number>(1)
+  const [pageSize] = useState<number>(20)
   const [modal,      setModal]    = useState<Modal>(null)
   const [search,     setSearch]   = useState('')
   const [saving,     setSaving]   = useState<string | null>(null)
@@ -36,26 +41,48 @@ export default function AdminProducts() {
     }
   }
 
+  // sorted holds current page's products (server-side search + sort applied where supported)
   const sorted = useMemo(() => {
-    const base = search.trim()
-      ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
-      : [...products]
+    const base = [...products]
+    // client-side fallback sorting for category
+    if (sortKey === 'category') {
+      return base.sort((a, b) => {
+        const va = (a.categories?.name ?? '').toLowerCase()
+        const vb = (b.categories?.name ?? '').toLowerCase()
+        if (va < vb) return sortDir === 'asc' ? -1 : 1
+        if (va > vb) return sortDir === 'asc' ?  1 : -1
+        return 0
+      })
+    }
+    return base
+  }, [products, sortKey, sortDir])
 
-    return base.sort((a, b) => {
-      let va: string | number = '', vb: string | number = ''
-      switch (sortKey) {
-        case 'name':         va = a.name.toLowerCase();                     vb = b.name.toLowerCase();                     break
-        case 'category':     va = (a.categories?.name ?? '').toLowerCase(); vb = (b.categories?.name ?? '').toLowerCase(); break
-        case 'updated_at':   va = a.updated_at;                             vb = b.updated_at;                             break
-        case 'created_at':   va = a.created_at;                             vb = b.created_at;                             break
-        case 'is_available': va = a.is_available ? 1 : 0;                   vb = b.is_available ? 1 : 0;                   break
-        case 'is_featured':  va = a.is_featured  ? 1 : 0;                   vb = b.is_featured  ? 1 : 0;                   break
-      }
-      if (va < vb) return sortDir === 'asc' ? -1 : 1
-      if (va > vb) return sortDir === 'asc' ?  1 : -1
-      return 0
-    })
-  }, [products, search, sortKey, sortDir])
+  // Fetch page
+  async function fetchPage() {
+    setLoading(true); setError(null)
+    try {
+      const res = await getProductsPage({ page, pageSize, search: search || undefined, includeUnavailable: true, sortKey, sortDir })
+      setProducts(res.items)
+      setTotal(res.total)
+      try {
+        const available = await getProductsCount({ includeUnavailable: false })
+        setAvailableCount(available)
+      } catch {}
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load products')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Initial + dependency-driven fetch
+  useEffect(() => {
+    fetchPage()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, sortKey, sortDir])
+
+  // refetch helper used by mutations
+  const refetch = fetchPage
 
   async function handleSave(data: ProductFormData) {
     if (modal?.mode === 'add')  await createProduct(data)
@@ -111,8 +138,8 @@ export default function AdminProducts() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Products</h1>
           <p className="text-sm text-gray-500">
-            {products.length} total · {products.filter(p => p.is_available).length} available
-          </p>
+              {total} total · {availableCount !== null ? `${availableCount} available` : '— available'}
+            </p>
         </div>
         <button onClick={() => setModal({ mode: 'add' })}
           className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors">
@@ -302,6 +329,18 @@ export default function AdminProducts() {
             {search ? 'No products match that search.' : 'No products yet — add one!'}
           </div>
         )}
+      </div>
+
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="text-sm text-gray-500">Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total}</div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Prev</button>
+          <div className="text-sm text-gray-500">Page {page}</div>
+          <button onClick={() => setPage(p => p + 1)} disabled={page * pageSize >= total}
+            className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Next</button>
+        </div>
       </div>
 
       {/* Add/Edit Modal */}

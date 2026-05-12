@@ -27,6 +27,8 @@ import AdminActivityLogs         from '@/views/admin/AdminActivityLogs'
 import ProtectedRoute            from '@/components/admin/ProtectedRoute'
 import ScrollToTop               from '@/components/ScrollToTop'
 import ErrorBoundary             from '@/components/ErrorBoundary'
+import NotFoundPage              from '@/views/NotFoundPage'
+import AdminNotFoundPage         from '@/views/admin/AdminNotFoundPage'
 
 export default function App() {
   return (
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="/terms"          element={<TermsPage />} />
           <Route path="/privacy"        element={<PrivacyPage />} />
           <Route path="/products/:slug" element={<ProductPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         {/* Admin */}
@@ -65,9 +68,9 @@ export default function App() {
           <Route path="requests"       element={<AdminProductRequests />} />
           <Route path="testimonials"   element={<AdminTestimonials />} />
           <Route path="settings"       element={<AdminSettings />} />
+          <Route path="*" element={<AdminNotFoundPage />} />
         </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+        
       </Routes>
     </CartProvider>
     </AuthProvider>

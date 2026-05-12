@@ -127,4 +127,5 @@ export type DBEnquiry         = Database['public']['Tables']['enquiries']['Row']
 export type DBTestimonial     = Database['public']['Tables']['testimonials']['Row']
 export type DBProductRequest  = Database['public']['Tables']['product_requests']['Row']
 export type DBAnalyticsEvent  = Database['public']['Tables']['analytics_events']['Row']
+export type DBAdminActivity   = Database['public']['Tables']['admin_activity_logs']['Row']
 export type DBProductWithCategory = DBProduct & { categories: DBCategory | null }

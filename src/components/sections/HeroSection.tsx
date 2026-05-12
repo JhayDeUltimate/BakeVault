@@ -69,9 +69,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
             <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-start text-white">
               <div className="max-w-[calc(100vw-2rem)] sm:max-w-2xl bg-white/5 backdrop-blur-md p-4 sm:p-12 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl animate-fadeInUp">
                 <div className="mb-1.5 sm:mb-6">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[11px] sm:text-xs font-bold tracking-widest uppercase">
-                    Baker's Pick
-                  </span>
+                  {product.categories?.name ? (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[11px] sm:text-xs font-bold tracking-widest uppercase">
+                      {product.categories.name}
+                    </span>
+                  ) : null}
                 </div>
                 <h1 className="text-lg sm:text-5xl lg:text-6xl font-extrabold mb-2 sm:mb-6 leading-tight font-display">
                   {product.name}
