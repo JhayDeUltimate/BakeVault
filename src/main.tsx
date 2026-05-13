@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
+import { PostHogProvider } from '@posthog/react'
 
 // ── Initialise Sentry before anything else renders ───────────────────────────
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -48,12 +49,18 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   })
 }
 
+const posthogOptions = {
+  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+} as const
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
         <ErrorBoundary>
-          <App />
+          <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN} options={posthogOptions}>
+            <App />
+          </PostHogProvider>
         </ErrorBoundary>
       </BrowserRouter>
     </HelmetProvider>

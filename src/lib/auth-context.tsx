@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { logger } from './logger'
 import { logAdminActivity } from './admin-activity'
-import type { User } from '@supabase/supabase-js'
+import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 
 // ── Admin email helpers ───────────────────────────────────────────────────────
 function parseAdminEmails(raw: string | undefined): Set<string> {
@@ -33,7 +33,7 @@ async function fetchIsAdmin(uid: string): Promise<boolean> {
       .select('user_id')
       .eq('user_id', uid)
       .maybeSingle()
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: { user_id: string } | null; error: unknown }) => {
         if (error || !data) return false
         return true
       })
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // onAuthStateChange handles sign-in, sign-out, and token refresh events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         if (cancelled) return
         const currentUser = session?.user ?? null
 

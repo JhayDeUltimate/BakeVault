@@ -153,6 +153,7 @@ export default function ProductPage() {
                                 <button key={i} onClick={() => setSlide(i)}
                                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${i === slide ? 'border-brand-orange' : 'border-transparent'}`}>
                                     <img src={optimizeImageUrl(img, IMG.adminThumb)} alt="" className="w-full h-full object-cover"
+                                        loading="lazy" decoding="async"
                                         onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }} />
                                 </button>
                             ))}

@@ -24,7 +24,34 @@ export function optimizeImageUrl(
   _opts?: { width?: number; height?: number; quality?: number },
 ): string {
   if (!url) return FALLBACK_IMAGE
-  return url
+
+  const opts = _opts ?? {}
+  const { width, height, quality = 75 } = opts
+
+  // Keep Unsplash URLs intact (they include their own params)
+  if (url.includes('images.unsplash.com')) return url
+
+  try {
+    const parsed = new URL(url)
+
+    // Prepare remote identifier for the proxy (strip protocol)
+    const remote = `${parsed.host}${parsed.pathname}${parsed.search}`.replace(/^\/+/,'')
+
+    // If no resizing requested, return original URL
+    if (!width && !height) return url
+
+    // Use a lightweight public image proxy to resize and cache images
+    // (images.weserv.nl accepts a remote host/path without protocol)
+    const params = new URLSearchParams()
+    if (width) params.set('w', String(width))
+    if (height) params.set('h', String(height))
+    params.set('fit', 'cover')
+    params.set('q', String(quality))
+
+    return `https://images.weserv.nl/?url=${encodeURIComponent(remote)}&${params.toString()}`
+  } catch (e) {
+    return url
+  }
 }
 
 /*
