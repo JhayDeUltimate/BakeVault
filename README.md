@@ -86,6 +86,8 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_ADMIN_EMAILS=         # Comma-separated fallback admin email list
 VITE_GEMINI_API_KEY=       # Not used client-side; set as a Supabase secret
+VITE_PUBLIC_POSTHOG_PROJECT_TOKEN=
+VITE_PUBLIC_POSTHOG_HOST=
 ```
 
 The Gemini API key is consumed only by the edge function. Set it as a Supabase secret:
@@ -107,6 +109,41 @@ The dev server runs on `http://localhost:5173`.
 npm run build    # Production build
 npm run preview  # Preview the production build locally
 ```
+
+## Analytics (PostHog)
+
+This project integrates PostHog for client-side analytics. The app is wrapped with `PostHogProvider` at the root (`src/main.tsx`). To enable tracking, set the following environment variables in your `.env.local`:
+
+```env
+VITE_PUBLIC_POSTHOG_PROJECT_TOKEN=  # Public project token
+VITE_PUBLIC_POSTHOG_HOST=           # e.g. https://app.posthog.com or your host
+```
+
+Usage options:
+- Use `usePostHog()` from `@posthog/react` to access the PostHog instance directly.
+- Or use the small helper hook exported from [src/hooks/useTrack.ts](src/hooks/useTrack.ts) which wraps `usePostHog()` and performs a safe no-op when PostHog is not configured.
+
+Example:
+
+```tsx
+import { useTrack } from '@/hooks'
+
+function MyComponent() {
+  const track = useTrack()
+  return <button onClick={() => track('button_clicked', { button_name: 'signup' })}>Sign up</button>
+}
+```
+
+Helper files:
+- [src/lib/posthog.ts](src/lib/posthog.ts) — safe wrappers around `window.posthog`
+- [src/hooks/useTrack.ts](src/hooks/useTrack.ts) — convenience hook for tracking events
+
+Install the client packages if you haven't already:
+
+```bash
+npm install posthog-js @posthog/react
+```
+
 
 ## Database
 
