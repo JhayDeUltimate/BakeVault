@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import * as Sentry from '@sentry/react'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
+import { AuthProvider } from '@/lib/auth-context'
 import './index.css'
 import { PostHogProvider } from '@posthog/react'
 
@@ -59,7 +60,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <ErrorBoundary>
           <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN} options={posthogOptions}>
-            <App />
+            <AuthProvider>
+              <App />
+            </AuthProvider>
           </PostHogProvider>
         </ErrorBoundary>
       </BrowserRouter>

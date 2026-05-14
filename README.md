@@ -57,7 +57,7 @@ public/
 
 ### Admin Panel
 
-Located at `/admin`, protected by Supabase Auth. Admin role is resolved via a `profiles` table with a fallback to a comma-separated email allowlist in `.env`.
+Located at `/admin`, protected by Supabase Auth. Admin role is resolved via an `admins` table with a fallback to a comma-separated email allowlist in `.env`.
 
 - **Dashboard** shows store statistics alongside a visitor analytics panel with a configurable date range (7/14/30 days), a line chart of activity over time, top products by cart additions, and CSV export.
 - **Products** supports full CRUD with image upload to Supabase Storage, up to 5 images per product, availability and featured toggles, display order, and AI-powered name/description generation from an uploaded image.
@@ -156,7 +156,7 @@ The application expects the following tables in Supabase:
 - `settings`
 - `product_requests`
 - `analytics_events`
-- `profiles`
+- `admins`
 
 This repository does not include Supabase SQL migrations. Create the database schema in your Supabase project (see the expected tables listed above), or import migrations from the original project if you have them.
 

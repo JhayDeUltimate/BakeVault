@@ -1,6 +1,5 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider }          from '@/lib/auth-context'
 import { CartProvider }          from '@/lib/cart-context'
 import PublicLayout              from '@/components/PublicLayout'
 import HomePage                  from '@/views/HomePage'
@@ -33,7 +32,6 @@ import AdminNotFoundPage         from '@/views/admin/AdminNotFoundPage'
 export default function App() {
   return (
     <ErrorBoundary>
-    <AuthProvider>
     <CartProvider>
       <ScrollToTop />
       <Routes>
@@ -73,7 +71,6 @@ export default function App() {
         
       </Routes>
     </CartProvider>
-    </AuthProvider>
     </ErrorBoundary>
   )
 }
