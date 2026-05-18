@@ -35,7 +35,7 @@ export default function PublicLayout() {
 
   return (
     <SettingsContext.Provider value={{ settings: settingsMap, loading: settingsLoading }}>
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pt-16 sm:pt-20">
       <Header
         cartCount={cartCount}
         onOpenCart={openCart}

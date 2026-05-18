@@ -11,19 +11,17 @@ interface BrandLogoProps {
 
 const BrandLogo: React.FC<BrandLogoProps> = ({
   className = '',
-  iconClassName = 'w-10 h-10',
+  iconClassName = 'h-10 w-auto',
   textClassName = '',
   hideText = true,
 }) => {
   return (
-    <div className={['flex items-center gap-2', className].filter(Boolean).join(' ')}>
-      <div className={[iconClassName].filter(Boolean).join(' ')}>
-        <img
-          src="/logo.svg"
-          alt="BakeVault"
-          className="w-full h-full object-contain"
-        />
-      </div>
+    <div className={['inline-flex items-center gap-2 min-w-0', className].filter(Boolean).join(' ')}>
+      <img
+        src="/logo.svg"
+        alt="BakeVault"
+        className={[iconClassName, 'block max-w-[9rem] shrink-0 object-contain'].filter(Boolean).join(' ')}
+      />
 
       {!hideText && (
         <span

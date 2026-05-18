@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
     ].join(' ')
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-orange-100 shadow-sm">
+    <header className="fixed inset-x-0 top-0 z-40 w-full bg-white border-b border-orange-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           <Link to="/" className="flex-shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange rounded">
