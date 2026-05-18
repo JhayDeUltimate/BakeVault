@@ -1,173 +1,270 @@
 # BakeVault
 
-A full-stack storefront for BakeVault, a wholesale baking supplies business in Lagos, Nigeria. Customers can browse products, add items to a cart, and send order enquiries directly via WhatsApp. The application includes a complete admin panel for managing products, categories, enquiries, testimonials, and store settings.
+BakeVault is a full-stack React storefront for a Lagos-based baking supplies business. Customers browse product categories, open product details, add items to an order bag, and send quote requests through WhatsApp. The same app includes a Supabase-backed admin panel for catalog management, enquiries, product requests, testimonials, store settings, analytics, and admin activity logs.
 
-## Tech Stack
+## Stack
 
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4
-- **Backend/Database:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
-- **AI Features:** Google Gemini 2.5 Flash via a Supabase Edge Function (Deno)
-- **Routing:** React Router v7
-- **Charts:** Recharts (admin analytics dashboard)
+- React 19, TypeScript, Vite 6, React Router 7
+- Tailwind CSS v4 through `@tailwindcss/postcss`
+- Supabase Auth, Postgres, Storage, and Edge Functions
+- Google Gemini plus Tavily search in the Supabase `ai-assistant` function
+- Recharts for admin analytics
+- PostHog helper integration and first-party Supabase analytics events
+- Sentry browser error monitoring and session replay when configured
 
-## Project Structure
+## App Map
 
 ```text
 src/
+  App.tsx                         # Route tree for public and admin pages
+  main.tsx                        # React root, Helmet, Sentry, PostHog, auth providers
+  index.css                       # Tailwind import, theme tokens, global overflow guards
+  constants.ts                    # Categories and WhatsApp runtime config
   components/
-    admin/           # Admin-only form and upload components
-    sections/        # Page sections (Hero, Footer, About, Testimonials)
-    ui/              # Shared UI primitives (BrandLogo, SectionHeading)
-  hooks/             # Data-fetching hooks (useProducts, useCategories, etc.)
+    Header.tsx                    # Fixed public header
+    PublicLayout.tsx              # Public shell, cart/category drawers, footer, consent, toast
+    Cart.tsx                      # Order drawer and WhatsApp quote checkout
+    CategoryMenu.tsx              # Mobile navigation/category drawer
+    ProductCard.tsx
+    ProductModal.tsx
+    ProductAssistant.tsx
+    ProductRequestModal.tsx
+    RecentlyViewedStrip.tsx
+    sections/                     # Hero, About, Testimonials, Footer
+    ui/                           # BrandLogo, SectionHeading, skeletons, toast, consent
+    admin/                        # Protected route, product form, image uploads
+  hooks/                          # Data hooks, tracking hooks, consent, recently viewed
   lib/
-    api.ts           # All Supabase data access functions
-    analytics.ts     # Client-side event tracking
-    cart-context.tsx # Cart state with localStorage persistence
-    database.types.ts
-    image.ts         # Image URL utilities and fallback handling
-    supabase.ts      # Supabase client initialisation
-    utils.ts         # DB-to-UI model mapping
+    api.ts                        # Supabase reads/writes, storage uploads, analytics summaries
+    auth-context.tsx              # Supabase Auth plus admin resolution
+    cart-context.tsx              # Local cart state with 7-day localStorage expiry
+    analytics.ts                  # Consent-gated first-party event logging
+    admin-activity.ts             # Best-effort immutable admin action logging
+    image.ts                      # Image fallback, galleries, lightweight proxy optimization
+    supabase.ts                   # Typed Supabase client
+    database.types.ts             # Local database type definitions
   views/
-    admin/           # Admin pages (Dashboard, Products, Categories, etc.)
-    *Page.tsx        # Public pages (Home, Catalog, FAQ, Product, Delivery, etc.)
-  constants.ts       # Categories, product seed data, WhatsApp config
-  index.css          # Global styles and Tailwind theme tokens
+    *.tsx                         # Public pages
+    landing/                      # SEO landing pages
+    admin/                        # Admin dashboard and CRUD screens
 
-supabase/
-  functions/
-    ai-assistant/    # Deno edge function for Gemini chat and image analysis
-    
-public/
-  sitemap.xml        # XML sitemap for SEO indexing
-  robots.txt         # Search engine crawler instructions
+supabase/functions/ai-assistant/  # Deno Edge Function for AI chat and product-image analysis
+scripts/generate-sitemap.mjs      # Build-time sitemap generator
+public/                           # Static assets, manifest, robots.txt, generated sitemap
 ```
 
-## Features
+## Public Routes
 
-### Public Storefront
+- `/` - home page with featured product hero, about section, featured products, recently viewed products, and testimonials.
+- `/catalog` - searchable and filterable catalog. Supports category deep links through `?cat=Category+Name`.
+- `/products/:slug` - standalone product page with image gallery, SEO metadata, structured product data, add-to-order CTA, AI assistant, and recently viewed products.
+- `/about`, `/faq`, `/how-to-order`, `/delivery`, `/contact` - customer information pages.
+- `/terms`, `/privacy` - legal pages, with configurable "last updated" text from settings.
+- `/yogurt-starter-lagos`, `/kefir-starter-lagos`, `/bread-improver-lagos` - SEO landing pages for high-intent product categories.
+- `*` - public 404 inside the normal public layout.
 
-- **Hero slider** cycles through featured products with a 5-second interval and manual dot navigation.
-- **Catalog & Product Pages**: Full product grid with real-time search, category filtering, and standalone product detail pages (`/products/:slug`) for improved sharing and deep-linking.
-- **Shopping cart** persists to localStorage with quantity controls. Checkout sends an order summary to WhatsApp via `wa.me`.
-- **Product AI assistant** is a per-product chat widget powered by Google Gemini, helping customers with specific product/usage queries.
-- **Informational Pages**: Dedicated routing for FAQ, How to Order, Delivery Info, Contact, Privacy, and Terms & Conditions.
-- **SEO Optimized**: Fully integrated with Open Graph tags, Twitter Cards, `application/ld+json` structured local business data, `sitemap.xml`, and `robots.txt` mapped to the `bakevault.com.ng` domain.
-- **Product requests** allow customers to submit a form requesting products not currently in the catalog.
-- **Testimonials** are displayed in an auto-rotating carousel sourced from the database.
+## Admin Routes
 
-### Admin Panel
+- `/admin/login` - Supabase email/password login, forgot-password email trigger, and non-admin account handling.
+- `/admin/reset-password` - Supabase password recovery completion page.
+- `/admin/dashboard` - store stats, recent enquiries, analytics cards, activity chart, top added-to-cart products, and CSV export.
+- `/admin/products` - paginated product management with search, sorting, availability toggle, hero/featured flag, display order, image gallery, storage deletion, and AI product analysis.
+- `/admin/categories` - category create, rename, delete, and ordering support.
+- `/admin/enquiries` - WhatsApp quote enquiries with status filters and status transitions.
+- `/admin/requests` - customer product requests with contact details and workflow statuses.
+- `/admin/activity` - recent admin activity log with filtering.
+- `/admin/testimonials` - testimonial create, edit, hide/show, and delete.
+- `/admin/settings` - WhatsApp number, Instagram handle, contact email, business hours, and legal-page dates.
 
-Located at `/admin`, protected by Supabase Auth. Admin role is resolved via an `admins` table with a fallback to a comma-separated email allowlist in `.env`.
+Admin routes are protected by `ProtectedRoute`. Users are created in Supabase Authentication, then promoted by inserting their auth user id into the public `admins` table. `VITE_ADMIN_EMAILS` exists as a local fallback, but it is intentionally warned against in production because it exposes admin emails in the client bundle.
 
-- **Dashboard** shows store statistics alongside a visitor analytics panel with a configurable date range (7/14/30 days), a line chart of activity over time, top products by cart additions, and CSV export.
-- **Products** supports full CRUD with image upload to Supabase Storage, up to 5 images per product, availability and featured toggles, display order, and AI-powered name/description generation from an uploaded image.
-- **Categories** supports inline create, rename, and delete.
-- **Enquiries** shows all WhatsApp order enquiries logged from the storefront with status management (sent / responded / fulfilled).
-- **Product Requests** lets admins review and action customer product requests, including any contact info provided.
-- **Testimonials** supports adding, editing, toggling visibility, and deleting customer testimonials.
-- **Settings** manages WhatsApp number, Instagram handle, and contact email via a key-value settings table in the database.
+## Main Features
 
-### AI Edge Function
-
-Located at `supabase/functions/ai-assistant`, written in Deno. Handles two modes:
-
-- **`chat`** runs multi-turn product Q&A using a system prompt scoped to the current product context.
-- **`analyze`** fetches a product image URL server-side (with SSRF protection), sends it to Gemini vision, and returns a structured `{ name, description }` object for pre-filling the product form.
+- Mobile-first storefront with fixed header, slide-out category menu, cart drawer, and floating WhatsApp CTA.
+- Product catalog backed by Supabase with category filtering, debounced search, loading skeletons, and SEO metadata per category.
+- Product pages and modals with multi-image galleries, similar products, recently viewed products, and product-specific Gemini chat.
+- Order bag stored in `localStorage` under `bakevault:cart`, with a 7-day expiry.
+- WhatsApp checkout that formats quote requests and logs enquiries to Supabase without blocking the user.
+- Product request form for out-of-stock or missing products.
+- Cookie/analytics consent banner. First-party analytics events are only inserted after consent is accepted.
+- Admin product image upload to Supabase Storage with JPEG/PNG/WebP validation and a 5 MB limit.
+- Best-effort admin activity logging for product, category, enquiry, testimonial, setting, image, and auth actions.
+- SEO support through `react-helmet-async`, Open Graph/Twitter tags, JSON-LD, `robots.txt`, manifest metadata, and a build-time sitemap.
 
 ## Environment Variables
 
-Copy `.env.local.example` to `.env.local` and fill in your values:
+Create `.env.local` from `env.local.example`.
 
 ```env
-VITE_WHATSAPP_NUMBER=      # Full number with country code, no + or spaces
+VITE_SENTRY_DSN=
+VITE_WHATSAPP_NUMBER=
 VITE_INSTAGRAM_HANDLE=
 VITE_CONTACT_EMAIL=
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_ADMIN_EMAILS=         # Comma-separated fallback admin email list
-VITE_GEMINI_API_KEY=       # Not used client-side; set as a Supabase secret
 VITE_PUBLIC_POSTHOG_PROJECT_TOKEN=
 VITE_PUBLIC_POSTHOG_HOST=
 ```
 
-The Gemini API key is consumed only by the edge function. Set it as a Supabase secret:
-
-```bash
-supabase secrets set GEMINI_API_KEY=your-key
-```
-
-## Getting Started
-
-```bash
-npm install
-npm run dev
-```
-
-The dev server runs on `http://localhost:5173`.
-
-```bash
-npm run build    # Production build
-npm run preview  # Preview the production build locally
-```
-
-## Analytics (PostHog)
-
-This project integrates PostHog for client-side analytics. The app is wrapped with `PostHogProvider` at the root (`src/main.tsx`). To enable tracking, set the following environment variables in your `.env.local`:
+Additional optional client variables used by the code:
 
 ```env
-VITE_PUBLIC_POSTHOG_PROJECT_TOKEN=  # Public project token
-VITE_PUBLIC_POSTHOG_HOST=           # e.g. https://app.posthog.com or your host
+VITE_WHATSAPP_CTA_LABEL=
+VITE_WHATSAPP_CTA_PREFILL=
+VITE_APP_VERSION=
+VITE_ADMIN_EMAILS=
 ```
 
-Usage options:
-- Use `usePostHog()` from `@posthog/react` to access the PostHog instance directly.
-- Or use the small helper hook exported from [src/hooks/useTrack.ts](src/hooks/useTrack.ts) which wraps `usePostHog()` and performs a safe no-op when PostHog is not configured.
+`VITE_ADMIN_EMAILS` should only be used for local fallback access. Prefer the `admins` table for production authorization.
 
-Example:
+## Supabase Requirements
 
-```tsx
-import { useTrack } from '@/hooks'
+The runtime app expects these public Postgres tables:
 
-function MyComponent() {
-  const track = useTrack()
-  return <button onClick={() => track('button_clicked', { button_name: 'signup' })}>Sign up</button>
-}
-```
-
-Helper files:
-- [src/lib/posthog.ts](src/lib/posthog.ts) — safe wrappers around `window.posthog`
-- [src/hooks/useTrack.ts](src/hooks/useTrack.ts) — convenience hook for tracking events
-
-Install the client packages if you haven't already:
-
-```bash
-npm install posthog-js @posthog/react
-```
-
-
-## Database
-
-The application expects the following tables in Supabase:
-
-- `products`
+- `admins` - maps Supabase Auth user ids to admin access.
 - `categories`
+- `products`
 - `enquiries`
 - `testimonials`
 - `settings`
 - `product_requests`
 - `analytics_events`
-- `admins`
+- `admin_activity_logs`
 
-This repository does not include Supabase SQL migrations. Create the database schema in your Supabase project (see the expected tables listed above), or import migrations from the original project if you have them.
+No `profiles` table is required by the current backend flow. Admin access is resolved from Supabase Auth plus the `admins` table only.
 
-Product images are stored in a Supabase Storage bucket named `bakevault-images` under a `products/` prefix.
+The repository does not currently include SQL migrations. The expected runtime table shapes are reflected in `src/lib/database.types.ts`, though that generated type file may contain legacy entries that are no longer used by the app.
 
-> **Note on image optimisation:** Supabase image transformation (`/render/image/`) requires the Pro plan. The current configuration returns original URLs unchanged and relies on browser-native lazy loading. To enable resizing, see the commented block in `src/lib/image.ts`.
+Storage requirement:
 
-## Deploying the Edge Function
+- Bucket: `bakevault-images`
+- Product upload prefix: `products/`
+- Accepted upload types: JPEG, PNG, WebP
+- Max client-side upload size: 5 MB
+
+## AI Edge Function
+
+The Supabase Edge Function lives at `supabase/functions/ai-assistant/index.ts`.
+
+It supports two modes:
+
+- `chat` - customer product Q&A from product pages and product modals.
+- `analyze` - admin product-image analysis that suggests a product name and structured description.
+
+The function uses:
+
+- Gemini models in fallback order: `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`
+- Tavily search for current product context
+- CORS allowlisting from `ALLOWED_ORIGINS`
+- SSRF checks for image analysis URLs
+- 25-second fetch timeouts and an 8 MB image fetch limit
+
+Set function secrets:
+
+```bash
+supabase secrets set GEMINI_API_KEY=your-gemini-key
+supabase secrets set TAVILY_API_KEY=your-tavily-key
+supabase secrets set ALLOWED_ORIGINS="https://bakevault.com.ng,https://www.bakevault.com.ng"
+```
+
+Deploy:
 
 ```bash
 supabase functions deploy ai-assistant --no-verify-jwt
 ```
 
-The `--no-verify-jwt` flag is required because the function is called from the browser using the public anon key.
+`--no-verify-jwt` is required because the browser calls the function with the public anon key.
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start Vite:
+
+```bash
+npm run dev
+```
+
+The configured dev server runs at:
+
+```text
+http://localhost:3000
+```
+
+On Windows PowerShell, if script execution blocks `npm`, use:
+
+```bash
+npm.cmd run dev
+```
+
+Build:
+
+```bash
+npm run build
+```
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+Available npm scripts:
+
+- `npm run dev` - start Vite.
+- `npm run sitemap` - generate `public/sitemap.xml`.
+- `npm run build` - run sitemap generation, then `vite build`.
+- `npm run preview` - serve the production build locally.
+
+There is no dedicated test script in `package.json` at the moment.
+
+## Sitemap and SEO
+
+`npm run build` runs `scripts/generate-sitemap.mjs` before Vite builds. The script:
+
+- Writes static public routes.
+- Fetches available product slugs from Supabase when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are present.
+- Falls back to a static-only sitemap if Supabase config is missing or the fetch fails.
+- Writes to `public/sitemap.xml`, so production builds can modify that file.
+
+Static SEO assets:
+
+- `index.html` contains site-wide meta, Open Graph/Twitter tags, JSON-LD LocalBusiness data, fonts, favicon, and manifest links.
+- `public/robots.txt` allows public crawling and disallows `/admin/`.
+- `public/manifest.json` declares BakeVault Lagos as an installable-style web app.
+- `public/404.html` is a static-host fallback.
+
+## Analytics and Monitoring
+
+First-party analytics:
+
+- Implemented in `src/lib/analytics.ts`.
+- Stored in `analytics_events`.
+- Gated by `bakevault:cookie_consent` in localStorage.
+- Tracks page views, product views, add-to-cart, checkout, cart clear, product requests, search, and WhatsApp clicks.
+
+PostHog:
+
+- `PostHogProvider` is mounted in `src/main.tsx`.
+- `useTrack()` wraps `usePostHog()` and no-ops when PostHog is unavailable.
+
+Sentry:
+
+- Enabled only when `VITE_SENTRY_DSN` is set.
+- Uses browser tracing and replay.
+- Samples all traces in development, 10% in production.
+- Replays all errored sessions and 5% of production sessions.
+- Strips cookies and authorization headers before events are sent.
+
+## Operational Notes
+
+- Product images use original URLs or `images.weserv.nl` for lightweight resizing. Supabase Storage transforms are not used because they require a paid Supabase plan.
+- `CartProvider` locks body scroll while the cart or category drawer is open.
+- Public settings are fetched once in `PublicLayout` and shared through `SettingsContext`.
+- The mobile WhatsApp CTA is dismissible per session with `sessionStorage`.
+- Recently viewed products are stored in `localStorage` under `bakevault:recently_viewed`, capped at 10 items, and synced across tabs.
+- Admin activity writes to `admin_activity_logs` and falls back to `analytics_events` when the dedicated table insert fails.
