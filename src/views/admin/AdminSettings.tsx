@@ -4,13 +4,15 @@
 import React, { useEffect, useState } from 'react'
 import { getSettings, upsertSetting } from '@/lib/api'
 
+const SITEMAP_URL = 'https://bakevault.com.ng/sitemap.xml'
+
 export function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [original, setOriginal] = useState<Record<string, string>>({})
-  const [loading,  setLoading]  = useState(true)
-  const [saving,   setSaving]   = useState(false)
-  const [saved,    setSaved]    = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     getSettings()
@@ -37,11 +39,13 @@ export function AdminSettings() {
     finally { setSaving(false) }
   }
 
+
+
   const fields = [
-    { key: 'whatsapp_number', label: 'WhatsApp Number',    placeholder: '2349064652679', hint: 'Country code included, no + or spaces' },
+    { key: 'whatsapp_number', label: 'WhatsApp Number', placeholder: '2349064652679', hint: 'Country code included, no + or spaces' },
     { key: 'instagram_handle', label: 'Instagram Handle', placeholder: 'bakevaultlagos', hint: 'Without the @' },
-    { key: 'contact_email',   label: 'Contact Email',     placeholder: 'sales@bakevault.com.ng', hint: 'Shown in desktop footer' },
-    { key: 'business_hours',  label: 'Business Hours',    placeholder: '[JSON or newline list]', hint: 'JSON array e.g. [{"day":"Monday – Friday","hours":"8:00 AM – 6:00 PM"}] or newline-separated "Monday – Friday: 8:00 AM – 6:00 PM"' },
+    { key: 'contact_email', label: 'Contact Email', placeholder: 'sales@bakevault.com.ng', hint: 'Shown in desktop footer' },
+    { key: 'business_hours', label: 'Business Hours', placeholder: '[JSON or newline list]', hint: 'JSON array e.g. [{"day":"Monday – Friday","hours":"8:00 AM – 6:00 PM"}] or newline-separated "Monday – Friday: 8:00 AM – 6:00 PM"' },
     { key: 'terms_last_updated', label: 'Terms last updated', placeholder: 'May 2026', hint: 'Displayed on the Terms page' },
     { key: 'privacy_last_updated', label: 'Privacy last updated', placeholder: 'May 2026', hint: 'Displayed on the Privacy page' },
   ]
@@ -52,8 +56,8 @@ export function AdminSettings() {
     <div className="space-y-6 max-w-xl">
       <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        {error  && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-5">{error}</div>}
-        {saved  && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg mb-5">Settings saved ✓</div>}
+        {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-5">{error}</div>}
+        {saved && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg mb-5">Settings saved ✓</div>}
         <form onSubmit={handleSave} className="space-y-5">
           {fields.map(f => (
             <div key={f.key}>
@@ -83,6 +87,8 @@ export function AdminSettings() {
           </button>
         </form>
       </div>
+
+
     </div>
   )
 }

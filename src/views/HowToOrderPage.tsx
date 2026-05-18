@@ -19,7 +19,7 @@ const STEPS = [
     {
         number: '03',
         title: 'Request a quote on WhatsApp',
-        body: 'When you\'re ready, tap "Request a Quote on WhatsApp." This sends us your order list automatically. No need to type it out — we get everything.',
+        body: 'When you\'re ready, tap "Request a Quote on WhatsApp." This sends us your order list automatically. No need to type it out; we get everything.',
         cta: null,
     },
     {
@@ -36,7 +36,7 @@ const STEPS = [
     },
     {
         number: '06',
-        title: 'We deliver — or you pick up',
+        title: 'We deliver, or you pick up',
         body: 'Lagos orders placed and paid before 2PM are delivered the same day. Nationwide orders go out the same day and arrive in 1 to 3 business days. You\'ll get a confirmation when your order is on its way.',
         cta: null,
     },

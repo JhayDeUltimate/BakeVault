@@ -7,6 +7,7 @@ import type { DBProductWithCategory } from '@/lib/database.types'
 
 interface Props {
   initial?:  DBProductWithCategory | null
+  nextDisplayOrder?: number
   onSave:    (data: ProductFormData) => Promise<void>
   onCancel:  () => void
 }
@@ -29,7 +30,7 @@ function parseImageUrls(raw: unknown, fallback: string): string[] {
   return []
 }
 
-export default function ProductForm({ initial, onSave, onCancel }: Props) {
+export default function ProductForm({ initial, nextDisplayOrder, onSave, onCancel }: Props) {
   const { categories } = useCategories()
   const initialImageUrls = parseImageUrls(initial?.image_urls, initial?.image_url ?? '')
 
@@ -42,7 +43,7 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
     is_available:  initial?.is_available  ?? true,
     is_featured:   initial?.is_featured   ?? false,
     price_type:    initial?.price_type    ?? 'wholesale',
-    display_order: initial?.display_order ?? 0,
+    display_order: initial?.display_order ?? nextDisplayOrder ?? 0,
   })
   const [saving,    setSaving]    = useState(false)
   const [analyzing, setAnalyzing] = useState(false)

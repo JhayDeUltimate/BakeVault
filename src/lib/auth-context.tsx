@@ -26,21 +26,34 @@ const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
  */
 async function fetchIsAdmin(uid: string): Promise<boolean> {
   try {
-    const timeout = new Promise<false>(resolve => setTimeout(() => resolve(false), 4000))
+    const timeout = new Promise<false>(resolve => setTimeout(() => {
+      logger.warn('fetchIsAdmin timed out after 4s', { event: 'admin_check_timeout', user_id: uid })
+      resolve(false)
+    }, 4000))
     const query = supabase
       .from('admins')
       .select('user_id')
       .eq('user_id', uid)
       .maybeSingle()
       .then(({ data, error }: { data: { user_id: string } | null; error: unknown }) => {
-        if (error || !data) return false
+        if (error) {
+          logger.warn('fetchIsAdmin query error', { event: 'admin_check_error', user_id: uid, error: String(error), errorObj: JSON.stringify(error) })
+          return false
+        }
+        if (!data) {
+          logger.warn('fetchIsAdmin: no row found', { event: 'admin_check_no_row', user_id: uid })
+          return false
+        }
+        logger.info('fetchIsAdmin: admin confirmed', { event: 'admin_check_pass', user_id: uid })
         return true
       })
     return await Promise.race([query, timeout])
-  } catch {
+  } catch (err) {
+    logger.error('fetchIsAdmin caught exception', err as Error, { event: 'admin_check_exception', user_id: uid })
     return false
   }
 }
+
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 interface AuthState {
@@ -60,21 +73,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
+  const confirmedAdminRef = React.useRef<string | null>(null)
+
   /** Resolves admin status: admins table first, env-var fallback second */
   async function resolveAdmin(u: User): Promise<boolean> {
-    const isAdmin = await fetchIsAdmin(u.id)
-    if (isAdmin) {
+    // If we already confirmed this exact user, skip the DB call
+    if (confirmedAdminRef.current === u.id) {
+      logger.debug('resolveAdmin: using cached result', { user_id: u.id })
+      return true
+    }
+
+    const admin = await fetchIsAdmin(u.id)
+    if (admin) {
+      confirmedAdminRef.current = u.id
       logger.debug('resolveAdmin: admins table check passed', { user_id: u.id })
       return true
     }
 
-    let emailMatch = false
     if (ADMIN_EMAILS.size > 0 && u.email) {
-      emailMatch = ADMIN_EMAILS.has(u.email.toLowerCase())
-      if (emailMatch) logger.debug('resolveAdmin: env fallback passed', { user_email: u.email })
-      return emailMatch
+      const emailMatch = ADMIN_EMAILS.has(u.email.toLowerCase())
+      if (emailMatch) {
+        confirmedAdminRef.current = u.id
+        logger.debug('resolveAdmin: env fallback passed', { user_email: u.email })
+        return true
+      }
     }
 
+    confirmedAdminRef.current = null
     logger.debug('resolveAdmin: no admin match', { user_id: u.id, user_email: u.email ?? null })
     return false
   }
@@ -92,9 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.debug('Auth init session', {
           event: 'auth_init',
           hasSession: !!session,
-          user_id: session?.user?.id ?? null,
-          user_email: session?.user?.email ?? null,
-          expires_at: (session as any)?.expires_at ?? null,
+          user_id: session?.user?.id ?? undefined,
+          user_email: session?.user?.email ?? undefined,
+          expires_at: (session as any)?.expires_at ?? undefined,
         })
         if (cancelled) return
         const currentUser = session?.user ?? null
@@ -123,27 +148,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           event: _event,
           initialized,
           hasSession: !!session,
-          user_id: session?.user?.id ?? null,
-          user_email: session?.user?.email ?? null,
+          user_id: session?.user?.id ?? undefined,
+          user_email: session?.user?.email ?? undefined,
         })
 
         const currentUser = session?.user ?? null
 
         if (currentUser) {
-          if (!initialized) setLoading(true)
           setUser(currentUser)
-          const admin = await resolveAdmin(currentUser)
-          if (!cancelled) {
-            setIsAdmin(admin)
-            if (!initialized) {
-              setLoading(false)
-              initialized = true
+
+          // Only re-check admin on actual SIGNED_IN events.
+          // TOKEN_REFRESHED and INITIAL_SESSION don't need a re-check;
+          // init() already handled the initial load, and the cache covers the rest.
+          if (_event === 'SIGNED_IN') {
+            if (!initialized) setLoading(true)
+            confirmedAdminRef.current = null // force fresh check on new sign-in
+            const admin = await resolveAdmin(currentUser)
+            if (!cancelled) {
+              setIsAdmin(admin)
+              if (!initialized) {
+                setLoading(false)
+                initialized = true
+              }
+              logger.info('User authenticated', {
+                event: 'auth_sign_in',
+                user_id: currentUser.id,
+              })
+              void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch { } })()
             }
-            logger.info('User authenticated', {
-              event: 'auth_sign_in',
-              user_id: currentUser.id,
-            })
-            void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch {} })()
+          } else {
+            // For TOKEN_REFRESHED, INITIAL_SESSION, etc. just use cached admin status
+            if (!initialized) {
+              const admin = await resolveAdmin(currentUser) // will hit cache if already confirmed
+              if (!cancelled) {
+                setIsAdmin(admin)
+                setLoading(false)
+                initialized = true
+              }
+            }
           }
         } else {
           // If we haven't finished initialising, ignore transient null sessions
@@ -152,11 +194,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
+          confirmedAdminRef.current = null
           setUser(null)
           setIsAdmin(false)
           setLoading(false)
           logger.info('User signed out', { event: 'auth_sign_out' })
-          void (async () => { try { await logAdminActivity({ action: 'auth.sign_out', resource_type: 'auth' }) } catch {} })()
+          // Do NOT log admin activity here; the session is already null
+          // so any authenticated insert will fail with 401.
         }
       },
     )
@@ -177,6 +221,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
+    // Log BEFORE clearing session; JWT must still be valid for RLS.
+    try { await logAdminActivity({ action: 'auth.sign_out', resource_type: 'auth' }) } catch { /* best-effort */ }
     await supabase.auth.signOut()
     setIsAdmin(false)
   }

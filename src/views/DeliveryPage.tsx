@@ -50,7 +50,7 @@ export default function DeliveryPage() {
                             ))}
                         </div>
                         <p className="text-sm text-brand-darkGray/70 leading-relaxed">
-                            Delivery fees within Lagos depend on your location. The exact fee is quoted before you confirm your order — nothing is added after the fact. Orders placed after 2PM are dispatched the next business day.
+                            Delivery fees within Lagos depend on your location. The exact fee is quoted before you confirm your order; nothing is added after the fact. Orders placed after 2PM are dispatched the next business day.
                         </p>
                     </div>
                 </div>
@@ -77,7 +77,7 @@ export default function DeliveryPage() {
                             ))}
                         </div>
                         <p className="text-sm text-brand-darkGray/70 leading-relaxed">
-                            We ship to all states through reliable courier partners. Shipping fees are calculated based on order weight and your location — we'll quote you the exact amount during order confirmation. You'll receive a tracking number once your order is dispatched.
+                            We ship to all states through reliable courier partners. Shipping fees are calculated based on order weight and your location; we'll quote you the exact amount during order confirmation. You'll receive a tracking number once your order is dispatched.
                         </p>
                     </div>
                 </div>
@@ -86,7 +86,7 @@ export default function DeliveryPage() {
                 <div className="bg-brand-cream border border-orange-100 rounded-2xl p-6 space-y-3">
                     <h3 className="text-sm font-extrabold text-brand-darkGray font-display uppercase tracking-wider">Good to know</h3>
                     {[
-                        'Delivery fees are always confirmed before you pay — no surprises at the door.',
+                        'Delivery fees are always confirmed before you pay; no surprises at the door.',
                         'If you\'re in Lagos and prefer to collect your order, that\'s available. Let us know when ordering.',
                         'For large or heavy bulk orders, we\'ll advise the best shipping option before confirming.',
                         'Always inspect your order on delivery. Report any issues within 24 hours via WhatsApp with photos.',

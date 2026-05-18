@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import type { DBProductWithCategory } from '@/lib/database.types'
 import { getProductImages, optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
 import { mapDBProduct } from '@/lib/utils'
-import { useProducts } from '@/hooks'
+import { useProducts, useRecentlyViewed } from '@/hooks'
 import ProductAssistant from './ProductAssistant'
 
 interface Props {
@@ -17,6 +17,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
   const [slide, setSlide] = useState(0)
   const mapped  = mapDBProduct(product)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { addRecentlyViewed } = useRecentlyViewed()
 
   // Fetch similar products (same category, exclude current)
   const { products: allCategoryProducts, loading: productsLoading } = useProducts({
@@ -27,11 +28,12 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
     .filter(p => p.id !== product.id)
     .slice(0, 4)
 
-  // Scroll to top and reset slide when product changes
+  // Scroll to top, reset slide, and record view when product changes
   useEffect(() => {
     setSlide(0)
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [product.id])
+    addRecentlyViewed(product)
+  }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'

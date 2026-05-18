@@ -12,27 +12,27 @@ import {
 import type { DBEnquiry } from '@/lib/database.types'
 
 interface Stats {
-  totalProducts:    number
-  availableProducts:number
-  totalCategories:  number
-  totalEnquiries:   number
-  enquiriesThisWeek:number
-  enquiriesOpen:    number
+  totalProducts: number
+  availableProducts: number
+  totalCategories: number
+  totalEnquiries: number
+  enquiriesThisWeek: number
+  enquiriesOpen: number
 }
 
 type DateRange = 7 | 14 | 30
 
 export default function AdminDashboard() {
-  const [stats,       setStats]       = useState<Stats | null>(null)
-  const [recent,      setRecent]      = useState<DBEnquiry[]>([])
-  const [chartData,   setChartData]   = useState<AnalyticsChartPoint[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [recent, setRecent] = useState<DBEnquiry[]>([])
+  const [chartData, setChartData] = useState<AnalyticsChartPoint[]>([])
   const [topProducts, setTopProducts] = useState<TopProduct[]>([])
-  const [totals,      setTotals]      = useState<Record<string, number>>({})
-  const [dateRange,   setDateRange]   = useState<DateRange>(7)
-  const [loading,     setLoading]     = useState(true)
+  const [totals, setTotals] = useState<Record<string, number>>({})
+  const [dateRange, setDateRange] = useState<DateRange>(7)
+  const [loading, setLoading] = useState(true)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
-  const [analyticsError, setAnalyticsError]     = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
 
   // Load core stats (use server-side counts + paginated recent enquiries)
@@ -57,12 +57,12 @@ export default function AdminDashboard() {
         ])
 
         setStats({
-          totalProducts:     totalProducts,
+          totalProducts: totalProducts,
           availableProducts: availableProducts,
-          totalCategories:   categories.length,
-          totalEnquiries:    totalEnquiries,
+          totalCategories: categories.length,
+          totalEnquiries: totalEnquiries,
           enquiriesThisWeek: enquiriesThisWeek,
-          enquiriesOpen:     enquiriesOpen,
+          enquiriesOpen: enquiriesOpen,
         })
         setRecent(enquiriesPage.items)
       } catch (e) {
@@ -105,9 +105,9 @@ export default function AdminDashboard() {
       ]
       const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
       const blob = new Blob([csv], { type: 'text/csv' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href     = url
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
       a.download = `bakevault-analytics-${dateRange}d-${new Date().toISOString().slice(0, 10)}.csv`
       a.click()
       URL.revokeObjectURL(url)
@@ -126,21 +126,21 @@ export default function AdminDashboard() {
   if (error) return <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">{error}</div>
 
   const statCards = [
-    { label: 'Total Products',    value: stats!.totalProducts,    sub: `${stats!.availableProducts} available`,    color: 'text-orange-600' },
-    { label: 'Categories',        value: stats!.totalCategories,  sub: 'product categories',                       color: 'text-blue-600'   },
-    { label: 'Total Enquiries',   value: stats!.totalEnquiries,   sub: `${stats!.enquiriesThisWeek} this week`,    color: 'text-green-600'  },
-    { label: 'Pending Enquiries', value: stats!.enquiriesOpen,    sub: 'awaiting response',                        color: 'text-yellow-600' },
+    { label: 'Total Products', value: stats!.totalProducts, sub: `${stats!.availableProducts} available`, color: 'text-orange-600' },
+    { label: 'Categories', value: stats!.totalCategories, sub: 'product categories', color: 'text-blue-600' },
+    { label: 'Total Enquiries', value: stats!.totalEnquiries, sub: `${stats!.enquiriesThisWeek} this week`, color: 'text-green-600' },
+    { label: 'Pending Enquiries', value: stats!.enquiriesOpen, sub: 'awaiting response', color: 'text-yellow-600' },
   ]
 
   const analyticsCards = [
-    { label: 'Page Views',      value: totals['page_view']    ?? 0, color: 'text-blue-600'   },
-    { label: 'Product Views',   value: totals['product_view'] ?? 0, color: 'text-purple-600' },
-    { label: 'Add to Cart',     value: totals['add_to_cart']  ?? 0, color: 'text-orange-600' },
-    { label: 'Checkouts',       value: totals['cart_checkout']?? 0, color: 'text-green-600'  },
+    { label: 'Page Views', value: totals['page_view'] ?? 0, color: 'text-blue-600' },
+    { label: 'Product Views', value: totals['product_view'] ?? 0, color: 'text-purple-600' },
+    { label: 'Add to Cart', value: totals['add_to_cart'] ?? 0, color: 'text-orange-600' },
+    { label: 'Checkouts', value: totals['cart_checkout'] ?? 0, color: 'text-green-600' },
   ]
 
   const statusColor: Record<string, string> = {
-    sent:      'bg-yellow-100 text-yellow-700',
+    sent: 'bg-yellow-100 text-yellow-700',
     responded: 'bg-blue-100 text-blue-700',
     fulfilled: 'bg-green-100 text-green-700',
   }
@@ -180,9 +180,8 @@ export default function AdminDashboard() {
             <div className="flex gap-1">
               {([7, 14, 30] as DateRange[]).map(d => (
                 <button key={d} onClick={() => setDateRange(d)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
-                    dateRange === d ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}>
+                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${dateRange === d ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}>
                   {d}d
                 </button>
               ))}
@@ -239,10 +238,10 @@ export default function AdminDashboard() {
                       labelStyle={{ fontWeight: 700, color: '#374151' }}
                     />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                    <Line type="monotone" dataKey="page_views"    name="Page Views"    stroke="#3b82f6" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="product_views" name="Product Views"  stroke="#a855f7" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="add_to_cart"   name="Add to Cart"   stroke="#f97316" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="checkouts"     name="Checkouts"     stroke="#22c55e" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="page_views" name="Page Views" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="product_views" name="Product Views" stroke="#a855f7" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="add_to_cart" name="Add to Cart" stroke="#f97316" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="checkouts" name="Checkouts" stroke="#22c55e" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -286,7 +285,7 @@ export default function AdminDashboard() {
             {/* Mobile */}
             <div className="sm:hidden divide-y divide-gray-50">
               {recent.map(e => {
-                const items = (e.items as Array<{product_name: string; quantity: number}>) ?? []
+                const items = (e.items as Array<{ product_name: string; quantity: number }>) ?? []
                 return (
                   <div key={e.id} className="px-5 py-4">
                     <div className="flex items-center justify-between mb-1">
@@ -294,7 +293,7 @@ export default function AdminDashboard() {
                       <span className="text-xs text-gray-400">{new Date(e.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-sm text-gray-700">
-                      {items.slice(0,2).map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
+                      {items.slice(0, 2).map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
                       {items.length > 2 && ` +${items.length - 2} more`}
                     </p>
                   </div>

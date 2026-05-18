@@ -1,25 +1,27 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import ProductCard         from '@/components/ProductCard'
-import ProductModal        from '@/components/ProductModal'
-import AboutSection        from '@/components/sections/AboutSection'
-import HeroSection         from '@/components/sections/HeroSection'
+import ProductCard from '@/components/ProductCard'
+import ProductModal from '@/components/ProductModal'
+import AboutSection from '@/components/sections/AboutSection'
+import HeroSection from '@/components/sections/HeroSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
-import SectionHeading      from '@/components/ui/SectionHeading'
+import SectionHeading from '@/components/ui/SectionHeading'
 import SkeletonProductCard from '@/components/ui/SkeletonProductCard'
-import { CATEGORIES }      from '@/constants'
-import { useCart }         from '@/lib/cart-context'
-import { useProducts, useTestimonials } from '@/hooks'
-import { mapDBProduct }    from '@/lib/utils'
-import { trackEvent }      from '@/lib/analytics'
-import { Helmet }          from 'react-helmet-async'
+import RecentlyViewedStrip from '@/components/RecentlyViewedStrip'
+import { CATEGORIES } from '@/constants'
+import { useCart } from '@/lib/cart-context'
+import { useProducts, useTestimonials, useRecentlyViewed } from '@/hooks'
+import { mapDBProduct } from '@/lib/utils'
+import { trackEvent } from '@/lib/analytics'
+import { Helmet } from 'react-helmet-async'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
 export default function HomePage() {
-  const { addToCart }                = useCart()
-  const navigate                     = useNavigate()
+  const { addToCart } = useCart()
+  const navigate = useNavigate()
   const { products: featuredFromDB, loading: featuredLoading } = useProducts({ featuredOnly: true })
-  const { testimonials }             = useTestimonials(true)
+  const { testimonials } = useTestimonials(true)
+  const { items: recentItems } = useRecentlyViewed()
 
   const [visibleFeaturedLoading, setVisibleFeaturedLoading] = useState<boolean>(featuredLoading)
   useEffect(() => {
@@ -34,9 +36,9 @@ export default function HomePage() {
 
   // Hero and featured draw from the same list — hero shows up to 5 slides,
   // featured section mirrors those exact products in the same order.
-  const heroSlides       = useMemo(() => featuredFromDB.slice(0, 5), [featuredFromDB])
+  const heroSlides = useMemo(() => featuredFromDB.slice(0, 5), [featuredFromDB])
   const featuredProducts = useMemo(() => featuredFromDB.map(mapDBProduct).slice(0, 5), [featuredFromDB])
-  const rawByIdMap       = useMemo(() => new Map(featuredFromDB.map(p => [p.id, p])), [featuredFromDB])
+  const rawByIdMap = useMemo(() => new Map(featuredFromDB.map(p => [p.id, p])), [featuredFromDB])
 
   function openDetails(p: ReturnType<typeof mapDBProduct>) {
     const raw = rawByIdMap.get(p.id) ?? null
@@ -120,6 +122,17 @@ export default function HomePage() {
 
         </div>
       </main>
+
+      {/* Recently Viewed — shown only to returning visitors */}
+      {recentItems.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <RecentlyViewedStrip
+            items={recentItems}
+            title="You Were Looking At These"
+            subtitle="Pick up where you left off"
+          />
+        </div>
+      )}
 
       <TestimonialsSection testimonials={testimonials} />
 

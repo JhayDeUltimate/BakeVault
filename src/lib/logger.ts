@@ -5,10 +5,10 @@ import * as Sentry from '@sentry/react'
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export interface LogContext {
-  user_id?:     string
-  session_id?:  string
-  page?:        string
-  event?:       string
+  user_id?: string
+  session_id?: string
+  page?: string
+  event?: string
   duration_ms?: number
   status_code?: number
   [key: string]: unknown
@@ -45,8 +45,8 @@ export const logger = {
       Sentry.addBreadcrumb({
         category: context.event ?? 'app',
         message,
-        level:    'info',
-        data:     sanitize(context),
+        level: 'info',
+        data: sanitize(context),
       })
     } else {
       console.info(`%c[INFO]  ${message}`, 'color: #2196f3', context)

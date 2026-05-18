@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import SectionHeading from '@/components/ui/SectionHeading'
 import { WHATSAPP_URL, WHATSAPP_DISPLAY_NUMBER } from '@/constants'
 import { useSettings } from '@/hooks'
@@ -9,6 +9,15 @@ export default function ContactPage() {
     const email = settings.contact_email || 'sales@bakevault.com.ng'
     const waNumber = settings.whatsapp_number || WHATSAPP_DISPLAY_NUMBER
     const waUrl = waNumber ? `https://wa.me/${waNumber.replace(/\D/g, '')}` : WHATSAPP_URL
+    const [copied, setCopied] = useState(false)
+
+    function copyPhone() {
+        if (!waNumber) return
+        navigator.clipboard.writeText(waNumber).then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        })
+    }
     // Default hours used when no admin setting is present or parsing fails
     const DEFAULT_HOURS = [
         { day: 'Monday – Friday', hours: '8:00 AM – 6:00 PM' },
@@ -24,7 +33,7 @@ export default function ContactPage() {
             if (Array.isArray(parsed)) {
                 return parsed.map((r: any) => ({ day: String(r.day ?? r.name ?? ''), hours: String(r.hours ?? r.time ?? '') }))
             }
-        } catch {}
+        } catch { }
         // Fallback: newline-separated lines like "Monday – Friday: 8:00 AM – 6:00 PM"
         const lines = raw.split('\n').map(l => l.trim()).filter(Boolean)
         if (lines.length > 0) {
@@ -57,7 +66,7 @@ export default function ContactPage() {
                     <SectionHeading
                         eyebrow="Contact"
                         title="We respond fast. Reach out any time."
-                        description="For orders, product questions, or anything else — WhatsApp is the quickest way to get us."
+                        description="For orders, product questions, or anything else. WhatsApp is the quickest way to get us."
                     />
                 </div>
             </section>
@@ -78,8 +87,29 @@ export default function ContactPage() {
                             </svg>
                         </div>
                         <div>
-                            <p className="text-xs font-black uppercase tracking-widest text-green-700 mb-0.5">WhatsApp — Fastest response</p>
-                            <p className="text-base font-bold text-brand-darkGray">{waNumber || 'Message us on WhatsApp'}</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-green-700 mb-0.5">WhatsApp, Fastest response</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-base font-bold text-brand-darkGray">{waNumber || 'Message us on WhatsApp'}</p>
+                                {waNumber && (
+                                    <button
+                                        type="button"
+                                        onClick={e => { e.preventDefault(); copyPhone() }}
+                                        title="Copy number"
+                                        className="shrink-0 p-1.5 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
+                                        aria-label="Copy WhatsApp number"
+                                    >
+                                        {copied ? (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
                             <p className="text-xs text-brand-darkGray/50 mt-0.5">We reply within 1 hour during business hours</p>
                         </div>
                         <svg className="w-5 h-5 text-green-400 ml-auto shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,18 +167,18 @@ export default function ContactPage() {
                     <h3 className="text-sm font-extrabold text-brand-darkGray font-display uppercase tracking-wider mb-4">
                         Business Hours
                     </h3>
-                        <div className="space-y-2">
-                            {businessHours.map(row => (
-                                <div key={row.day} className="flex items-center justify-between text-sm">
-                                    <span className="text-brand-darkGray/60 font-medium">{row.day}</span>
-                                    <span className={`font-bold ${row.hours === 'Closed' ? 'text-red-400' : 'text-brand-darkGray'}`}>
-                                        {row.hours}
-                                    </span>
-                                </div>
-                            ))}
+                    <div className="space-y-2">
+                        {businessHours.map(row => (
+                            <div key={row.day} className="flex items-center justify-between text-sm">
+                                <span className="text-brand-darkGray/60 font-medium">{row.day}</span>
+                                <span className={`font-bold ${row.hours === 'Closed' ? 'text-red-400' : 'text-brand-darkGray'}`}>
+                                    {row.hours}
+                                </span>
+                            </div>
+                        ))}
                     </div>
                     <p className="text-xs text-brand-darkGray/40 mt-4 leading-relaxed">
-                        Outside business hours, send us a WhatsApp message — we'll respond first thing when we're back.
+                        Outside business hours, send us a WhatsApp message. We'll respond first thing when we're back.
                     </p>
                 </div>
             </section>

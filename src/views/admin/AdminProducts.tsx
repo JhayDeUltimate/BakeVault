@@ -1,19 +1,19 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { createProduct, updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import ProductForm, { type ProductFormData } from '../../components/admin/ProductForm'
 import type { DBProductWithCategory } from '../../lib/database.types'
 
-type Modal   = { mode: 'add' } | { mode: 'edit'; product: DBProductWithCategory } | null
+type Modal = { mode: 'add' } | { mode: 'edit'; product: DBProductWithCategory } | null
 type SortKey = 'name' | 'category' | 'updated_at' | 'created_at' | 'is_available' | 'is_featured'
 type SortDir = 'asc' | 'desc'
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'name',         label: 'Name (A–Z)'   },
-  { key: 'category',     label: 'Category'     },
-  { key: 'is_available', label: 'Available'    },
-  { key: 'is_featured',  label: 'Hero'         },
-  { key: 'updated_at',   label: 'Last Updated' },
-  { key: 'created_at',   label: 'Date Added'   },
+  { key: 'name', label: 'Name (A–Z)' },
+  { key: 'category', label: 'Category' },
+  { key: 'is_available', label: 'Available' },
+  { key: 'is_featured', label: 'Hero' },
+  { key: 'updated_at', label: 'Last Updated' },
+  { key: 'created_at', label: 'Date Added' },
 ]
 
 export default function AdminProducts() {
@@ -24,13 +24,26 @@ export default function AdminProducts() {
   const [availableCount, setAvailableCount] = useState<number | null>(null)
   const [page, setPage] = useState<number>(1)
   const [pageSize] = useState<number>(20)
-  const [modal,      setModal]    = useState<Modal>(null)
-  const [search,     setSearch]   = useState('')
-  const [saving,     setSaving]   = useState<string | null>(null)
-  const [sortKey,    setSortKey]  = useState<SortKey>('name')
-  const [sortDir,    setSortDir]  = useState<SortDir>('asc')
-  const [deleteError,setDeleteError] = useState<string | null>(null)
-  const [toggling,   setToggling]    = useState<string | null>(null)
+  const [modal, setModal] = useState<Modal>(null)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [initialLoad, setInitialLoad] = useState(true)
+
+  // Debounce search: only update the query value 350ms after the user stops typing
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1) // reset to page 1 on new search
+    }, 350)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [search])
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -50,7 +63,7 @@ export default function AdminProducts() {
         const va = (a.categories?.name ?? '').toLowerCase()
         const vb = (b.categories?.name ?? '').toLowerCase()
         if (va < vb) return sortDir === 'asc' ? -1 : 1
-        if (va > vb) return sortDir === 'asc' ?  1 : -1
+        if (va > vb) return sortDir === 'asc' ? 1 : -1
         return 0
       })
     }
@@ -61,13 +74,13 @@ export default function AdminProducts() {
   async function fetchPage() {
     setLoading(true); setError(null)
     try {
-      const res = await getProductsPage({ page, pageSize, search: search || undefined, includeUnavailable: true, sortKey, sortDir })
+      const res = await getProductsPage({ page, pageSize, search: debouncedSearch || undefined, includeUnavailable: true, sortKey, sortDir })
       setProducts(res.items)
       setTotal(res.total)
       try {
         const available = await getProductsCount({ includeUnavailable: false })
         setAvailableCount(available)
-      } catch {}
+      } catch { }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load products')
     } finally {
@@ -77,15 +90,15 @@ export default function AdminProducts() {
 
   // Initial + dependency-driven fetch
   useEffect(() => {
-    fetchPage()
+    fetchPage().finally(() => { if (initialLoad) setInitialLoad(false) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, sortKey, sortDir])
+  }, [page, debouncedSearch, sortKey, sortDir])
 
   // refetch helper used by mutations
   const refetch = fetchPage
 
   async function handleSave(data: ProductFormData) {
-    if (modal?.mode === 'add')  await createProduct(data)
+    if (modal?.mode === 'add') await createProduct(data)
     if (modal?.mode === 'edit') await updateProduct(modal.product.id, data)
     setModal(null); refetch()
   }
@@ -124,7 +137,7 @@ export default function AdminProducts() {
     }
   }
 
-  if (loading) return (
+  if (initialLoad && loading) return (
     <div className="flex justify-center py-20">
       <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
     </div>
@@ -138,8 +151,8 @@ export default function AdminProducts() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Products</h1>
           <p className="text-sm text-gray-500">
-              {total} total · {availableCount !== null ? `${availableCount} available` : '— available'}
-            </p>
+            {total} total · {availableCount !== null ? `${availableCount} available` : '— available'}
+          </p>
         </div>
         <button onClick={() => setModal({ mode: 'add' })}
           className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors">
@@ -176,7 +189,12 @@ export default function AdminProducts() {
             </svg>
             <input type="text" placeholder="Search products…" value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            {!initialLoad && loading && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-3.5 h-3.5 border-2 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
+              </div>
+            )}
           </div>
           <div className="hidden sm:block h-6 w-px bg-gray-200" />
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">Sort by:</span>
@@ -186,11 +204,10 @@ export default function AdminProducts() {
               const arrow = isActive ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
               return (
                 <button key={opt.key} type="button" onClick={() => handleSort(opt.key)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                    isActive
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${isActive
                       ? 'bg-orange-500 text-white border-orange-500'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600'
-                  }`}>
+                    }`}>
                   {opt.label}{arrow}
                 </button>
               )
@@ -285,9 +302,8 @@ export default function AdminProducts() {
                     <button onClick={() => toggleAvailable(p)}
                       disabled={toggling === p.id}
                       aria-label={p.is_available ? 'Mark unavailable' : 'Mark available'}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${
-                        toggling === p.id ? 'opacity-50 cursor-not-allowed' : ''
-                      } ${p.is_available ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      className={`relative w-9 h-5 rounded-full transition-colors ${toggling === p.id ? 'opacity-50 cursor-not-allowed' : ''
+                        } ${p.is_available ? 'bg-green-500' : 'bg-gray-300'}`}>
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${p.is_available ? 'translate-x-4' : ''}`} />
                     </button>
                   </td>
@@ -362,6 +378,7 @@ export default function AdminProducts() {
               <ProductForm
                 key={modal.mode === 'edit' ? modal.product.id : '__new__'}
                 initial={modal.mode === 'edit' ? modal.product : null}
+                nextDisplayOrder={total}
                 onSave={handleSave}
                 onCancel={() => setModal(null)}
               />

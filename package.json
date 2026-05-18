@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "sitemap": "node --env-file=.env.local scripts/generate-sitemap.mjs",
+    "build": "npm run sitemap && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,13 +21,18 @@
     "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
     "tailwindcss": "^4",
     "typescript": "^6.0.2",
+    "typescript-eslint": "^8.59.3",
     "vite": "^6.0.0"
   }
 }

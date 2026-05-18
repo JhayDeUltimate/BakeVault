@@ -35,7 +35,7 @@ export function optimizeImageUrl(
     const parsed = new URL(url)
 
     // Prepare remote identifier for the proxy (strip protocol)
-    const remote = `${parsed.host}${parsed.pathname}${parsed.search}`.replace(/^\/+/,'')
+    const remote = `${parsed.host}${parsed.pathname}${parsed.search}`.replace(/^\/+/, '')
 
     // If no resizing requested, return original URL
     if (!width && !height) return url
@@ -95,9 +95,9 @@ export function getProductImages(p: { image_url?: string | null; image_urls?: un
 
 /** Thumbnail size presets — kept for API compatibility, values unused on free plan */
 export const IMG = {
-  card:       { width: 400,  height: 400  },
-  hero:       { width: 1200, height: 700  },
-  modal:      { width: 800,  height: 600  },
-  adminThumb: { width: 80,   height: 80   },
-  cartThumb:  { width: 200,  height: 200  },
+  card: { width: 400, height: 400 },
+  hero: { width: 1200, height: 700 },
+  modal: { width: 800, height: 600 },
+  adminThumb: { width: 80, height: 80 },
+  cartThumb: { width: 200, height: 200 },
 } as const

@@ -188,11 +188,12 @@ async function callGemini(
   apiKey:   string,
   system:   string,
   contents: GeminiContent[],
+  configOverride?: Record<string, unknown>,
 ): Promise<Response> {
   const body = {
     systemInstruction: { parts: [{ text: system }] },
     contents,
-    generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+    generationConfig: { maxOutputTokens: 1024, temperature: 0.7, ...configOverride },
   }
   const payload = JSON.stringify(body)
 
@@ -376,7 +377,10 @@ serve(async (req: Request) => {
         ],
       }]
 
-      const finalRes  = await callGemini(GEMINI_API_KEY, ANALYZE_FINAL_SYSTEM(searchContext), finalContents)
+      const finalRes  = await callGemini(GEMINI_API_KEY, ANALYZE_FINAL_SYSTEM(searchContext), finalContents, {
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+      })
       const finalData = await finalRes.json() as Record<string, unknown>
 
       if (!finalRes.ok) {
@@ -384,13 +388,14 @@ serve(async (req: Request) => {
         return respond({ error: errMsg }, origin)
       }
 
-      const raw   = extractText(finalData)
-      const clean = raw.replace(/```json|```/g, '').trim()
+      const raw = extractText(finalData)
+      const clean = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
 
       let parsed: { name?: string; description?: string } = {}
       try {
         parsed = JSON.parse(clean)
       } catch {
+        log('WARN', 'AI returned unparseable JSON', { raw: raw.slice(0, 500), cleaned: clean.slice(0, 500) })
         return respond({ error: 'AI returned unparseable JSON. Try again.' }, origin)
       }
 

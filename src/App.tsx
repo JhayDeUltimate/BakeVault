@@ -1,76 +1,82 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { CartProvider }          from '@/lib/cart-context'
-import PublicLayout              from '@/components/PublicLayout'
-import HomePage                  from '@/views/HomePage'
-import CatalogPage               from '@/views/CatalogPage'
-import AboutPage                 from '@/views/AboutPage'
-import FAQPage                   from '@/views/FAQPage'
-import HowToOrderPage            from '@/views/HowToOrderPage'
-import DeliveryPage              from '@/views/DeliveryPage'
-import ContactPage               from '@/views/ContactPage'
-import TermsPage                 from '@/views/TermsPage'
-import PrivacyPage               from '@/views/PrivacyPage'
-import ProductPage               from '@/views/ProductPage'
-import AdminLogin                from '@/views/admin/AdminLogin'
-import AdminResetPassword       from '@/views/admin/AdminResetPassword'
-import AdminLayout               from '@/views/admin/AdminLayout'
-import AdminDashboard            from '@/views/admin/AdminDashboard'
-import AdminProducts             from '@/views/admin/AdminProducts'
-import AdminCategories           from '@/views/admin/AdminCategories'
-import AdminEnquiries            from '@/views/admin/AdminEnquiries'
-import AdminProductRequests      from '@/views/admin/AdminProductRequests'
-import AdminTestimonials         from '@/views/admin/AdminTestimonials'
-import AdminSettings             from '@/views/admin/AdminSettings'
-import AdminActivityLogs         from '@/views/admin/AdminActivityLogs'
-import ProtectedRoute            from '@/components/admin/ProtectedRoute'
-import ScrollToTop               from '@/components/ScrollToTop'
-import ErrorBoundary             from '@/components/ErrorBoundary'
-import NotFoundPage              from '@/views/NotFoundPage'
-import AdminNotFoundPage         from '@/views/admin/AdminNotFoundPage'
+import { AuthProvider } from '@/lib/auth-context'
+import { CartProvider } from '@/lib/cart-context'
+import PublicLayout from '@/components/PublicLayout'
+import HomePage from '@/views/HomePage'
+import CatalogPage from '@/views/CatalogPage'
+import AboutPage from '@/views/AboutPage'
+import FAQPage from '@/views/FAQPage'
+import HowToOrderPage from '@/views/HowToOrderPage'
+import DeliveryPage from '@/views/DeliveryPage'
+import ContactPage from '@/views/ContactPage'
+import TermsPage from '@/views/TermsPage'
+import PrivacyPage from '@/views/PrivacyPage'
+import ProductPage from '@/views/ProductPage'
+import YogurtStarterPage from '@/views/landing/YogurtStarterPage'
+import KefirStarterPage from '@/views/landing/KefirStarterPage'
+import BreadImproverPage from '@/views/landing/BreadImproverPage'
+import NotFoundPage from '@/views/NotFoundPage'
+import AdminLogin from '@/views/admin/AdminLogin'
+import AdminLayout from '@/views/admin/AdminLayout'
+import AdminDashboard from '@/views/admin/AdminDashboard'
+import AdminProducts from '@/views/admin/AdminProducts'
+import AdminCategories from '@/views/admin/AdminCategories'
+import AdminEnquiries from '@/views/admin/AdminEnquiries'
+import AdminProductRequests from '@/views/admin/AdminProductRequests'
+import AdminTestimonials from '@/views/admin/AdminTestimonials'
+import AdminSettings from '@/views/admin/AdminSettings'
+import AdminActivityLogs from '@/views/admin/AdminActivityLogs'
+import ProtectedRoute from '@/components/admin/ProtectedRoute'
+import ScrollToTop from '@/components/ScrollToTop'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export default function App() {
   return (
     <ErrorBoundary>
-    <CartProvider>
-      <ScrollToTop />
-      <Routes>
-        {/* Public */}
-        <Route element={<PublicLayout />}>
-          <Route path="/"        element={<HomePage />} />
-          <Route path="/catalog" element={<CatalogPage />} />
-          <Route path="/about"   element={<AboutPage />} />
-          <Route path="/faq"            element={<FAQPage />} />
-          <Route path="/how-to-order"   element={<HowToOrderPage />} />
-          <Route path="/delivery"       element={<DeliveryPage />} />
-          <Route path="/contact"        element={<ContactPage />} />
-          <Route path="/terms"          element={<TermsPage />} />
-          <Route path="/privacy"        element={<PrivacyPage />} />
-          <Route path="/products/:slug" element={<ProductPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
+      <AuthProvider>
+        <CartProvider>
+          <ScrollToTop />
+          <Routes>
+            {/* Public */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/catalog" element={<CatalogPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/how-to-order" element={<HowToOrderPage />} />
+              <Route path="/delivery" element={<DeliveryPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/products/:slug" element={<ProductPage />} />
+              {/* SEO landing pages */}
+              <Route path="/yogurt-starter-lagos" element={<YogurtStarterPage />} />
+              <Route path="/kefir-starter-lagos" element={<KefirStarterPage />} />
+              <Route path="/bread-improver-lagos" element={<BreadImproverPage />} />
+              {/* 404 — rendered inside the public layout so header/footer are present */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
 
-        {/* Admin */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/reset-password" element={<AdminResetPassword />} />
-        <Route
-          path="/admin"
-          element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}
-        >
-          <Route index                 element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"      element={<AdminDashboard />} />
-          <Route path="products"       element={<AdminProducts />} />
-          <Route path="activity"       element={<AdminActivityLogs />} />
-          <Route path="categories"     element={<AdminCategories />} />
-          <Route path="enquiries"      element={<AdminEnquiries />} />
-          <Route path="requests"       element={<AdminProductRequests />} />
-          <Route path="testimonials"   element={<AdminTestimonials />} />
-          <Route path="settings"       element={<AdminSettings />} />
-          <Route path="*" element={<AdminNotFoundPage />} />
-        </Route>
-        
-      </Routes>
-    </CartProvider>
+            {/* Admin */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin"
+              element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="enquiries" element={<AdminEnquiries />} />
+              <Route path="requests" element={<AdminProductRequests />} />
+              <Route path="testimonials" element={<AdminTestimonials />} />
+              <Route path="settings"     element={<AdminSettings />} />
+              <Route path="activity"     element={<AdminActivityLogs />} />
+            </Route>
+          </Routes>
+        </CartProvider>
+      </AuthProvider>
     </ErrorBoundary>
   )
 }

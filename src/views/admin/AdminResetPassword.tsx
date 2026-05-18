@@ -5,14 +5,14 @@ import BrandLogo from '@/components/ui/BrandLogo'
 
 export default function AdminResetPassword() {
   const navigate = useNavigate()
-  const [password, setPassword]   = useState('')
-  const [confirm, setConfirm]     = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const [ready, setReady]         = useState(false)   // true once Supabase confirms recovery session
-  const [error, setError]         = useState<string | null>(null)
-  const [saving, setSaving]       = useState(false)
-  const [done, setDone]           = useState(false)
+  const [ready, setReady] = useState(false)   // true once Supabase confirms recovery session
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [done, setDone] = useState(false)
 
   useEffect(() => {
     // Supabase fires PASSWORD_RECOVERY when the hash fragment contains type=recovery
@@ -25,7 +25,7 @@ export default function AdminResetPassword() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (password !== confirm) { setError('Passwords do not match.'); return }
-    if (password.length < 8)  { setError('Password must be at least 8 characters.'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
 
     try {
       setSaving(true); setError(null)

@@ -23,7 +23,7 @@ function loadCart(): CartItem[] {
       const stored = parsed as StoredCart
       if (typeof stored.ts === 'number') {
         if (Date.now() - stored.ts > CART_EXPIRY_MS) {
-          try { localStorage.removeItem(CART_STORAGE_KEY) } catch {}
+          try { localStorage.removeItem(CART_STORAGE_KEY) } catch { }
           return []
         }
       }
@@ -46,25 +46,25 @@ function saveCart(items: CartItem[]): void {
 }
 
 interface CartContextType {
-  items:             CartItem[]
-  isCartOpen:        boolean
-  isCategoriesOpen:  boolean
-  openCart:          () => void
-  closeCart:         () => void
-  openCategories:    () => void
-  closeCategories:   () => void
-  addToCart:         (product: Product) => void
-  removeFromCart:    (id: string) => void
-  updateQuantity:    (id: string, delta: number) => void
-  clearCart:         () => void
-  cartCount:         number
+  items: CartItem[]
+  isCartOpen: boolean
+  isCategoriesOpen: boolean
+  openCart: () => void
+  closeCart: () => void
+  openCategories: () => void
+  closeCategories: () => void
+  addToCart: (product: Product) => void
+  removeFromCart: (id: string) => void
+  updateQuantity: (id: string, delta: number) => void
+  clearCart: () => void
+  cartCount: number
 }
 
 const CartContext = createContext<CartContextType | null>(null)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items,            setItems]            = useState<CartItem[]>(loadCart)
-  const [isCartOpen,       setIsCartOpen]       = useState(false)
+  const [items, setItems] = useState<CartItem[]>(loadCart)
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
 
   // Persist cart to localStorage whenever it changes
@@ -89,7 +89,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('bakevault:add-to-cart', { detail: { product } }))
       }
-    } catch {}
+    } catch { }
   }
 
   function removeFromCart(id: string) {
@@ -99,7 +99,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   function updateQuantity(id: string, delta: number) {
     setItems(prev =>
       prev.map(i => i.id === id ? { ...i, quantity: i.quantity + delta } : i)
-          .filter(i => i.quantity > 0)
+        .filter(i => i.quantity > 0)
     )
   }
 
@@ -110,11 +110,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return (
     <CartContext.Provider value={{
       items,
-      isCartOpen,       isCategoriesOpen,
-      openCart:         () => setIsCartOpen(true),
-      closeCart:        () => setIsCartOpen(false),
-      openCategories:   () => setIsCategoriesOpen(true),
-      closeCategories:  () => setIsCategoriesOpen(false),
+      isCartOpen, isCategoriesOpen,
+      openCart: () => setIsCartOpen(true),
+      closeCart: () => setIsCartOpen(false),
+      openCategories: () => setIsCategoriesOpen(true),
+      closeCategories: () => setIsCategoriesOpen(false),
       addToCart, removeFromCart, updateQuantity, clearCart,
       cartCount: items.reduce((sum, i) => sum + i.quantity, 0),
     }}>

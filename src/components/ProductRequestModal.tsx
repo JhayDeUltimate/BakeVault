@@ -76,7 +76,7 @@ export default function ProductRequestModal({ onClose }: Props) {
           <>
             <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-1">Can't find it? Request it.</h2>
             <p className="text-xs text-brand-darkGray/50 mb-6">
-              Tell us what you're looking for and we'll see if we can source it — retail or bulk. Add your contact info and we'll update you directly.
+              Tell us what you're looking for and we'll see if we can source it, retail or bulk. Add your contact info and we'll update you directly.
             </p>
 
             {error && (
@@ -135,7 +135,7 @@ export default function ProductRequestModal({ onClose }: Props) {
                   placeholder="e.g. +2348012345678 or you@email.com"
                   className={inputCls} />
                 <p className="mt-1 text-[10px] text-brand-darkGray/40">
-                  Optional — so we can update you when the product is available.
+                  Optional, so we can update you when the product is available.
                 </p>
               </div>
 

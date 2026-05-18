@@ -22,7 +22,7 @@ Wholesale pricing applies to orders above ₦50,000. Retail pricing applies to a
         },
         {
             title: '3. Payment',
-            body: `Payment is accepted via bank transfer only. Payment details are provided during the WhatsApp order confirmation process. We do not request payment before your order total — including delivery — has been confirmed and agreed.
+            body: `Payment is accepted via bank transfer only. Payment details are provided during the WhatsApp order confirmation process. We do not request payment before your order total, including delivery, has been confirmed and agreed.
 
 Orders are processed after payment confirmation. We are not responsible for delays caused by incorrect payment details provided by the customer.`,
         },
