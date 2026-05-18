@@ -145,7 +145,7 @@ export default function AdminProducts() {
   if (error) return <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">{error}</div>
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div className="mx-auto w-full max-w-6xl min-w-0 space-y-5 pb-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -155,7 +155,7 @@ export default function AdminProducts() {
           </p>
         </div>
         <button onClick={() => setModal({ mode: 'add' })}
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors">
+          className="flex w-full items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors sm:w-auto">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
           </svg>
@@ -180,8 +180,8 @@ export default function AdminProducts() {
       )}
 
       {/* Search + Sort controls row */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+      <div className="w-full max-w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:w-64">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,13 +198,13 @@ export default function AdminProducts() {
           </div>
           <div className="hidden sm:block h-6 w-px bg-gray-200" />
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">Sort by:</span>
-          <div className="flex gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
+          <div className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1 -mb-1 scrollbar-hide">
             {SORT_OPTIONS.map(opt => {
               const isActive = sortKey === opt.key
               const arrow = isActive ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
               return (
                 <button key={opt.key} type="button" onClick={() => handleSort(opt.key)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${isActive
+                  className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${isActive
                       ? 'bg-orange-500 text-white border-orange-500'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600'
                     }`}>
@@ -219,7 +219,7 @@ export default function AdminProducts() {
       {/* Mobile card list */}
       <div className="sm:hidden space-y-3">
         {sorted.map(p => (
-          <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div key={p.id} className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex gap-3">
               {p.image_url
                 ? <img src={p.image_url} alt={p.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
@@ -348,9 +348,9 @@ export default function AdminProducts() {
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-gray-500">Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total}</div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:flex sm:items-center">
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
             className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Prev</button>
           <div className="text-sm text-gray-500">Page {page}</div>

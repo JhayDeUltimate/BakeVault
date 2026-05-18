@@ -43,7 +43,7 @@ export function AdminEnquiries() {
   if (error)   return <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">{error}</div>
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="mx-auto w-full max-w-5xl min-w-0 space-y-6 pb-6">
       {mutationError && (
         <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-100">
           {mutationError}
@@ -51,7 +51,7 @@ export function AdminEnquiries() {
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Enquiries <span className="text-base font-normal text-gray-400">({total})</span></h1>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+        <div className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide flex-nowrap sm:w-auto">
           {(['all','sent','responded','fulfilled'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize shrink-0 ${filter === f ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               {f}
@@ -64,7 +64,7 @@ export function AdminEnquiries() {
         {visible.map(e => {
           const items = (e.items as Array<{ product_name: string; quantity: number }>) ?? []
           return (
-            <div key={e.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <div key={e.id} className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -87,9 +87,9 @@ export function AdminEnquiries() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-gray-500">Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total}</div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:flex sm:items-center">
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
             className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Prev</button>
           <div className="text-sm text-gray-500">Page {page}</div>

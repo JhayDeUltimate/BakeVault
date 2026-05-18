@@ -101,7 +101,7 @@ export function AdminCategories() {
   )
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl min-w-0 space-y-5 pb-6">
       <h1 className="text-2xl font-bold text-gray-800">Categories</h1>
 
       {/* Status messages */}
@@ -118,17 +118,17 @@ export function AdminCategories() {
       )}
 
       {/* Add form */}
-      <form onSubmit={handleCreate} className="flex gap-3">
+      <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row">
         <input
           value={newName}
           onChange={e => { setNewName(e.target.value); setFormError(null) }}
           placeholder="New category name…"
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
         <button
           type="submit"
           disabled={savingNew || !newName.trim()}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed sm:w-auto sm:shrink-0"
         >
           {savingNew ? 'Adding…' : 'Add'}
         </button>
@@ -138,21 +138,21 @@ export function AdminCategories() {
       )}
 
       {/* Categories list */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <div className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         {categories.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-gray-400">
             No categories yet. Add one above.
           </div>
         ) : (
           categories.map(cat => (
-            <div key={cat.id} className="flex items-center gap-3 px-4 py-3 group">
+            <div key={cat.id} className="flex min-w-0 items-center gap-3 px-4 py-3 group">
               {editId === cat.id ? (
                 <>
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleUpdate(cat); if (e.key === 'Escape') cancelEdit() }}
-                    className="flex-1 border border-orange-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="min-w-0 flex-1 border border-orange-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     autoFocus
                   />
                   <button
@@ -168,7 +168,7 @@ export function AdminCategories() {
                 </>
               ) : (
                 <>
-                  <span className="flex-1 text-sm text-gray-700 font-medium">{cat.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-700 font-medium">{cat.name}</span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => startEdit(cat)}

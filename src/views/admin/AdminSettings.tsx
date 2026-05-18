@@ -53,9 +53,9 @@ export function AdminSettings() {
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="mx-auto w-full max-w-xl min-w-0 space-y-6 pb-6">
       <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-5">{error}</div>}
         {saved && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg mb-5">Settings saved ✓</div>}
         <form onSubmit={handleSave} className="space-y-5">

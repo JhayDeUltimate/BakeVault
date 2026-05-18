@@ -33,15 +33,15 @@ export default function AdminActivityLogs() {
   }, [logs, filter])
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6 pb-6">
       <SectionHeading eyebrow="Admin" title="Activity Log" description="Recent admin actions. Records are immutable and include admin id/email, action, resource, and details." />
 
-      <div className="bg-white border border-gray-100 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+      <div className="w-full min-w-0 overflow-hidden bg-white border border-gray-100 rounded-xl p-4">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action, admin email, resource..."
-              className="px-4 py-2 border border-gray-200 rounded-lg w-96 text-sm" />
-            <div className="text-sm text-gray-500">Showing {filtered.length} of {logs.length}</div>
+              className="w-full min-w-0 px-4 py-2 border border-gray-200 rounded-lg text-sm sm:w-96" />
+            <div className="shrink-0 text-sm text-gray-500">Showing {filtered.length} of {logs.length}</div>
           </div>
         </div>
 

@@ -41,7 +41,7 @@ export default function AdminResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-dvh bg-gray-50 flex items-center justify-center px-4 py-8 overflow-x-hidden">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <BrandLogo iconClassName="h-10 w-auto" />

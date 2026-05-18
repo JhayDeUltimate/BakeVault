@@ -74,7 +74,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-dvh w-full max-w-full bg-gray-50 overflow-hidden">
       <div className="hidden md:block">
         <AdminSidebar email={user?.email} onSignOut={handleSignOut} />
       </div>
@@ -86,14 +86,14 @@ export default function AdminLayout() {
           </div>
         </div>
       )}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100">
+      <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-hidden">
+        <div className="md:hidden flex h-14 shrink-0 items-center gap-3 px-4 py-3 bg-white border-b border-gray-100">
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-gray-100">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <BrandLogo iconClassName="h-7 w-auto" />
         </div>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6"><Outlet /></main>
+        <main className="flex-1 min-w-0 max-w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-gray-50 p-4 sm:p-6"><Outlet /></main>
       </div>
     </div>
   )

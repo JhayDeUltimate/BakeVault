@@ -146,7 +146,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl">
+    <div className="mx-auto w-full max-w-6xl min-w-0 space-y-8 pb-6">
 
       {/* Page heading */}
       <div>
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Store stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid min-w-0 grid-cols-2 gap-4 lg:grid-cols-4">
         {statCards.map(c => (
           <div key={c.label} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
             <div className={`text-3xl font-bold mb-1 ${c.color}`}>{c.value}</div>
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Analytics section ─────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm">
         {/* Analytics header */}
         <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent enquiries */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-bold text-gray-800">Recent Enquiries</h2>
           <Link to="/admin/enquiries" className="text-sm text-orange-500 hover:text-orange-600">View all →</Link>

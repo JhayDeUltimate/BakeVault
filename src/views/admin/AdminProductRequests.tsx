@@ -36,7 +36,7 @@ export default function AdminProductRequests() {
   )
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="mx-auto w-full max-w-4xl min-w-0 space-y-6 pb-6">
       {mutationError && (
         <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-100">
           {mutationError}
@@ -50,7 +50,7 @@ export default function AdminProductRequests() {
             {requests.length} total · {requests.filter(r => r.status === 'pending').length} pending
           </p>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap shrink-0">
+        <div className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide flex-nowrap sm:w-auto sm:shrink-0">
           {(['all', 'pending', 'reviewed', 'fulfilled'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize shrink-0 ${
@@ -64,13 +64,13 @@ export default function AdminProductRequests() {
 
       {/* Request cards */}
       {visible.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm py-12 text-center text-sm text-gray-400">
+        <div className="w-full min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm py-12 text-center text-sm text-gray-400">
           No requests {filter !== 'all' ? `with status "${filter}"` : 'yet'}.
         </div>
       ) : (
         <div className="space-y-3">
           {visible.map(r => (
-            <div key={r.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <div key={r.id} className="w-full min-w-0 overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
 
                 {/* Left: details */}

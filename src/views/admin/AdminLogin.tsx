@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks'
 import BrandLogo from '@/components/ui/BrandLogo'
 
 export default function AdminLogin() {
-  const { signIn, signUp, signOut, user, isAdmin, loading: authLoading } = useAuth()
+  const { signIn, signOut, user, isAdmin, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -51,7 +51,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-dvh bg-gray-50 flex items-center justify-center px-4 py-8 overflow-x-hidden">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-2">

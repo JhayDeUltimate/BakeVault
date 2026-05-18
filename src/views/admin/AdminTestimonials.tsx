@@ -58,8 +58,8 @@ export function AdminTestimonials() {
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 pb-6">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-800">Testimonials</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
@@ -69,9 +69,9 @@ export function AdminTestimonials() {
 
       <div className="space-y-3">
         {testimonials.map(t => (
-          <div key={t.id} className={`bg-white rounded-xl border shadow-sm p-5 ${t.is_visible ? 'border-gray-100' : 'border-gray-100 opacity-60'}`}>
+          <div key={t.id} className={`w-full min-w-0 overflow-hidden bg-white rounded-xl border shadow-sm p-5 ${t.is_visible ? 'border-gray-100' : 'border-gray-100 opacity-60'}`}>
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-gray-700 italic mb-2">"{t.quote}"</p>
                 <p className="text-xs font-bold text-gray-800">{t.customer_name} · <span className="font-normal text-gray-500">{t.business_name}</span></p>
               </div>
