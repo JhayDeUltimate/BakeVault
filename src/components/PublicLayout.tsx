@@ -41,10 +41,10 @@ export default function PublicLayout() {
         onOpenCart={openCart}
         onOpenCategories={openCategories}
       />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full overflow-x-hidden">
         <Outlet />
+        <Footer />
       </div>
-      <Footer />
       <Cart
         isOpen={isCartOpen}
         onClose={closeCart}

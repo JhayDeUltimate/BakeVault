@@ -76,7 +76,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
       <div className="absolute inset-0 bg-brand-darkGray/40 backdrop-blur-sm" onClick={onClose} />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex">
-        <div className="w-screen max-w-md">
+        <div className="w-full max-w-md">
           <div className="h-full flex flex-col bg-white shadow-2xl">
 
             {/* Header */}

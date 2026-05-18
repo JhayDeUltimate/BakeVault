@@ -33,8 +33,8 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
             if (img.src !== FALLBACK_IMAGE) img.src = FALLBACK_IMAGE
           }}
         />
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
-          <span className="bg-white/95 backdrop-blur-md text-[11px] sm:text-xs font-bold text-brand-brown-text px-1.5 py-0.5 sm:px-3 sm:py-1.5 rounded-full uppercase tracking-[0.1em] shadow-sm border border-orange-50">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 left-2 sm:left-auto flex justify-end">
+          <span className="bg-white/95 backdrop-blur-md text-[10px] sm:text-xs font-bold text-brand-brown-text px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-full uppercase tracking-wider shadow-sm border border-orange-50 max-w-[95%] inline-block whitespace-nowrap overflow-hidden text-ellipsis">
             {product.category}
           </span>
         </div>

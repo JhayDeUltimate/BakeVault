@@ -69,7 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
                 </div>
 
                 <div className="relative h-full flex flex-col justify-center items-start text-white px-4 sm:px-8 lg:px-12">
-                  <div className="max-w-[calc(100vw-2rem)] sm:max-w-lg bg-white/5 backdrop-blur-md p-4 sm:p-8 rounded-[32px] sm:rounded-3xl border border-white/10 shadow-2xl animate-fadeInUp">
+                  <div className="w-full sm:max-w-lg bg-white/5 backdrop-blur-md p-4 sm:p-8 rounded-[32px] sm:rounded-3xl border border-white/10 shadow-2xl animate-fadeInUp">
                     <div className="mb-1.5 sm:mb-3">
                       {product.categories?.name ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[11px] sm:text-xs font-bold tracking-widest uppercase">

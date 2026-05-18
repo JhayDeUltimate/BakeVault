@@ -23,7 +23,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-brand-darkGray/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-y-0 right-0 max-w-full flex">
-        <div className="w-screen max-w-xs">
+        <div className="w-full max-w-xs">
           <div className="h-full flex flex-col bg-white shadow-2xl">
             <div className="flex-1 py-8 overflow-y-auto px-6">
               <div className="flex items-start justify-between mb-8">
