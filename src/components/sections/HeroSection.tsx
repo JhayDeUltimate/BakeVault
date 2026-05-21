@@ -34,7 +34,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   }
 
   if (products.length === 0) return (
-    <section className="relative h-[340px] sm:h-[520px] overflow-hidden bg-brand-darkGray animate-pulse flex items-center justify-center">
+    <section className="relative h-[300px] sm:h-[450px] lg:h-[600px] xl:h-[700px] overflow-hidden bg-brand-darkGray animate-pulse flex items-center justify-center">
       <div className="text-white/20">
         <svg className="w-16 h-16 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -46,7 +46,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   return (
     <section className="bg-brand-darkGray">
       <div className="w-full">
-        <div className="relative h-[300px] sm:h-[450px] overflow-hidden">
+        <div className="relative h-[300px] sm:h-[450px] lg:h-[600px] xl:h-[700px] overflow-hidden">
           {products.map((product, index) => {
             const src = optimizeImageUrl(product.image_url, IMG.hero)
 
