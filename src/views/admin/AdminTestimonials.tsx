@@ -6,7 +6,7 @@ export function AdminTestimonials() {
   const [testimonials, setTestimonials] = useState<DBTestimonial[]>([])
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState<null | 'add' | DBTestimonial>(null)
-  const [form,         setForm]         = useState({ customer_name: '', business_name: '', initials: '', quote: '', is_visible: true })
+  const [form,         setForm]         = useState({ customer_name: '', business_name: '', initials: '', quote: '', rating: 5, is_visible: true })
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState<string | null>(null)
 
@@ -14,8 +14,8 @@ export function AdminTestimonials() {
     getTestimonials(false).then(setTestimonials).catch(e => setError(e.message)).finally(() => setLoading(false))
   }, [])
 
-  function openAdd()                   { setForm({ customer_name: '', business_name: '', initials: '', quote: '', is_visible: true }); setModal('add') }
-  function openEdit(t: DBTestimonial)  { setForm({ customer_name: t.customer_name, business_name: t.business_name ?? '', initials: t.initials ?? '', quote: t.quote, is_visible: t.is_visible }); setModal(t) }
+  function openAdd()                   { setForm({ customer_name: '', business_name: '', initials: '', quote: '', rating: 5, is_visible: true }); setModal('add') }
+  function openEdit(t: DBTestimonial)  { setForm({ customer_name: t.customer_name, business_name: t.business_name ?? '', initials: t.initials ?? '', quote: t.quote, rating: t.rating ?? 5, is_visible: t.is_visible }); setModal(t) }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -72,6 +72,7 @@ export function AdminTestimonials() {
           <div key={t.id} className={`w-full min-w-0 overflow-hidden bg-white rounded-xl border shadow-sm p-5 ${t.is_visible ? 'border-gray-100' : 'border-gray-100 opacity-60'}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
+                <p className="text-xs font-bold text-orange-500 mb-1">Rating: {Math.max(1, Math.min(5, t.rating ?? 5))}/5</p>
                 <p className="text-sm text-gray-700 italic mb-2">"{t.quote}"</p>
                 <p className="text-xs font-bold text-gray-800">{t.customer_name} · <span className="font-normal text-gray-500">{t.business_name}</span></p>
               </div>
@@ -109,6 +110,18 @@ export function AdminTestimonials() {
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Quote *</label>
                 <textarea value={form.quote} onChange={e => setForm(p => ({ ...p, quote: e.target.value }))} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Rating *</label>
+                <select
+                  value={form.rating}
+                  onChange={e => setForm(p => ({ ...p, rating: Number(e.target.value) }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                >
+                  {[5, 4, 3, 2, 1].map(value => (
+                    <option key={value} value={value}>{value} star{value === 1 ? '' : 's'}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={saving} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>

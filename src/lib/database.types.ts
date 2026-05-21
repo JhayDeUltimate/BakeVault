@@ -44,9 +44,9 @@ export interface Database {
         Relationships: []
       }
       testimonials: {
-        Row: { id: string; customer_name: string; business_name: string | null; initials: string | null; quote: string; is_visible: boolean; display_order: number; created_at: string }
-        Insert: { id?: string; customer_name: string; business_name?: string | null; initials?: string | null; quote: string; is_visible?: boolean; display_order?: number }
-        Update: { customer_name?: string; business_name?: string | null; initials?: string | null; quote?: string; is_visible?: boolean; display_order?: number }
+        Row: { id: string; customer_name: string; business_name: string | null; initials: string | null; quote: string; rating: number; is_visible: boolean; display_order: number; created_at: string; admin_notified_at: string | null }
+        Insert: { id?: string; customer_name: string; business_name?: string | null; initials?: string | null; quote: string; rating?: number; is_visible?: boolean; display_order?: number; admin_notified_at?: string | null }
+        Update: { customer_name?: string; business_name?: string | null; initials?: string | null; quote?: string; rating?: number; is_visible?: boolean; display_order?: number; admin_notified_at?: string | null }
         Relationships: []
       }
       settings: {
@@ -60,15 +60,15 @@ export interface Database {
           id: string; product_name: string; product_size: string | null
           quantity: number | null; notes: string | null
           contact_info: string | null
-          status: string; created_at: string
+          status: string; created_at: string; admin_notified_at: string | null
         }
         Insert: {
           id?: string; product_name: string; product_size?: string | null
           quantity?: number | null; notes?: string | null
           contact_info?: string | null
-          status?: string; created_at?: string
+          status?: string; created_at?: string; admin_notified_at?: string | null
         }
-        Update: { status?: string }
+        Update: { status?: string; admin_notified_at?: string | null }
         Relationships: []
       }
       analytics_events: {

@@ -12,6 +12,7 @@ export type AnalyticsEventType =
   | 'cart_checkout'
   | 'cart_cleared'
   | 'product_request_submitted'
+  | 'review_submitted'
   | 'search'
   | 'whatsapp_click'
 

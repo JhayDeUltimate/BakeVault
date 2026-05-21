@@ -11,6 +11,41 @@ export function toSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
 }
 
+type AdminNotificationType = 'product_request' | 'review'
+
+async function notifyAdminOfSubmission(type: AdminNotificationType, id: string): Promise<void> {
+  try {
+    const { error } = await supabase.functions.invoke('notify-admin', {
+      body: { type, id },
+    })
+    if (error) {
+      logger.warn('Admin notification failed', {
+        event: 'admin_notification.failed',
+        notification_type: type,
+        resource_id: id,
+        reason: error.message,
+      })
+    }
+  } catch (err) {
+    logger.warn('Admin notification failed', {
+      event: 'admin_notification.failed',
+      notification_type: type,
+      resource_id: id,
+      reason: err instanceof Error ? err.message : 'Unknown error',
+    })
+  }
+}
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const initials = parts.slice(0, 2).map(part => part[0]?.toUpperCase()).join('')
+  return initials || name.trim().slice(0, 2).toUpperCase()
+}
+
+function clampRating(rating: number): number {
+  return Math.max(1, Math.min(5, Math.round(rating)))
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────────
 export async function getProducts(filters?: {
   categoryId?: string | null; search?: string; featuredOnly?: boolean; includeUnavailable?: boolean; limit?: number
@@ -207,21 +242,51 @@ export async function updateEnquiryStatus(id: string, status: 'sent' | 'responde
 
 // ─── Testimonials ─────────────────────────────────────────────────────────────
 export async function getTestimonials(visibleOnly = true): Promise<DBTestimonial[]> {
-  let query = supabase.from('testimonials').select('*').order('display_order')
+  let query = supabase.from('testimonials').select('*').order('display_order').order('created_at', { ascending: false })
   if (visibleOnly) query = query.eq('is_visible', true)
   const { data, error } = await query
   if (error) throw new Error(error.message)
   return data ?? []
 }
 
-export async function createTestimonial(t: { customer_name: string; business_name?: string; initials?: string; quote: string; is_visible?: boolean; display_order?: number }): Promise<DBTestimonial> {
+export async function createTestimonial(t: { customer_name: string; business_name?: string; initials?: string; quote: string; rating?: number; is_visible?: boolean; display_order?: number }): Promise<DBTestimonial> {
   const { data, error } = await supabase.from('testimonials').insert(t).select().single()
   if (error) throw new Error(error.message)
   void (async () => { try { await logAdminActivity({ action: 'testimonial.create', resource_type: 'testimonial', resource_id: (data as DBTestimonial).id, details: { customer_name: t.customer_name } }) } catch {} })()
   return data
 }
 
-export async function updateTestimonial(id: string, updates: Partial<{ customer_name: string; business_name: string | null; initials: string | null; quote: string; is_visible: boolean; display_order: number }>): Promise<DBTestimonial> {
+export async function submitCustomerReview(review: {
+  customer_name: string
+  business_name?: string
+  quote: string
+  rating: number
+}): Promise<DBTestimonial> {
+  const customerName = review.customer_name.trim()
+  const quote = review.quote.trim()
+  if (!customerName || !quote) throw new Error('Name and review are required.')
+
+  const { data, error } = await supabase
+    .from('testimonials')
+    .insert({
+      customer_name: customerName,
+      business_name: review.business_name?.trim() || null,
+      initials: initialsFromName(customerName),
+      quote,
+      rating: clampRating(review.rating),
+      is_visible: true,
+      display_order: 0,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+
+  void notifyAdminOfSubmission('review', (data as DBTestimonial).id)
+  return data
+}
+
+export async function updateTestimonial(id: string, updates: Partial<{ customer_name: string; business_name: string | null; initials: string | null; quote: string; rating: number; is_visible: boolean; display_order: number }>): Promise<DBTestimonial> {
   const { data, error } = await supabase.from('testimonials').update(updates).eq('id', id).select().single()
   if (error) throw new Error(error.message)
   void (async () => { try { await logAdminActivity({ action: 'testimonial.update', resource_type: 'testimonial', resource_id: id, details: { updates } }) } catch {} })()
@@ -254,6 +319,7 @@ export async function createProductRequest(req: {
 }): Promise<DBProductRequest> {
   const { data, error } = await supabase.from('product_requests').insert(req).select().single()
   if (error) throw new Error(error.message)
+  void notifyAdminOfSubmission('product_request', (data as DBProductRequest).id)
   return data
 }
 
@@ -364,6 +430,7 @@ const STOREFRONT_ANALYTICS_EVENT_TYPES = [
   'cart_checkout',
   'cart_cleared',
   'product_request_submitted',
+  'review_submitted',
   'search',
   'whatsapp_click',
   'enquiry.created',
