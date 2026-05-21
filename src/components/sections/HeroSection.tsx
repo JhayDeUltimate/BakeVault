@@ -34,7 +34,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   }
 
   if (products.length === 0) return (
-    <section className="relative h-[300px] sm:h-[450px] lg:h-[600px] xl:h-[700px] overflow-hidden bg-brand-darkGray animate-pulse flex items-center justify-center">
+    <section className="relative h-[300px] sm:h-[400px] lg:h-[500px] overflow-hidden bg-brand-darkGray animate-pulse flex items-center justify-center">
       <div className="text-white/20">
         <svg className="w-16 h-16 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -46,7 +46,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   return (
     <section className="bg-brand-darkGray">
       <div className="w-full">
-        <div className="relative h-[300px] sm:h-[450px] lg:h-[600px] xl:h-[700px] overflow-hidden">
+        <div className="relative h-[300px] sm:h-[400px] lg:h-[500px] overflow-hidden">
           {products.map((product, index) => {
             const src = optimizeImageUrl(product.image_url, IMG.hero)
 
@@ -55,21 +55,31 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
                 key={product.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
               >
-                <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-brand-darkGray overflow-hidden">
+                  {/* Blurred background to fill space elegantly */}
                   <img
                     src={src}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    /* Hero images are above the fold — load eagerly for LCP */
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40"
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
                     onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
                   />
-                  <div className="absolute inset-0 bg-brand-darkGray/35" />
+                  {/* Main image contained within */}
+                  <img
+                    src={src}
+                    alt={product.name}
+                    className="absolute inset-0 w-full h-full object-contain"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
+                  />
+                  {/* Dark overlay for text readability */}
+                  <div className="absolute inset-0 bg-black/20" />
                 </div>
 
-                <div className="relative h-full flex flex-col justify-center items-start text-white px-4 sm:px-8 lg:px-12">
-                  <div className="w-full sm:max-w-lg bg-white/5 backdrop-blur-md p-4 sm:p-8 rounded-[32px] sm:rounded-3xl border border-white/10 shadow-2xl animate-fadeInUp">
+                <div className="relative h-full flex flex-col justify-center items-start text-white px-4 sm:px-8 lg:px-12 pointer-events-none">
+                  <div className="w-full sm:max-w-lg bg-white/10 backdrop-blur-md p-4 sm:p-8 rounded-[32px] sm:rounded-3xl border border-white/20 shadow-2xl animate-fadeInUp pointer-events-auto">
                     <div className="mb-1.5 sm:mb-3">
                       {product.categories?.name ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-orange text-white text-[11px] sm:text-xs font-bold tracking-widest uppercase">
