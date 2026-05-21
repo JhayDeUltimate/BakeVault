@@ -38,6 +38,7 @@ export function trackEvent(type: AnalyticsEventType, data: EventData = {}): void
   if (!hasConsent()) return
 
   const page = typeof window !== 'undefined' ? window.location.pathname : ''
+  if (page.startsWith('/admin')) return
 
   // Fire-and-forget using an async IIFE so we get a real Promise with .catch()
   void (async () => {

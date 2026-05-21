@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { CartItem, Product } from './types'
+import { lockBodyScroll, unlockBodyScroll } from './scroll-lock'
 
 const CART_STORAGE_KEY = 'bakevault:cart'
 // Expire carts after 7 days by default. Adjust this value if needed.
@@ -72,10 +73,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCart(items)
   }, [items])
 
-  // Lock body scroll when any drawer is open
+  // Lock body scroll when any drawer is open (ref-counted to avoid conflicts with ProductModal)
+  const prevLockedRef = React.useRef(false)
   useEffect(() => {
-    document.body.style.overflow = (isCartOpen || isCategoriesOpen) ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    const shouldLock = isCartOpen || isCategoriesOpen
+    if (shouldLock && !prevLockedRef.current) {
+      lockBodyScroll()
+      prevLockedRef.current = true
+    } else if (!shouldLock && prevLockedRef.current) {
+      unlockBodyScroll()
+      prevLockedRef.current = false
+    }
+    return () => {
+      if (prevLockedRef.current) {
+        unlockBodyScroll()
+        prevLockedRef.current = false
+      }
+    }
   }, [isCartOpen, isCategoriesOpen])
 
   function addToCart(product: Product) {

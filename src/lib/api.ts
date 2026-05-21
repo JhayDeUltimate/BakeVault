@@ -294,7 +294,7 @@ export async function uploadProductImage(file: File): Promise<string> {
     'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
   }
   const ext  = MIME_TO_EXT[file.type] ?? 'jpg'
-  const path = `products/${crypto.randomUUID()}.${ext}`
+  const path = `products/${typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16) })}.${ext}`
   const start = Date.now()
 
   const { error } = await supabase.storage
@@ -308,18 +308,7 @@ export async function uploadProductImage(file: File): Promise<string> {
       reason:   error.message,
       duration_ms: Date.now() - start,
     })
-    // Analytics: record upload failure
-    void (async () => {
-      try {
-        const { error: ae } = await supabase.from('analytics_events').insert({
-          event_type: 'image.upload_failed',
-          event_data: { path, reason: error.message, duration_ms: Date.now() - start },
-          session_id: typeof window !== 'undefined' ? SESSION_ID : null,
-          page: typeof window !== 'undefined' ? window.location.pathname : null,
-        })
-        if (ae) console.debug('[analytics] image.upload_failed insert failed:', ae.message)
-      } catch {}
-    })()
+    void (async () => { try { await logAdminActivity({ action: 'image.upload_failed', resource_type: 'image', resource_id: path, details: { reason: error.message, duration_ms: Date.now() - start } }) } catch {} })()
     throw new Error(error.message)
   }
 
@@ -329,19 +318,6 @@ export async function uploadProductImage(file: File): Promise<string> {
     size_mb:  (file.size / 1024 / 1024).toFixed(2),
     duration_ms: Date.now() - start,
   })
-
-  // Analytics: record upload success
-  void (async () => {
-    try {
-      const { error: ae } = await supabase.from('analytics_events').insert({
-        event_type: 'image.upload_success',
-        event_data: { path, size_mb: (file.size / 1024 / 1024).toFixed(2), duration_ms: Date.now() - start },
-        session_id: typeof window !== 'undefined' ? SESSION_ID : null,
-        page: typeof window !== 'undefined' ? window.location.pathname : null,
-      })
-      if (ae) console.debug('[analytics] image.upload_success insert failed:', ae.message)
-    } catch {}
-  })()
 
   // Record admin activity for image upload (best-effort)
   void (async () => { try { await logAdminActivity({ action: 'image.upload_success', resource_type: 'image', resource_id: path, details: { size_mb: (file.size / 1024 / 1024).toFixed(2), duration_ms: Date.now() - start } }) } catch {} })()
@@ -380,6 +356,28 @@ export interface TopProduct {
   count:        number
 }
 
+const STOREFRONT_ANALYTICS_EVENT_TYPES = [
+  'page_view',
+  'product_view',
+  'add_to_cart',
+  'remove_from_cart',
+  'cart_checkout',
+  'cart_cleared',
+  'product_request_submitted',
+  'search',
+  'whatsapp_click',
+  'enquiry.created',
+  'enquiry.log_failed',
+] as const
+
+const STOREFRONT_ANALYTICS_EVENTS = new Set<string>(STOREFRONT_ANALYTICS_EVENT_TYPES)
+
+function isStorefrontAnalyticsEvent<T extends { event_type: string | null; page?: string | null }>(
+  event: T
+): event is T & { event_type: string } {
+  return !!event.event_type && STOREFRONT_ANALYTICS_EVENTS.has(event.event_type) && !(event.page ?? '').startsWith('/admin')
+}
+
 export async function getAnalyticsSummary(days = 30): Promise<{
   chart:       AnalyticsChartPoint[]
   topProducts: TopProduct[]
@@ -388,12 +386,13 @@ export async function getAnalyticsSummary(days = 30): Promise<{
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
     .from('analytics_events')
-    .select('event_type, event_data, created_at')
+    .select('event_type, event_data, created_at, page')
     .gte('created_at', since)
+    .in('event_type', STOREFRONT_ANALYTICS_EVENT_TYPES)
     .order('created_at', { ascending: true })
 
   if (error) throw new Error(error.message)
-  const events = data ?? []
+  const events = (data ?? []).filter(isStorefrontAnalyticsEvent)
 
   const buckets = new Map<string, AnalyticsChartPoint>()
   for (let i = days - 1; i >= 0; i--) {
@@ -441,9 +440,10 @@ export async function getAnalyticsRawEvents(days = 30): Promise<DBAnalyticsEvent
     .from('analytics_events')
     .select('*')
     .gte('created_at', since)
+    .in('event_type', STOREFRONT_ANALYTICS_EVENT_TYPES)
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
-  return data ?? []
+  return ((data ?? []) as DBAnalyticsEvent[]).filter(isStorefrontAnalyticsEvent)
 }
 
 // ─── Admin activity logs ────────────────────────────────────────────────────

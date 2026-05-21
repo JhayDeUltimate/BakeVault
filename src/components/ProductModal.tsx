@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock'
 import type { DBProductWithCategory } from '@/lib/database.types'
 import { getProductImages, optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
 import { mapDBProduct } from '@/lib/utils'
@@ -36,8 +37,8 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
   }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    lockBodyScroll()
+    return () => { unlockBodyScroll() }
   }, [])
 
   useEffect(() => {

@@ -190,7 +190,7 @@ export default function CatalogPage() {
   const isFiltering = categoryId !== null || searchInput.trim() !== ''
 
   return (
-    <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
+    <main className="flex-grow max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
       <CatalogHelmet categoryName={activeCategoryName} searchInput={searchInput} />
       <SectionHeading eyebrow="The Vault" title="Everything We Stock"
         description="Search by name or filter by category. Prices on request via WhatsApp. DM us any time." />
@@ -296,7 +296,7 @@ export default function CatalogPage() {
         </div>
 
         {visibleLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
+          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i}>
                 <SkeletonProductCard />
@@ -304,7 +304,7 @@ export default function CatalogPage() {
             ))}
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
+          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
             {products.map(product => (
               <ProductCard key={product.id} product={product}
                 onAddToCart={p => {

@@ -55,7 +55,7 @@ export default function HomePage() {
       <HeroSection products={heroSlides} onAddToCart={p => addToCart(mapDBProduct(p))} />
       <AboutSection />
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
+      <main className="flex-grow max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
         <div className="space-y-16 sm:space-y-24">
 
           {/* Category grid — desktop only */}
@@ -99,7 +99,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
               {visibleFeaturedLoading ? (
                 [...Array(4)].map((_, i) => (
                   <div key={i}><SkeletonProductCard /></div>

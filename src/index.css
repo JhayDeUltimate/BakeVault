@@ -14,7 +14,7 @@
   --font-sans:    'Open Sans', sans-serif;
   --font-display: 'Montserrat', sans-serif;
 
-  --animate-fadeInUp: fadeInUp 0.8s ease-out forwards;
+  --animate-fadeInUp: fadeInUp 0.35s ease-out forwards;
 }
 
 @keyframes fadeInUp {
@@ -39,6 +39,15 @@ body,
 
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
+
+/* Hide scrollbars while keeping scroll functional */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE / Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
 
 /* Respect user's motion preferences (vestibular safety) */
 @media (prefers-reduced-motion: reduce) {

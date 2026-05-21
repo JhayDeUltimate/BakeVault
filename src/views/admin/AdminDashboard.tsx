@@ -5,7 +5,7 @@ import {
   Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  getProducts, getCategories, getEnquiries, getProductsCount, getEnquiriesPage, getEnquiriesCount,
+  getCategories, getProductsCount, getEnquiriesPage, getEnquiriesCount,
   getAnalyticsSummary, getAnalyticsRawEvents,
   type AnalyticsChartPoint, type TopProduct,
 } from '@/lib/api'
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
       {/* Page heading */}
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Store overview and visitor analytics</p>
+        <p className="text-sm text-gray-500 mt-1">Store overview and storefront analytics</p>
       </div>
 
       {/* Store stat cards */}
@@ -170,9 +170,9 @@ export default function AdminDashboard() {
         {/* Analytics header */}
         <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="font-bold text-gray-800">Visitor Analytics</h2>
+            <h2 className="font-bold text-gray-800">Storefront Analytics</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Tracked events from the public storefront
+              Client-side events from the public store only
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
             {/* Line chart */}
             <div className="px-4 pt-6 pb-4">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4 px-2">
-                Activity Over Time
+                Storefront Activity Over Time
               </h3>
               {chartData.every(d => d.page_views === 0 && d.add_to_cart === 0) ? (
                 <div className="flex items-center justify-center h-40 text-sm text-gray-300">

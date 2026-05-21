@@ -95,7 +95,7 @@ export function getProductImages(p: { image_url?: string | null; image_urls?: un
 
 /** Thumbnail size presets — kept for API compatibility, values unused on free plan */
 export const IMG = {
-  card: { width: 400, height: 400 },
+  card: { width: 360, height: 270 },
   hero: { width: 1200, height: 700 },
   modal: { width: 800, height: 600 },
   adminThumb: { width: 80, height: 80 },

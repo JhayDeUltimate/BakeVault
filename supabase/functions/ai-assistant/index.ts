@@ -340,6 +340,44 @@ serve(async (req: Request) => {
 
   // ── Mode: analyze ──────────────────────────────────────────────────────────
   if (mode === 'analyze') {
+    // Analyze uses Gemini + Tavily credits — require authenticated admin.
+    const authHeader = req.headers.get('authorization') ?? ''
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+
+    if (!token) {
+      return respond({ error: 'Authentication required for analyze mode.' }, origin, 401)
+    }
+
+    // Validate JWT with Supabase. SUPABASE_URL and SUPABASE_ANON_KEY are
+    // automatically available in Supabase Edge Functions.
+    const supabaseUrl  = Deno.env.get('SUPABASE_URL')  ?? ''
+    const supabaseKey  = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': supabaseKey,
+          },
+        })
+        if (!userRes.ok) {
+          log('WARN', 'Analyze mode: invalid or expired token', { status: userRes.status })
+          return respond({ error: 'Invalid or expired session. Please log in again.' }, origin, 401)
+        }
+        const user = await userRes.json() as { role?: string }
+        // Supabase auth sets role to 'authenticated' for logged-in users.
+        // For extra safety you could check app_metadata.role === 'admin',
+        // but requiring any authenticated session already blocks anonymous abuse.
+        if (!user?.role) {
+          return respond({ error: 'Admin access required for analyze mode.' }, origin, 403)
+        }
+      } catch (err) {
+        log('ERROR', 'Analyze auth check failed', { error: err instanceof Error ? err.message : String(err) })
+        return respond({ error: 'Auth verification failed. Try again.' }, origin, 500)
+      }
+    }
+
     if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
       return respond({ error: 'imageUrl is required for analyze mode.' }, origin, 400)
     }

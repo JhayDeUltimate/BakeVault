@@ -26,11 +26,14 @@ const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onOpenCategories
             <BrandLogo iconClassName="h-10 w-auto group-hover:opacity-80 transition-opacity" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/"        className={navLinkClass('/')}>Home</Link>
-            <Link to="/catalog" className={navLinkClass('/catalog')}>Catalog</Link>
-            <Link to="/about"   className={navLinkClass('/about')}>About</Link>
-            <Link to="/faq"     className={navLinkClass('/faq')}>FAQ</Link>
+          <nav className="hidden md:flex items-center gap-5 lg:gap-8">
+            <Link to="/"             className={navLinkClass('/')}>Home</Link>
+            <Link to="/catalog"      className={navLinkClass('/catalog')}>Catalog</Link>
+            <Link to="/about"        className={navLinkClass('/about')}>About</Link>
+            <Link to="/faq"          className={navLinkClass('/faq')}>FAQ</Link>
+            <Link to="/how-to-order" className={navLinkClass('/how-to-order')}>How to Order</Link>
+            <Link to="/delivery"     className={navLinkClass('/delivery')}>Delivery</Link>
+            <Link to="/contact"      className={navLinkClass('/contact')}>Contact</Link>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4">
