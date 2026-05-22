@@ -18,7 +18,13 @@ function loadCart(): CartItem[] {
     const parsed = JSON.parse(raw) as unknown
 
     // Backwards-compatible: previous versions stored a raw array of items.
-    if (Array.isArray(parsed)) return parsed as CartItem[]
+    // Keep it once, but immediately migrate to the timestamped shape so normal
+    // cart expiry applies from this load onward.
+    if (Array.isArray(parsed)) {
+      const items = parsed as CartItem[]
+      saveCart(items)
+      return items
+    }
 
     if (parsed && typeof parsed === 'object' && Array.isArray((parsed as StoredCart).items)) {
       const stored = parsed as StoredCart
@@ -27,6 +33,9 @@ function loadCart(): CartItem[] {
           try { localStorage.removeItem(CART_STORAGE_KEY) } catch { }
           return []
         }
+      }
+      if (typeof stored.ts !== 'number') {
+        saveCart(stored.items)
       }
       return stored.items
     }

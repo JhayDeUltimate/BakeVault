@@ -133,6 +133,11 @@ interface GeminiErrorBody {
   error?: { message?: string; code?: number; status?: string }
 }
 
+interface AnalyzeJsonPayload {
+  name:        string
+  description: string
+}
+
 // ── Tavily search ─────────────────────────────────────────────────────────────
 
 interface TavilyResult {
@@ -243,6 +248,116 @@ function extractText(data: Record<string, unknown>): string {
     .map(p => p.text)
     .join('\n')
     .trim()
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function dedupeCandidates(candidates: string[]): string[] {
+  const seen = new Set<string>()
+  return candidates
+    .map(candidate => candidate.trim())
+    .filter(candidate => {
+      if (!candidate || seen.has(candidate)) return false
+      seen.add(candidate)
+      return true
+    })
+}
+
+function stripFenceEnvelope(input: string): string {
+  return input
+    .replace(/^\s*```\s*(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim()
+}
+
+function extractJsonObjectCandidates(input: string): string[] {
+  const candidates: string[] = []
+  let start = -1
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i]
+
+    if (depth === 0) {
+      if (char === '{') {
+        start = i
+        depth = 1
+      }
+      continue
+    }
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === '"') {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === '"') {
+      inString = true
+      continue
+    }
+
+    if (char === '{') {
+      depth++
+      continue
+    }
+
+    if (char === '}' && depth > 0) {
+      depth--
+      if (depth === 0 && start >= 0) {
+        candidates.push(input.slice(start, i + 1))
+        start = -1
+      }
+    }
+  }
+
+  return candidates
+}
+
+function buildJsonCandidates(raw: string): string[] {
+  const candidates = [raw, stripFenceEnvelope(raw)]
+  const fenceRegex = /```\s*(?:json)?\s*([\s\S]*?)```/gi
+
+  for (const match of raw.matchAll(fenceRegex)) {
+    candidates.push(match[1])
+  }
+
+  for (const candidate of [...candidates]) {
+    candidates.push(...extractJsonObjectCandidates(candidate))
+  }
+
+  return dedupeCandidates(candidates)
+}
+
+function parseAnalyzeJson(raw: string): { payload: AnalyzeJsonPayload; candidate: string } | null {
+  for (const candidate of buildJsonCandidates(raw)) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown
+      if (!isRecord(parsed)) continue
+      if (typeof parsed.name !== 'string' || typeof parsed.description !== 'string') continue
+
+      return {
+        payload: {
+          name:        parsed.name,
+          description: parsed.description,
+        },
+        candidate,
+      }
+    } catch {
+      // Try the next candidate. The caller logs once if none parse.
+    }
+  }
+
+  return null
 }
 
 // ── SSRF-safe image fetcher ───────────────────────────────────────────────────
@@ -427,17 +542,14 @@ serve(async (req: Request) => {
       }
 
       const raw = extractText(finalData)
-      const clean = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+      const parsed = parseAnalyzeJson(raw)
 
-      let parsed: { name?: string; description?: string } = {}
-      try {
-        parsed = JSON.parse(clean)
-      } catch {
-        log('WARN', 'AI returned unparseable JSON', { raw: raw.slice(0, 500), cleaned: clean.slice(0, 500) })
+      if (!parsed) {
+        log('WARN', 'AI returned unparseable JSON', { raw: raw.slice(0, 500) })
         return respond({ error: 'AI returned unparseable JSON. Try again.' }, origin)
       }
 
-      return respond({ name: parsed.name ?? '', description: parsed.description ?? '' }, origin)
+      return respond({ name: parsed.payload.name, description: parsed.payload.description }, origin)
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Analyze failed'

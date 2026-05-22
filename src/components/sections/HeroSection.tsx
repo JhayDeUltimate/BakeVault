@@ -135,7 +135,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
 
                   <button
                     onClick={() => onAddToCart(product)}
-                    className="group inline-flex items-center justify-center gap-3 rounded-full bg-brand-darkGray px-9 py-4 text-base font-bold text-white shadow-xl shadow-brand-darkGray/10 transition-all duration-300 hover:bg-brand-orange hover:shadow-brand-orange/20 active:scale-95"
+                    className="group inline-flex items-center justify-center gap-3 rounded-full bg-brand-orange px-9 py-4 text-base font-bold text-white shadow-xl shadow-brand-orange/20 transition-all duration-300 hover:bg-brand-brown active:scale-95"
                   >
                     <span>Add to Bag</span>
                     <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -159,14 +159,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
           )
         })}
 
-        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 justify-center px-6 sm:bottom-10 lg:bottom-8 lg:left-0 lg:w-full lg:translate-x-0 lg:justify-start lg:px-[max(2rem,calc((100vw-90rem)/2+2rem))]">
-          <div className="flex gap-3 lg:gap-2 lg:rounded-full lg:border lg:border-black/5 lg:bg-white/70 lg:px-4 lg:py-2 lg:shadow-sm lg:backdrop-blur-md">
+        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 justify-center px-6 sm:bottom-10 lg:bottom-12 lg:left-0 lg:w-full lg:translate-x-0 lg:justify-start lg:px-[max(2rem,calc((100vw-90rem)/2+2rem))]">
+          <div className="flex gap-3 lg:gap-2 lg:px-4 lg:py-2">
             {products.map((product, index) => (
               <button
                 key={product.id}
                 onClick={() => goToSlide(index)}
                 aria-label={`Go to slide ${index + 1}`}
-                className={`h-1 rounded-full transition-all duration-300 sm:h-2 lg:transition-all lg:duration-500 lg:ease-out ${index === activeSlide ? 'w-6 bg-brand-orange sm:w-12 lg:bg-brand-darkGray' : 'w-1.5 bg-white/40 sm:w-2 lg:bg-brand-darkGray/20 lg:hover:bg-brand-darkGray/40'}`}
+                className={`h-1 rounded-full transition-all duration-300 sm:h-2 lg:transition-all lg:duration-500 lg:ease-out ${index === activeSlide ? 'w-6 bg-brand-orange sm:w-12 lg:bg-brand-orange' : 'w-1.5 bg-white/40 sm:w-2 lg:bg-brand-orange/20 lg:hover:bg-brand-orange/40'}`}
               />
             ))}
           </div>
