@@ -122,6 +122,7 @@ VITE_ADMIN_EMAILS=
 The runtime app expects these public Postgres tables:
 
 - `admins` - maps Supabase Auth user ids to admin access.
+- `profiles`
 - `categories`
 - `products`
 - `enquiries`
@@ -131,9 +132,33 @@ The runtime app expects these public Postgres tables:
 - `analytics_events`
 - `admin_activity_logs`
 
-No `profiles` table is required by the current backend flow. Admin access is resolved from Supabase Auth plus the `admins` table only.
+### Database Setup
 
-The repository does not currently include SQL migrations. The expected runtime table shapes are reflected in `src/lib/database.types.ts`, though that generated type file may contain legacy entries that are no longer used by the app.
+The full schema lives in `supabase/migrations/`. To bootstrap a new project:
+
+```bash
+# 1. Link to your Supabase project (or start a local instance)
+supabase link --project-ref <your-project-ref>
+
+# 2. Push all migrations in order
+supabase db push
+```
+
+For a local development environment:
+
+```bash
+supabase start          # starts local Docker containers
+supabase db reset       # runs all migrations from scratch
+```
+
+Migration files (run in lexicographic order):
+
+| File | Purpose |
+|------|---------|
+| `000001_initial_schema.sql` | Core tables, indices, and RLS policies |
+| `202605210001_reviews_and_notifications.sql` | Testimonial rating column, review insert policy |
+| `202605220001_analytics_views.sql` | Analytics summary and top products views |
+| `202605220002_analytics_totals_fn.sql` | `get_analytics_totals` RPC function |
 
 Storage requirement:
 

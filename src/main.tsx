@@ -8,6 +8,10 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from '@/lib/auth-context'
 import './index.css'
 import { PostHogProvider } from '@posthog/react'
+import { validateEnv } from '@/lib/env'
+
+// ── Validate critical env vars before anything else ──────────────────────────
+validateEnv()
 
 // ── Initialise Sentry before anything else renders ───────────────────────────
 if (import.meta.env.VITE_SENTRY_DSN) {
