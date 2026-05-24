@@ -572,52 +572,26 @@ serve(async (req: Request) => {
     }
 
     // IP-keyed rate limit: 30 chat messages per minute per IP.
-    // Store in Supabase using service role key (auto-injected in Edge Functions).
-    const clientIp   = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
-    const rateLimitKey = `chat_rl:${clientIp}`
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    // Uses Deno KV (built into Supabase Edge Functions) — no table pollution.
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
 
-    if (supabaseUrl && serviceKey) {
-      try {
-        const windowStart = new Date(Date.now() - 60_000).toISOString()
-        const { count } = await fetch(
-          `${supabaseUrl}/rest/v1/analytics_events?select=id&event_type=eq.chat_message&event_data->ip=eq.${encodeURIComponent(clientIp)}&created_at=gte.${windowStart}`,
-          {
-            headers: {
-              'apikey': serviceKey,
-              'Authorization': `Bearer ${serviceKey}`,
-              'Prefer': 'count=exact',
-              'Range': '0-0',
-            },
-          }
-        ).then(r => ({ count: parseInt(r.headers.get('content-range')?.split('/')[1] ?? '0', 10) }))
+    try {
+      const kv = await Deno.openKv()
+      const key = ['chat_rl', clientIp]
+      const now = Date.now()
+      const windowMs = 60_000
+      const { value: hits } = await kv.get<number[]>(key) ?? { value: [] }
+      const recent = (hits ?? []).filter(t => now - t < windowMs)
 
-        if (count >= 30) {
-          log('WARN', 'Chat rate limit hit', { ip: clientIp, count })
-          return respond({ error: 'Too many requests. Please wait a moment before asking another question.' }, origin, 429)
-        }
-
-        // Log this chat message for rate limiting (fire-and-forget)
-        void fetch(`${supabaseUrl}/rest/v1/analytics_events`, {
-          method: 'POST',
-          headers: {
-            'apikey': serviceKey,
-            'Authorization': `Bearer ${serviceKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({
-            event_type: 'chat_message',
-            event_data: { ip: clientIp },
-            session_id: null,
-            page: null,
-          }),
-        })
-      } catch (err) {
-        // Rate limit check failure is non-fatal — allow the request through
-        log('WARN', 'Rate limit check failed (allowing request)', { error: err instanceof Error ? err.message : String(err) })
+      if (recent.length >= 30) {
+        log('WARN', 'Chat rate limit hit', { ip: clientIp, count: recent.length })
+        return respond({ error: 'Too many requests. Please wait a moment before asking another question.' }, origin, 429)
       }
+
+      await kv.set(key, [...recent, now], { expireIn: windowMs })
+    } catch (err) {
+      // Rate limit check failure is non-fatal — allow the request through
+      log('WARN', 'Rate limit check failed (allowing request)', { error: err instanceof Error ? err.message : String(err) })
     }
 
     // ── Chat message validation ───────────────────────────────────────────────

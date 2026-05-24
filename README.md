@@ -156,7 +156,7 @@ The function uses:
 - Gemini models in fallback order: `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`
 - Tavily search for current product context
 - CORS allowlisting from `ALLOWED_ORIGINS`
-- Session-keyed IP rate limiting for chat mode (30 messages per minute per IP)
+- Session-keyed IP rate limiting for chat mode (30 messages per minute per IP, via Deno KV)
 - SSRF checks for image analysis URLs
 - 25-second fetch timeouts and an 8 MB image fetch limit
 
@@ -264,9 +264,15 @@ Sentry:
 ## Operational Notes
 
 - Product images use original URLs or `images.weserv.nl` for lightweight resizing. Supabase Storage transforms are not used because they require a paid Supabase plan.
+- Image deletion validates the URL against the Supabase Storage hostname and public path prefix before attempting removal, safely ignoring external image URLs.
 - `CartProvider` locks body scroll while the cart or category drawer is open.
 - Public settings are fetched once in `PublicLayout` and shared through `SettingsContext`.
 - The mobile WhatsApp CTA is dismissible per session with `sessionStorage`.
 - Recently viewed products are stored in `localStorage` under `bakevault:recently_viewed`, capped at 10 items, and synced across tabs.
 - Admin activity writes to `admin_activity_logs` and falls back to `analytics_events` when the dedicated table insert fails.
 - Product slugs are generated during creation and frozen on subsequent updates, ensuring that renaming a product doesn't break its original URL.
+- Customer-submitted reviews default to `is_visible: false` and must be approved by an admin before they appear on the storefront.
+- Enquiry logging retries once after a 1-second delay before giving up, since enquiries are business-critical records.
+- Chat rate limiting uses Deno KV in the edge function, not the `analytics_events` table, to avoid inflating the analytics table with non-storefront rows.
+- Admin analytics summary reads from `analytics_daily_summary` and `analytics_top_products` views when available, reducing raw row scans.
+- Admin product listing supports full server-side sorting, including category name sorting via Supabase `referencedTable` ordering.

@@ -3,6 +3,12 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      admins: {
+        Row: { user_id: string }
+        Insert: { user_id: string }
+        Update: { user_id?: string }
+        Relationships: []
+      }
       profiles: {
         Row:    { id: string; role: string }
         Insert: { id: string; role?: string }
@@ -113,8 +119,32 @@ export interface Database {
         Relationships: []
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
+    Views: {
+      analytics_daily_summary: {
+        Row: {
+          day: string
+          page_views: number
+          product_views: number
+          add_to_cart: number
+          checkouts: number
+        }
+        Relationships: []
+      }
+      analytics_top_products: {
+        Row: {
+          product_id: string
+          product_name: string | null
+          add_count: number
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      get_analytics_totals: {
+        Args: { since_ts: string }
+        Returns: { event_type: string; total: number }[]
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

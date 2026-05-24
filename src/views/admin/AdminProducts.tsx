@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createProduct, updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import ProductForm, { type ProductFormData } from '../../components/admin/ProductForm'
 import type { DBProductWithCategory } from '../../lib/database.types'
@@ -57,8 +57,8 @@ export default function AdminProducts() {
   // All sorting is now server-side -- no client-side re-sorting needed
   const sorted = products
 
-  // Fetch page
-  async function fetchPage() {
+  // Fetch page — memoised so mutation callbacks never hold a stale reference
+  const fetchPage = useCallback(async () => {
     setLoading(true); setError(null)
     try {
       const res = await getProductsPage({ page, pageSize, search: debouncedSearch || undefined, includeUnavailable: true, sortKey, sortDir })
@@ -73,21 +73,17 @@ export default function AdminProducts() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, debouncedSearch, sortKey, sortDir])
 
   // Initial + dependency-driven fetch
   useEffect(() => {
     fetchPage().finally(() => { if (initialLoad) setInitialLoad(false) })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, sortKey, sortDir])
-
-  // refetch helper used by mutations
-  const refetch = fetchPage
+  }, [fetchPage])
 
   async function handleSave(data: ProductFormData) {
     if (modal?.mode === 'add') await createProduct(data)
     if (modal?.mode === 'edit') await updateProduct(modal.product.id, data)
-    setModal(null); refetch()
+    setModal(null); fetchPage()
   }
 
   async function handleDelete(product: DBProductWithCategory) {
@@ -102,7 +98,7 @@ export default function AdminProducts() {
       ]
       await Promise.all(urls.map(u => deleteProductImage(u)))
       await deleteProduct(product.id)
-      refetch()
+      fetchPage()
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : 'Delete failed. Please try again.')
     } finally {
@@ -116,7 +112,7 @@ export default function AdminProducts() {
       setToggling(product.id)
       setDeleteError(null)
       await updateProduct(product.id, { is_available: !product.is_available })
-      refetch()
+      fetchPage()
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Toggle failed')
     } finally {

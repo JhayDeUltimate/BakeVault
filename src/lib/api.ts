@@ -495,19 +495,12 @@ export async function getAnalyticsSummary(days = 30): Promise<{
       .select('product_id, product_name, add_count')
       .limit(5),
 
-    // Totals: sum each event type over the period
-    supabase
-      .from('analytics_events')
-      .select('event_type')
-      .gte('created_at', since)
-      .in('event_type', [
-        'page_view', 'product_view', 'add_to_cart', 'cart_checkout',
-        'whatsapp_click', 'product_request_submitted', 'review_submitted',
-      ]),
+    supabase.rpc('get_analytics_totals', { since_ts: since }),
   ])
 
   if (summaryRes.error) throw new Error(summaryRes.error.message)
   if (topRes.error)     throw new Error(topRes.error.message)
+  if (totalsRes.error)  throw new Error(totalsRes.error.message)
 
   // Build chart buckets for the requested date range
   const buckets = new Map<string, AnalyticsChartPoint>()
@@ -535,13 +528,9 @@ export async function getAnalyticsSummary(days = 30): Promise<{
     count:        Number(r.add_count ?? 0),
   }))
 
-  // Build totals from the lightweight event_type-only query
-  const totals: Record<string, number> = {}
-  for (const row of totalsRes.data ?? []) {
-    if (row.event_type) {
-      totals[row.event_type] = (totals[row.event_type] ?? 0) + 1
-    }
-  }
+  const totals = Object.fromEntries(
+    (totalsRes.data ?? []).map(r => [r.event_type, Number(r.total)])
+  )
 
   return { chart: [...buckets.values()], topProducts, totals }
 }
