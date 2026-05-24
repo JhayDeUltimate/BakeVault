@@ -62,9 +62,9 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
         </div>
 
         <div className="mt-auto pt-2 sm:pt-3 border-t border-orange-50 space-y-2">
-          <div className="hidden sm:flex justify-center gap-2">
+          <div className="flex justify-center gap-2">
             <span className="text-brand-brown-text/60 font-extrabold text-xs font-display tracking-tight uppercase">
-              Price quoted via WhatsApp
+              Price on WhatsApp
             </span>
           </div>
           <button
@@ -83,4 +83,4 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart, onViewDetails }) =
   )
 }
 
-export default ProductCard
+export default React.memo(ProductCard)

@@ -34,7 +34,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
     setSlide(0)
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     addRecentlyViewed(product)
-  }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [product.id, addRecentlyViewed]) // CHANGED: added addRecentlyViewed to deps
 
   useEffect(() => {
     lockBodyScroll()

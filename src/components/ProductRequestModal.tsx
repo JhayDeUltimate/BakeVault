@@ -44,6 +44,8 @@ export default function ProductRequestModal({ onClose }: Props) {
   }
 
   const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 bg-brand-cream/30'
+  const isCustomSize = form.product_size === 'Other' || (form.product_size !== '' && !SIZES.includes(form.product_size))
+  const selectedSize = isCustomSize ? 'Other' : form.product_size
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -101,10 +103,24 @@ export default function ProductRequestModal({ onClose }: Props) {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-brand-brown mb-1.5">
                     Size / Weight
                   </label>
-                  <select value={form.product_size} onChange={e => set('product_size', e.target.value)} className={inputCls}>
+                  <select
+                    value={selectedSize}
+                    onChange={e => set('product_size', e.target.value)}
+                    className={inputCls}
+                  >
                     <option value="">Select size</option>
                     {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
+                  {/* Show free-text input when user selects "Other" */}
+                  {isCustomSize && (
+                    <input
+                      type="text"
+                      value={form.product_size === 'Other' ? '' : form.product_size}
+                      placeholder="Please specify the size or weight…"
+                      onChange={e => set('product_size', e.target.value || 'Other')}
+                      className={`${inputCls} mt-2`}
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-brand-brown mb-1.5">

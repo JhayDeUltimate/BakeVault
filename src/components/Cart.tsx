@@ -36,7 +36,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
     setPricePrefs(prev => ({ ...prev, [id]: pref }))
   }
 
-  function handleCheckout() {
+  async function handleCheckout() {
     if (!WHATSAPP_NUMBER) {
       alert('WhatsApp checkout is not configured. Please contact the store directly.')
       return
@@ -52,15 +52,30 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
     const message = `Hello Bakevault! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
     const encoded = encodeURIComponent(message)
+    const waUrl   = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`
 
-    // Fire-and-forget DB logging — must never block WhatsApp
-    logEnquiry(
-      items.map(i => ({ product_id: i.id, product_name: i.name, category: i.category, quantity: i.quantity })),
-      message
-    )
+    // Attempt DB insert first — fire-and-forget but we wait briefly so the record exists
+    // before the WA window opens. Admin needs the record to fulfil the order.
+    const enquiryItems = items.map(i => ({
+      product_id:   i.id,
+      product_name: i.name,
+      category:     i.category,
+      quantity:     i.quantity,
+    }))
+
+    try {
+      await Promise.race([
+        logEnquiry(enquiryItems, message),
+        // Don't block the WA open for more than 3 seconds if Supabase is slow
+        new Promise<void>(resolve => setTimeout(resolve, 3000)),
+      ])
+    } catch {
+      // Insert failure must not block checkout — customer has already seen their quote
+      console.warn('[BakeVault] Enquiry insert failed — order may not appear in admin panel')
+    }
+
     trackEvent('cart_checkout', { item_count: totalItems })
-
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, '_blank', 'noopener,noreferrer')
+    window.open(waUrl, '_blank', 'noopener,noreferrer')
     setCheckoutSuccess(true)
   }
 

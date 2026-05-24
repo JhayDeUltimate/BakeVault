@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createProduct, updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import ProductForm, { type ProductFormData } from '../../components/admin/ProductForm'
 import type { DBProductWithCategory } from '../../lib/database.types'
@@ -54,21 +54,8 @@ export default function AdminProducts() {
     }
   }
 
-  // sorted holds current page's products (server-side search + sort applied where supported)
-  const sorted = useMemo(() => {
-    const base = [...products]
-    // client-side fallback sorting for category
-    if (sortKey === 'category') {
-      return base.sort((a, b) => {
-        const va = (a.categories?.name ?? '').toLowerCase()
-        const vb = (b.categories?.name ?? '').toLowerCase()
-        if (va < vb) return sortDir === 'asc' ? -1 : 1
-        if (va > vb) return sortDir === 'asc' ? 1 : -1
-        return 0
-      })
-    }
-    return base
-  }, [products, sortKey, sortDir])
+  // All sorting is now server-side -- no client-side re-sorting needed
+  const sorted = products
 
   // Fetch page
   async function fetchPage() {

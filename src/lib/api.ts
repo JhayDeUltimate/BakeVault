@@ -100,8 +100,9 @@ export async function updateProduct(
     ...updates,
     updated_at: new Date().toISOString(),
   }
-  // Slugs are frozen at creation time to preserve URL stability.
-  // To rename a product without breaking its URL, update name but not slug.
+  // Slug is intentionally NOT regenerated here.
+  // Slugs are frozen at creation to preserve URL stability.
+  // Renaming a product updates its display name only, not its URL.
   if (updates.image_urls !== undefined) payload.image_urls = (updates.image_urls ?? []) as Json
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
   if (error) throw new Error(error.message)
@@ -161,47 +162,47 @@ export interface EnquiryItem { product_id: string; product_name: string; categor
 
 export async function logEnquiry(items: EnquiryItem[], whatsappMessage: string): Promise<void> {
   const start = Date.now()
-  const { error } = await supabase.from('enquiries').insert({
-    items: items as unknown as Json,
-    whatsapp_message: whatsappMessage,
-    status: 'sent',
-  })
-  if (error) {
-    logger.error('Failed to log enquiry to DB', undefined, {
-      event: 'enquiry.log_failed',
-      reason: error.message,
+
+  // Retry once on failure before giving up — this is a business-critical record
+  async function attemptInsert(): Promise<boolean> {
+    const { error } = await supabase.from('enquiries').insert({
+      items: items as unknown as Json,
+      whatsapp_message: whatsappMessage,
+      status: 'sent',
+    })
+    return !error
+  }
+
+  let success = await attemptInsert()
+  if (!success) {
+    // Wait 1 second and retry once
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    success = await attemptInsert()
+  }
+
+  if (!success) {
+    logger.error('Failed to log enquiry after retry — order is invisible to admin', undefined, {
+      event:      'enquiry.log_failed',
       item_count: items.length,
     })
-    // Fire-and-forget analytics event for enquiry failure
+    // Surface failure in a visible way for the admin (PostHog / Sentry will capture it)
+    // Also attempt to write a failure event so it's visible in admin analytics
     void (async () => {
       try {
-        const { error: ae } = await supabase.from('analytics_events').insert({
+        await supabase.from('analytics_events').insert({
           event_type: 'enquiry.log_failed',
-          event_data: { reason: error.message, item_count: items.length },
-          session_id: typeof window !== 'undefined' ? SESSION_ID : null,
-          page: typeof window !== 'undefined' ? window.location.pathname : null,
-        })
-        if (ae) console.debug('[analytics] enquiry.log_failed insert failed:', ae.message)
-      } catch {}
-    })()
-  } else {
-    logger.info('Enquiry logged', {
-      event:      'enquiry.created',
-      item_count: items.length,
-      duration_ms: Date.now() - start,
-    })
-    // Fire-and-forget analytics event for enquiry success
-    void (async () => {
-      try {
-        const { error: ae } = await supabase.from('analytics_events').insert({
-          event_type: 'enquiry.created',
           event_data: { item_count: items.length },
           session_id: typeof window !== 'undefined' ? SESSION_ID : null,
           page: typeof window !== 'undefined' ? window.location.pathname : null,
         })
-        if (ae) console.debug('[analytics] enquiry.created insert failed:', ae.message)
       } catch {}
     })()
+  } else {
+    logger.info('Enquiry logged', {
+      event:       'enquiry.created',
+      item_count:  items.length,
+      duration_ms: Date.now() - start,
+    })
   }
 }
 
@@ -275,7 +276,7 @@ export async function submitCustomerReview(review: {
       initials: initialsFromName(customerName),
       quote,
       rating: clampRating(review.rating),
-      is_visible: true,
+      is_visible: false,
       display_order: 0,
     })
     .select()
@@ -395,16 +396,44 @@ export async function uploadProductImage(file: File): Promise<string> {
 
 export async function deleteProductImage(imageUrl: string): Promise<void> {
   if (!imageUrl) return
-  const marker = '/bakevault-images/'
-  const idx = imageUrl.indexOf(marker)
-  if (idx === -1) return
-  const path = imageUrl.slice(idx + marker.length).split('?')[0] // strip query params
-  if (!path.startsWith('products/')) return
-  const { error } = await supabase.storage.from('bakevault-images').remove([path])
+
+  let parsed: URL
+  try {
+    parsed = new URL(imageUrl)
+  } catch {
+    // Not a valid URL — nothing to delete from storage
+    return
+  }
+
+  // Only attempt deletion for Supabase Storage URLs
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
+  if (supabaseUrl && !parsed.hostname.includes(new URL(supabaseUrl).hostname)) {
+    // External image (e.g. Unsplash) — do not attempt deletion
+    return
+  }
+
+  // Extract the storage path from the pathname
+  // Supabase Storage public URL format: /storage/v1/object/public/BUCKET/PATH
+  const STORAGE_PUBLIC_PREFIX = '/storage/v1/object/public/bakevault-images/'
+  const pathIndex = parsed.pathname.indexOf(STORAGE_PUBLIC_PREFIX)
+  if (pathIndex === -1) return
+
+  const storagePath = parsed.pathname.slice(pathIndex + STORAGE_PUBLIC_PREFIX.length)
+  if (!storagePath || !storagePath.startsWith('products/')) return
+
+  const { error } = await supabase.storage.from('bakevault-images').remove([storagePath])
   if (error) {
-    console.error('[BakeVault] Failed to delete image:', error.message)
+    console.error('[BakeVault] Failed to delete image from storage:', error.message)
   } else {
-    void (async () => { try { await logAdminActivity({ action: 'image.delete', resource_type: 'image', resource_id: path }) } catch {} })()
+    void (async () => {
+      try {
+        await logAdminActivity({
+          action: 'image.delete',
+          resource_type: 'image',
+          resource_id: storagePath,
+        })
+      } catch {}
+    })()
   }
 }
 
@@ -452,52 +481,67 @@ export async function getAnalyticsSummary(days = 30): Promise<{
   totals:      Record<string, number>
 }> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
-    .from('analytics_events')
-    .select('event_type, event_data, created_at, page')
-    .gte('created_at', since)
-    .in('event_type', STOREFRONT_ANALYTICS_EVENT_TYPES)
-    .order('created_at', { ascending: true })
 
-  if (error) throw new Error(error.message)
-  const events = (data ?? []).filter(isStorefrontAnalyticsEvent)
+  // Fetch aggregated daily summary from the Postgres view — never raw rows
+  const [summaryRes, topRes, totalsRes] = await Promise.all([
+    supabase
+      .from('analytics_daily_summary')
+      .select('day, page_views, product_views, add_to_cart, checkouts')
+      .gte('day', since)
+      .order('day', { ascending: true }),
 
+    supabase
+      .from('analytics_top_products')
+      .select('product_id, product_name, add_count')
+      .limit(5),
+
+    // Totals: sum each event type over the period
+    supabase
+      .from('analytics_events')
+      .select('event_type')
+      .gte('created_at', since)
+      .in('event_type', [
+        'page_view', 'product_view', 'add_to_cart', 'cart_checkout',
+        'whatsapp_click', 'product_request_submitted', 'review_submitted',
+      ]),
+  ])
+
+  if (summaryRes.error) throw new Error(summaryRes.error.message)
+  if (topRes.error)     throw new Error(topRes.error.message)
+
+  // Build chart buckets for the requested date range
   const buckets = new Map<string, AnalyticsChartPoint>()
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
-    const key = d.toISOString().slice(0, 10)
+    const key   = d.toISOString().slice(0, 10)
     const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     buckets.set(key, { date: label, page_views: 0, product_views: 0, add_to_cart: 0, checkouts: 0 })
   }
 
-  const totals: Record<string, number> = {}
-  const productCounts = new Map<string, { name: string; count: number }>()
-
-  for (const e of events) {
-    const key    = e.created_at.slice(0, 10)
+  for (const row of summaryRes.data ?? []) {
+    const key = (row.day as string).slice(0, 10)
     const bucket = buckets.get(key)
-    totals[e.event_type] = (totals[e.event_type] ?? 0) + 1
-
     if (bucket) {
-      if (e.event_type === 'page_view')     bucket.page_views    += 1
-      if (e.event_type === 'product_view')  bucket.product_views += 1
-      if (e.event_type === 'add_to_cart')   bucket.add_to_cart   += 1
-      if (e.event_type === 'cart_checkout') bucket.checkouts     += 1
-    }
-
-    if (e.event_type === 'add_to_cart') {
-      const d = e.event_data as { product_id?: string; product_name?: string }
-      if (d?.product_id) {
-        const existing = productCounts.get(d.product_id)
-        productCounts.set(d.product_id, { name: d.product_name ?? 'Unknown', count: (existing?.count ?? 0) + 1 })
-      }
+      bucket.page_views    = Number(row.page_views    ?? 0)
+      bucket.product_views = Number(row.product_views ?? 0)
+      bucket.add_to_cart   = Number(row.add_to_cart   ?? 0)
+      bucket.checkouts     = Number(row.checkouts     ?? 0)
     }
   }
 
-  const topProducts: TopProduct[] = [...productCounts.entries()]
-    .map(([id, { name, count }]) => ({ product_id: id, product_name: name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
+  const topProducts: TopProduct[] = (topRes.data ?? []).map(r => ({
+    product_id:   r.product_id   as string,
+    product_name: r.product_name as string,
+    count:        Number(r.add_count ?? 0),
+  }))
+
+  // Build totals from the lightweight event_type-only query
+  const totals: Record<string, number> = {}
+  for (const row of totalsRes.data ?? []) {
+    if (row.event_type) {
+      totals[row.event_type] = (totals[row.event_type] ?? 0) + 1
+    }
+  }
 
   return { chart: [...buckets.values()], topProducts, totals }
 }
@@ -538,17 +582,25 @@ export async function getProductsPage(options?: {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  let query = supabase.from('products').select('*, categories(*)', { count: 'exact' }).order('display_order', { ascending: true })
+  let query = supabase
+    .from('products')
+    .select('*, categories(*)', { count: 'exact' })
+
   if (!options?.includeUnavailable) query = query.eq('is_available', true)
   if (options?.featuredOnly)        query = query.eq('is_featured', true)
   if (options?.categoryId)          query = query.eq('category_id', options.categoryId)
   if (options?.search?.trim())      query = query.ilike('name', `%${options.search.trim()}%`)
 
-  // Server-side sorting for simple keys (category sorting handled client-side)
-  if (options?.sortKey && options.sortKey !== 'category') {
-    const orderField = options.sortKey
+  // All sorting is server-side -- including category (via referencedTable)
+  if (options?.sortKey) {
     const ascending = options.sortDir !== 'desc'
-    query = query.order(orderField as any, { ascending })
+    if (options.sortKey === 'category') {
+      query = query.order('name', { referencedTable: 'categories', ascending })
+    } else {
+      query = query.order(options.sortKey as string, { ascending })
+    }
+  } else {
+    query = query.order('display_order', { ascending: true })
   }
 
   query = query.range(from, to)

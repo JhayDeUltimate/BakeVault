@@ -18,7 +18,7 @@ export async function logAdminActivity(opts: AdminActivityOptions): Promise<void
   try {
     const { data: { user } } = await supabase.auth.getUser()
     const admin_id = user?.id ?? null
-    const admin_email = (user as any)?.email ?? null
+    const admin_email = user?.email ?? null
     const page = typeof window !== 'undefined' ? window.location.pathname : null
 
     const payload = {
