@@ -156,6 +156,7 @@ The function uses:
 - Gemini models in fallback order: `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`
 - Tavily search for current product context
 - CORS allowlisting from `ALLOWED_ORIGINS`
+- Session-keyed IP rate limiting for chat mode (30 messages per minute per IP)
 - SSRF checks for image analysis URLs
 - 25-second fetch timeouts and an 8 MB image fetch limit
 
@@ -268,3 +269,4 @@ Sentry:
 - The mobile WhatsApp CTA is dismissible per session with `sessionStorage`.
 - Recently viewed products are stored in `localStorage` under `bakevault:recently_viewed`, capped at 10 items, and synced across tabs.
 - Admin activity writes to `admin_activity_logs` and falls back to `analytics_events` when the dedicated table insert fails.
+- Product slugs are generated during creation and frozen on subsequent updates, ensuring that renaming a product doesn't break its original URL.

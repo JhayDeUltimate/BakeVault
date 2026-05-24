@@ -103,7 +103,7 @@ Lines 4+: Each feature on its own line, prefixed with "• " (bullet). List 3-6 
 Example description value:
 "Premium leavening agent for light and airy baked goods.\n\nKey Features:\n• Double-acting formula for consistent rise\n• Ideal for cakes, cookies, and pastries\n• Aluminium-free formulation\n• 1LB (454g) pack size"
 
-Use \n for newlines inside the JSON string. Do NOT use markdown. Do NOT wrap in code fences.
+Use \\n for newlines inside the JSON string. Do NOT use markdown. Do NOT wrap in code fences.
 
 ${searchContext ? `WEB RESEARCH ABOUT THIS PRODUCT:\n${searchContext}` : ''}
 `.trim()
@@ -558,52 +558,115 @@ serve(async (req: Request) => {
     }
   }
 
-  // ── Mode: chat ─────────────────────────────────────────────────────────────
-  if (!messages || !Array.isArray(messages)) {
-    return respond({ error: 'messages array is required for chat mode.' }, origin, 400)
-  }
-  if (messages.length > MAX_MESSAGES) {
-    return respond({ error: 'Conversation too long. Please start a new chat.' }, origin, 400)
-  }
+  // ── Mode: chat — rate-limited, no full auth required but session-keyed ──────
+  if (mode === 'chat') {
+    // Require at least the Supabase anon key to be present in the request.
+    // This doesn't block determined attackers but stops casual abuse and
+    // lets us key rate limits to the caller's session.
+    const authHeader = req.headers.get('authorization') ?? ''
+    const apiKey     = req.headers.get('apikey') ?? ''
+    const sessionToken = authHeader.replace(/^Bearer\s+/i, '').trim() || apiKey
 
-  const invalidMsg = messages.find(
-    m => typeof m.role !== 'string' || typeof m.content !== 'string',
-  )
-  if (invalidMsg) {
-    return respond({ error: 'Each message must have string role and content fields.' }, origin, 400)
-  }
-
-  const name        = productCtx?.name        ?? ''
-  const description = productCtx?.description ?? ''
-
-  // Step 1: Search for the product + user's latest question.
-  const lastUserMsg   = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
-  const searchQuery   = `${name} ${lastUserMsg} baking`.slice(0, 200)
-  const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
-
-  // Step 2: Call Gemini with enriched system prompt — no tools needed.
-  const contents: GeminiContent[] = messages.map(m => ({
-    role:  m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }))
-
-  try {
-    const res        = await callGemini(GEMINI_API_KEY, CHAT_SYSTEM(name, description, searchContext), contents)
-    const geminiData = await res.json() as Record<string, unknown>
-
-    if (!res.ok) {
-      const errMsg = (geminiData as GeminiErrorBody)?.error?.message ?? `Gemini ${res.status}`
-      return respond({ error: errMsg }, origin)
+    if (!sessionToken) {
+      return respond({ error: 'Missing authorization.' }, origin, 401)
     }
 
-    const text = extractText(geminiData)
-    return respond({
-      text: text || 'Sorry, I could not generate a response. Please try again.',
-    }, origin)
+    // IP-keyed rate limit: 30 chat messages per minute per IP.
+    // Store in Supabase using service role key (auto-injected in Edge Functions).
+    const clientIp   = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+    const rateLimitKey = `chat_rl:${clientIp}`
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Chat failed'
-    log('ERROR', 'Chat mode failed', { error: msg })
-    return respond({ error: msg }, origin)
+    if (supabaseUrl && serviceKey) {
+      try {
+        const windowStart = new Date(Date.now() - 60_000).toISOString()
+        const { count } = await fetch(
+          `${supabaseUrl}/rest/v1/analytics_events?select=id&event_type=eq.chat_message&event_data->ip=eq.${encodeURIComponent(clientIp)}&created_at=gte.${windowStart}`,
+          {
+            headers: {
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Prefer': 'count=exact',
+              'Range': '0-0',
+            },
+          }
+        ).then(r => ({ count: parseInt(r.headers.get('content-range')?.split('/')[1] ?? '0', 10) }))
+
+        if (count >= 30) {
+          log('WARN', 'Chat rate limit hit', { ip: clientIp, count })
+          return respond({ error: 'Too many requests. Please wait a moment before asking another question.' }, origin, 429)
+        }
+
+        // Log this chat message for rate limiting (fire-and-forget)
+        void fetch(`${supabaseUrl}/rest/v1/analytics_events`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            event_type: 'chat_message',
+            event_data: { ip: clientIp },
+            session_id: null,
+            page: null,
+          }),
+        })
+      } catch (err) {
+        // Rate limit check failure is non-fatal — allow the request through
+        log('WARN', 'Rate limit check failed (allowing request)', { error: err instanceof Error ? err.message : String(err) })
+      }
+    }
+
+    // ── Chat message validation ───────────────────────────────────────────────
+    if (!messages || !Array.isArray(messages)) {
+      return respond({ error: 'messages array is required for chat mode.' }, origin, 400)
+    }
+    if (messages.length > MAX_MESSAGES) {
+      return respond({ error: 'Conversation too long. Please start a new chat.' }, origin, 400)
+    }
+
+    const invalidMsg = messages.find(
+      m => typeof m.role !== 'string' || typeof m.content !== 'string',
+    )
+    if (invalidMsg) {
+      return respond({ error: 'Each message must have string role and content fields.' }, origin, 400)
+    }
+
+    const name        = productCtx?.name        ?? ''
+    const description = productCtx?.description ?? ''
+
+    // Step 1: Search for the product + user's latest question.
+    const lastUserMsg   = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+    const searchQuery   = `${name} ${lastUserMsg} baking`.slice(0, 200)
+    const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
+
+    // Step 2: Call Gemini with enriched system prompt — no tools needed.
+    const contents: GeminiContent[] = messages.map(m => ({
+      role:  m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }))
+
+    try {
+      const res        = await callGemini(GEMINI_API_KEY, CHAT_SYSTEM(name, description, searchContext), contents)
+      const geminiData = await res.json() as Record<string, unknown>
+
+      if (!res.ok) {
+        const errMsg = (geminiData as GeminiErrorBody)?.error?.message ?? `Gemini ${res.status}`
+        return respond({ error: errMsg }, origin)
+      }
+
+      const text = extractText(geminiData)
+      return respond({
+        text: text || 'Sorry, I could not generate a response. Please try again.',
+      }, origin)
+
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Chat failed'
+      log('ERROR', 'Chat mode failed', { error: msg })
+      return respond({ error: msg }, origin)
+    }
   }
 })

@@ -159,8 +159,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
           )
         })}
 
-        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 justify-center px-6 sm:bottom-10 lg:bottom-12 lg:left-0 lg:w-full lg:translate-x-0 lg:justify-start lg:px-[max(2rem,calc((100vw-90rem)/2+2rem))]">
-          <div className="flex gap-3 lg:gap-2 lg:px-4 lg:py-2">
+        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 justify-center sm:bottom-6 lg:bottom-8">
+          <div className="flex gap-3 lg:gap-2.5">
             {products.map((product, index) => (
               <button
                 key={product.id}

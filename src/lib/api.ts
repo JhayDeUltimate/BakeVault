@@ -100,7 +100,8 @@ export async function updateProduct(
     ...updates,
     updated_at: new Date().toISOString(),
   }
-  if (updates.name) payload.slug = toSlug(updates.name)
+  // Slugs are frozen at creation time to preserve URL stability.
+  // To rename a product without breaking its URL, update name but not slug.
   if (updates.image_urls !== undefined) payload.image_urls = (updates.image_urls ?? []) as Json
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
   if (error) throw new Error(error.message)
