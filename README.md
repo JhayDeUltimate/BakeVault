@@ -159,6 +159,7 @@ Migration files (run in lexicographic order):
 | `202605210001_reviews_and_notifications.sql` | Testimonial rating column, review insert policy |
 | `202605220001_analytics_views.sql` | Analytics summary and top products views |
 | `202605220002_analytics_totals_fn.sql` | `get_analytics_totals` RPC function |
+| `202605250001_admin_rls_policies.sql` | Admin-only SELECT/UPDATE RLS for sensitive tables |
 
 Storage requirement:
 

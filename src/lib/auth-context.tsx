@@ -6,11 +6,12 @@ import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 
 // ── Admin email helpers ───────────────────────────────────────────────────────
 function parseAdminEmails(raw: string | undefined): Set<string> {
-  if (import.meta.env.PROD && raw) {
+  if (import.meta.env.MODE !== 'development' && raw) {
     logger.warn(
-      '[BakeVault] VITE_ADMIN_EMAILS is set in a production build. ' +
-      'This exposes admin emails in the client bundle. Use the admins table instead.',
+      '[BakeVault] VITE_ADMIN_EMAILS is set outside development mode. ' +
+      'Ignoring — use the admins table instead.',
     )
+    return new Set<string>()
   }
   return new Set(
     (raw ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),

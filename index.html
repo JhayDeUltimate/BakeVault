@@ -34,59 +34,49 @@
   <!-- JSON-LD: LocalBusiness -->
   <!-- JSON-LD: LocalBusiness (injected from env at build/runtime) -->
   <!-- Uses VITE_WHATSAPP_NUMBER and VITE_CONTACT_EMAIL; falls back to current defaults. -->
-  <script type="module">
-    // Vite replaces import.meta.env.* at build time. This creates a JSON-LD block
-    // that matches your runtime config without hardcoding contact details.
-    const phone = import.meta.env.VITE_WHATSAPP_NUMBER || '+2349064652679'
-    const email = import.meta.env.VITE_CONTACT_EMAIL || 'sales@bakevault.com.ng'
-
-    const ld = {
-      '@context': 'https://schema.org',
-      '@type': 'LocalBusiness',
-      name: 'BakeVault Lagos',
-      description: 'Premium baking supplies and ingredients supplier in Lagos, Nigeria. Wholesale and retail. Same-day delivery.',
-      url: 'https://bakevault.com.ng',
-      logo: 'https://bakevault.com.ng/logo.svg',
-      image: 'https://bakevault.com.ng/og-image.jpg',
-      telephone: phone,
-      email: email,
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: 'Lagos',
-        addressCountry: 'NG'
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "BakeVault Lagos",
+    "description": "Premium baking supplies and ingredients supplier in Lagos, Nigeria. Wholesale and retail. Same-day delivery.",
+    "url": "https://bakevault.com.ng",
+    "logo": "https://bakevault.com.ng/logo.svg",
+    "image": "https://bakevault.com.ng/og-image.jpg",
+    "telephone": "__WHATSAPP_NUMBER__",
+    "email": "__CONTACT_EMAIL__",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Lagos",
+      "addressCountry": "NG"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+        "opens": "08:00",
+        "closes": "18:00"
       },
-      openingHoursSpecification: [
-        {
-          '@type': 'OpeningHoursSpecification',
-          dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'],
-          opens: '08:00',
-          closes: '18:00'
-        },
-        {
-          '@type': 'OpeningHoursSpecification',
-          dayOfWeek: 'Saturday',
-          opens: '09:00',
-          closes: '16:00'
-        }
-      ],
-      sameAs: ['https://instagram.com/bakevaultlagos'],
-      priceRange: '₦₦',
-      hasOfferCatalog: {
-        '@type': 'OfferCatalog',
-        name: 'Baking Supplies Lagos',
-        itemListElement: [
-          { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Yogurt Starter Culture Lagos' } },
-          { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Kefir Starter Lagos' } },
-          { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Bread Improver Nigeria' } },
-          { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Baking Supplies Lagos Nigeria' } }
-        ]
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Saturday",
+        "opens": "09:00",
+        "closes": "16:00"
       }
+    ],
+    "sameAs": ["https://instagram.com/bakevaultlagos"],
+    "priceRange": "₦₦",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Baking Supplies Lagos",
+      "itemListElement": [
+        { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Yogurt Starter Culture Lagos" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Kefir Starter Lagos" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Bread Improver Nigeria" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Baking Supplies Lagos Nigeria" } }
+      ]
     }
-
-    const s = document.createElement('script')
-    s.type = 'application/ld+json'
-    s.text = JSON.stringify(ld)
-    document.head.appendChild(s)
+  }
   </script>
 
   <!-- Google Fonts — preconnect first, then non-blocking stylesheet -->

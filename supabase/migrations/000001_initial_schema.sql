@@ -92,6 +92,14 @@ create policy "Anyone can insert enquiries"
   on public.enquiries for insert
   with check (true);
 
+create policy "Admins can read enquiries"
+  on public.enquiries for select
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can update enquiries"
+  on public.enquiries for update
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
 -- ─── Testimonials ────────────────────────────────────────────────────────────
 create table if not exists public.testimonials (
   id            uuid primary key default extensions.uuid_generate_v4(),
@@ -154,6 +162,14 @@ create policy "Anyone can submit product requests"
   on public.product_requests for insert
   with check (true);
 
+create policy "Admins can read product requests"
+  on public.product_requests for select
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can update product requests"
+  on public.product_requests for update
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
 -- ─── Analytics Events ────────────────────────────────────────────────────────
 create table if not exists public.analytics_events (
   id         uuid primary key default extensions.uuid_generate_v4(),
@@ -175,6 +191,10 @@ create policy "Anyone can insert analytics events"
   on public.analytics_events for insert
   with check (true);
 
+create policy "Admins can read analytics events"
+  on public.analytics_events for select
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
 -- ─── Admin Activity Logs ─────────────────────────────────────────────────────
 create table if not exists public.admin_activity_logs (
   id            uuid primary key default extensions.uuid_generate_v4(),
@@ -193,6 +213,14 @@ create index if not exists idx_admin_logs_created
   on public.admin_activity_logs(created_at);
 
 alter table public.admin_activity_logs enable row level security;
+
+create policy "Admins can read activity logs"
+  on public.admin_activity_logs for select
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can insert activity logs"
+  on public.admin_activity_logs for insert
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- ─── Storage Bucket ──────────────────────────────────────────────────────────
 -- The app uses a public bucket called "bakevault-images".
