@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { CATEGORIES } from '@/constants'
+import { useCategories } from '@/hooks'
 
 interface CategoryMenuProps {
   isOpen:  boolean
@@ -10,6 +10,7 @@ interface CategoryMenuProps {
 const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { categories, loading: categoriesLoading } = useCategories()
 
   if (!isOpen) return null
 
@@ -65,14 +66,18 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({ isOpen, onClose }) => {
                 <p className="px-1 pt-3 text-xs font-black uppercase tracking-widest text-brand-brown-text/60">
                   Ingredients by Category
                 </p>
-                {CATEGORIES.map(category => (
+                {categoriesLoading ? (
+                  [...Array(6)].map((_, i) => (
+                    <div key={i} className="h-12 rounded-2xl bg-orange-50 animate-pulse" />
+                  ))
+                ) : categories.map(category => (
                   <button
-                    key={category}
+                    key={category.id}
                     type="button"
-                    onClick={() => goToCategory(category)}
+                    onClick={() => goToCategory(category.name)}
                     className="block w-full text-left px-5 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border bg-white text-brand-darkGray border-orange-50 hover:bg-brand-brown hover:text-white hover:border-brand-brown"
                   >
-                    {category}
+                    {category.name}
                   </button>
                 ))}
               </div>

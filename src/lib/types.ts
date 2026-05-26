@@ -9,12 +9,14 @@ export type Category =
   | 'Food Coloring'
   | 'Other Products';
 
+export type ProductPrice = 'Retail' | 'Wholesale';
+
 export interface Product {
   id: string;
   name: string;
   category: Category;
   description?: string;
-  price: string;
+  price: ProductPrice;
   image: string;
   isCustom?: boolean;
 }

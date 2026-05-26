@@ -12,13 +12,35 @@ interface Options {
   refetchOnFocus?: boolean
 }
 
+type NormalizedOptions = Required<Pick<Options, 'featuredOnly' | 'includeUnavailable'>> & {
+  categoryId: string | null
+  search: string
+  limit: number | undefined
+  refetchOnFocus: boolean
+}
+
+function normalizeOptions(options: Options): NormalizedOptions {
+  const search = options.search?.trim() ?? ''
+  const limit = typeof options.limit === 'number' && options.limit > 0 ? options.limit : undefined
+
+  return {
+    categoryId: options.categoryId || null,
+    search,
+    featuredOnly: options.featuredOnly === true,
+    includeUnavailable: options.includeUnavailable === true,
+    limit,
+    refetchOnFocus: options.refetchOnFocus === true,
+  }
+}
+
 export function useProducts(options: Options = {}) {
   const [products, setProducts] = useState<DBProductWithCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const normalizedOptions = normalizeOptions(options)
 
-  const optionsRef = useRef(options)
-  optionsRef.current = options
+  const optionsRef = useRef(normalizedOptions)
+  optionsRef.current = normalizedOptions
 
   // Monotonically-increasing fetch ID. Only the most recent fetch may update state.
   const fetchIdRef = useRef(0)
@@ -47,14 +69,14 @@ export function useProducts(options: Options = {}) {
     fetch()
   }, [
     fetch,
-    options.categoryId,
-    options.search,
-    options.featuredOnly,
-    options.includeUnavailable,
-    options.limit,
+    normalizedOptions.categoryId,
+    normalizedOptions.search,
+    normalizedOptions.featuredOnly,
+    normalizedOptions.includeUnavailable,
+    normalizedOptions.limit,
   ])
 
-  const { refetchOnFocus } = options
+  const { refetchOnFocus } = normalizedOptions
   useEffect(() => {
     if (!refetchOnFocus) return
     window.addEventListener('focus', fetch)

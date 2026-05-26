@@ -73,17 +73,15 @@ export default function TestimonialsSection({ testimonials }: Props) {
     try {
       setSaving(true)
       setError(null)
-      const created = await submitCustomerReview({
+      const submitted = await submitCustomerReview({
         customer_name: form.customer_name,
         business_name: form.business_name,
         quote: form.quote,
         rating: form.rating,
       })
-      setItems(prev => [created, ...prev.filter(item => item.id !== created.id)])
-      setCurrent(0)
       setForm(EMPTY_FORM)
       setDone(true)
-      trackEvent('review_submitted', { rating: created.rating })
+      trackEvent('review_submitted', { rating: submitted.rating })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Review submission failed. Please try again.')
     } finally {
@@ -146,12 +144,12 @@ export default function TestimonialsSection({ testimonials }: Props) {
         <div className="rounded-[24px] border border-orange-100 bg-white p-5 shadow-sm sm:rounded-[28px] sm:p-6">
           <h3 className="font-display text-lg font-extrabold text-brand-darkGray">Leave a review</h3>
           <p className="mt-1 text-xs font-medium leading-relaxed text-brand-darkGray/50">
-            Share your experience. Your review appears here right after submission.
+            Share your experience. Reviews appear here after admin approval.
           </p>
 
           {done && (
             <div className="mt-4 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
-              Thank you. Your review is now live.
+              Thank you. Your review has been submitted for approval.
             </div>
           )}
 

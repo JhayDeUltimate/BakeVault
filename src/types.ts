@@ -1,1 +1,1 @@
-export type { CartItem, Category, Product, Testimonial } from './lib/types'
+export type { CartItem, Category, Product, ProductPrice, Testimonial } from './lib/types'

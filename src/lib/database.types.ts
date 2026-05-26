@@ -16,9 +16,9 @@ export interface Database {
         Relationships: []
       }
       categories: {
-        Row: { id: string; name: string; slug: string; display_order: number; created_at: string }
-        Insert: { id?: string; name: string; slug: string; display_order?: number; created_at?: string }
-        Update: { id?: string; name?: string; slug?: string; display_order?: number; created_at?: string }
+        Row: { id: string; name: string; slug: string; display_order: number; seo_title: string | null; seo_description: string | null; created_at: string }
+        Insert: { id?: string; name: string; slug: string; display_order?: number; seo_title?: string | null; seo_description?: string | null; created_at?: string }
+        Update: { id?: string; name?: string; slug?: string; display_order?: number; seo_title?: string | null; seo_description?: string | null; created_at?: string }
         Relationships: []
       }
       products: {
@@ -44,9 +44,9 @@ export interface Database {
         Relationships: [{ foreignKeyName: 'products_category_id_fkey'; columns: ['category_id']; isOneToOne: false; referencedRelation: 'categories'; referencedColumns: ['id'] }]
       }
       enquiries: {
-        Row: { id: string; items: Json; whatsapp_message: string | null; customer_name: string | null; status: string; created_at: string }
-        Insert: { id?: string; items: Json; whatsapp_message?: string | null; customer_name?: string | null; status?: string; created_at?: string }
-        Update: { status?: string }
+        Row: { id: string; items: Json; whatsapp_message: string | null; customer_name: string | null; idempotency_key: string | null; status: string; created_at: string }
+        Insert: { id?: string; items: Json; whatsapp_message?: string | null; customer_name?: string | null; idempotency_key?: string | null; status?: string; created_at?: string }
+        Update: { idempotency_key?: string | null; status?: string }
         Relationships: []
       }
       testimonials: {

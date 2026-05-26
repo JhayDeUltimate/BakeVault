@@ -8,7 +8,23 @@ import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTe
 export { getProductImages } from './image'
 
 export function toSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+  const ascii = name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ß/gi, 'ss')
+    .replace(/æ/gi, 'ae')
+    .replace(/œ/gi, 'oe')
+    .replace(/ø/gi, 'o')
+    .replace(/ð/gi, 'd')
+    .replace(/þ/gi, 'th')
+
+  return ascii
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    || 'item'
 }
 
 type AdminNotificationType = 'product_request' | 'review'
@@ -44,6 +60,14 @@ function initialsFromName(name: string): string {
 
 function clampRating(rating: number): number {
   return Math.max(1, Math.min(5, Math.round(rating)))
+}
+
+function randomUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
@@ -127,9 +151,19 @@ export async function getCategories(): Promise<DBCategory[]> {
   return data ?? []
 }
 
-export async function createCategory(name: string, displayOrder?: number): Promise<DBCategory> {
+export async function createCategory(
+  name: string,
+  displayOrder?: number,
+  seo?: { seo_title?: string | null; seo_description?: string | null }
+): Promise<DBCategory> {
   const slug = toSlug(name)
-  const { data, error } = await supabase.from('categories').insert({ name, slug, display_order: displayOrder ?? 0 }).select().single()
+  const { data, error } = await supabase.from('categories').insert({
+    name,
+    slug,
+    display_order: displayOrder ?? 0,
+    seo_title: seo?.seo_title ?? null,
+    seo_description: seo?.seo_description ?? null,
+  }).select().single()
   if (error) {
     if (error.code === '23505') throw new Error('A category with this name already exists.')
     throw new Error(error.message)
@@ -138,7 +172,10 @@ export async function createCategory(name: string, displayOrder?: number): Promi
   return data
 }
 
-export async function updateCategory(id: string, updates: { name?: string; display_order?: number }): Promise<DBCategory> {
+export async function updateCategory(
+  id: string,
+  updates: { name?: string; display_order?: number; seo_title?: string | null; seo_description?: string | null }
+): Promise<DBCategory> {
   const payload: Database['public']['Tables']['categories']['Update'] = { ...updates }
   if (updates.name) payload.slug = toSlug(updates.name)
   const { data, error } = await supabase.from('categories').update(payload).eq('id', id).select().single()
@@ -161,15 +198,23 @@ export interface EnquiryItem { product_id: string; product_name: string; categor
 
 export async function logEnquiry(items: EnquiryItem[], whatsappMessage: string): Promise<void> {
   const start = Date.now()
+  const idempotencyKey = randomUuid()
 
   // Retry once on failure before giving up — this is a business-critical record
   async function attemptInsert(): Promise<boolean> {
-    const { error } = await supabase.from('enquiries').insert({
-      items: items as unknown as Json,
-      whatsapp_message: whatsappMessage,
-      status: 'sent',
-    })
-    return !error
+    try {
+      const { error } = await supabase.from('enquiries').insert({
+        items: items as unknown as Json,
+        whatsapp_message: whatsappMessage,
+        idempotency_key: idempotencyKey,
+        status: 'sent',
+      })
+      if (!error) return true
+      if (error.code === '23505') return true
+      return false
+    } catch {
+      return false
+    }
   }
 
   let success = await attemptInsert()
@@ -262,29 +307,30 @@ export async function submitCustomerReview(review: {
   business_name?: string
   quote: string
   rating: number
-}): Promise<DBTestimonial> {
+}): Promise<{ id: string; rating: number }> {
   const customerName = review.customer_name.trim()
   const quote = review.quote.trim()
   if (!customerName || !quote) throw new Error('Name and review are required.')
+  const id = randomUuid()
+  const rating = clampRating(review.rating)
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('testimonials')
     .insert({
+      id,
       customer_name: customerName,
       business_name: review.business_name?.trim() || null,
       initials: initialsFromName(customerName),
       quote,
-      rating: clampRating(review.rating),
+      rating,
       is_visible: false,
       display_order: 0,
     })
-    .select()
-    .single()
 
   if (error) throw new Error(error.message)
 
-  void notifyAdminOfSubmission('review', (data as DBTestimonial).id)
-  return data
+  void notifyAdminOfSubmission('review', id)
+  return { id, rating }
 }
 
 export async function updateTestimonial(id: string, updates: Partial<{ customer_name: string; business_name: string | null; initials: string | null; quote: string; rating: number; is_visible: boolean; display_order: number }>): Promise<DBTestimonial> {

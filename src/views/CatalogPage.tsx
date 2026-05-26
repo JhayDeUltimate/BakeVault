@@ -14,60 +14,17 @@ import { mapDBProduct } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 import type { DBProductWithCategory, DBCategory } from '@/lib/database.types'
 
-// ── Per-category SEO meta ─────────────────────────────────────────────────────
-// Descriptions are hand-written to target the exact high-intent phrases
-// identified in keyword research. Keyed by the category name string because
-// category IDs are runtime UUIDs unknown at build time.
-const CATEGORY_META: Record<string, { title: string; description: string }> = {
-  'Yogurt & Dairy Starters': {
-    title: 'Yogurt Starter Culture & Kefir Starters in Lagos | BakeVault',
-    description: 'Buy yogurt starter culture and kefir starters in Lagos Nigeria. Yogourmet Original, Probio, Kefir, and more. Same-day delivery. Wholesale and retail. Order via WhatsApp.',
-  },
-  'Milk Flavorings & Essences': {
-    title: 'Milk Flavorings & Essences in Lagos Nigeria | BakeVault',
-    description: 'Shop milk flavorings, dairy essences, and flavouring concentrates in Lagos. Wholesale and retail. Same-day delivery. Order via WhatsApp.',
-  },
-  'Preservatives & Additives': {
-    title: 'Food Preservatives & Additives in Lagos Nigeria | BakeVault',
-    description: 'Buy food-grade preservatives, stabilisers, and additives in Lagos. Suitable for bakers, confectioners, and food producers. Wholesale pricing available. Order via WhatsApp.',
-  },
-  'Syrups & Toppings': {
-    title: 'Syrups & Toppings for Baking in Lagos | BakeVault',
-    description: 'Shop flavoured syrups, dessert toppings, and waffle sauces in Lagos Nigeria. Ideal for cafés, bakeries, and home bakers. Same-day delivery. Order via WhatsApp.',
-  },
-  'Milk Flavouring Powders (Bulk)': {
-    title: 'Milk Flavouring Powder Bulk Supply in Lagos | BakeVault',
-    description: 'Buy milk flavouring powders in bulk in Lagos Nigeria. Ideal for yogurt producers, ice cream makers, and food manufacturers. Wholesale pricing. Order via WhatsApp.',
-  },
-  'Margarine & Spreads': {
-    title: 'Baking Margarine & Spreads in Lagos Nigeria | BakeVault',
-    description: 'Buy baking margarine, puff pastry fat, and spreads in Lagos. Wholesale and retail. Trusted by Lagos bakeries. Same-day delivery. Order via WhatsApp.',
-  },
-  'Baking Ingredients': {
-    title: 'Bread Improver & Baking Ingredients in Lagos | BakeVault',
-    description: 'Buy bread improvers, yeast, baking powder, and baking ingredients in Lagos Nigeria. Wholesale and retail supply. Same-day delivery. Order via WhatsApp.',
-  },
-  'Food Coloring': {
-    title: 'Food Colouring in Lagos Nigeria | BakeVault',
-    description: 'Buy food-grade food colouring, gel colours, and powdered colour in Lagos. Suitable for cakes, pastries, and confectionery. Wholesale pricing. Order via WhatsApp.',
-  },
-  'Other Products': {
-    title: 'Other Baking Supplies in Lagos Nigeria | BakeVault',
-    description: 'Browse a wide range of baking supplies and ingredients in Lagos Nigeria. Wholesale and retail. Same-day delivery. Order via WhatsApp.',
-  },
-}
-
 const DEFAULT_META = {
   title: 'Baking Supplies & Ingredients in Lagos Nigeria | BakeVault',
   description: 'Wholesale and retail baking ingredients in Lagos. Bread improvers, yogurt starters, food colours, margarine, and more. Same-day delivery. Order via WhatsApp.',
 }
 
-function CatalogHelmet({ categoryName, searchInput }: { categoryName: string; searchInput: string }) {
-  const meta = categoryName
-    ? (CATEGORY_META[categoryName] ?? {
-      title: `${categoryName} in Lagos Nigeria | BakeVault`,
-      description: `Buy ${categoryName.toLowerCase()} in Lagos Nigeria. Wholesale and retail. Same-day delivery. Order via WhatsApp.`,
-    })
+function CatalogHelmet({ category, searchInput }: { category: DBCategory | null; searchInput: string }) {
+  const meta = category
+    ? {
+      title: category.seo_title?.trim() || `${category.name} in Lagos Nigeria | BakeVault`,
+      description: category.seo_description?.trim() || `Buy ${category.name.toLowerCase()} in Lagos Nigeria. Wholesale and retail. Same-day delivery. Order via WhatsApp.`,
+    }
     : DEFAULT_META
 
   // When a search is active, personalise the title but keep the default description
@@ -183,15 +140,16 @@ export default function CatalogPage() {
     if (raw) trackEvent('product_view', { product_id: raw.id, product_name: raw.name, category: raw.categories?.name ?? '' })
   }
 
-  const activeCategoryName = categoryId
-    ? (categories as DBCategory[]).find(c => c.id === categoryId)?.name ?? ''
-    : ''
+  const activeCategory = categoryId
+    ? (categories as DBCategory[]).find(c => c.id === categoryId) ?? null
+    : null
+  const activeCategoryName = activeCategory?.name ?? ''
 
   const isFiltering = categoryId !== null || searchInput.trim() !== ''
 
   return (
     <main className="flex-grow max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 w-full">
-      <CatalogHelmet categoryName={activeCategoryName} searchInput={searchInput} />
+      <CatalogHelmet category={activeCategory} searchInput={searchInput} />
       <SectionHeading eyebrow="The Vault" title="Everything We Stock"
         description="Search by name or filter by category. Prices on request via WhatsApp. DM us any time." />
 

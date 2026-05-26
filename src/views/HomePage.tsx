@@ -8,9 +8,8 @@ import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading from '@/components/ui/SectionHeading'
 import SkeletonProductCard from '@/components/ui/SkeletonProductCard'
 import RecentlyViewedStrip from '@/components/RecentlyViewedStrip'
-import { CATEGORIES } from '@/constants'
 import { useCart } from '@/lib/cart-context'
-import { useProducts, useTestimonials, useRecentlyViewed } from '@/hooks'
+import { useProducts, useTestimonials, useRecentlyViewed, useCategories } from '@/hooks'
 import { mapDBProduct } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 import { Helmet } from 'react-helmet-async'
@@ -20,6 +19,7 @@ export default function HomePage() {
   const { addToCart } = useCart()
   const navigate = useNavigate()
   const { products: featuredFromDB, loading: featuredLoading } = useProducts({ featuredOnly: true })
+  const { categories, loading: categoriesLoading } = useCategories()
   const { testimonials } = useTestimonials(true)
   const { items: recentItems } = useRecentlyViewed()
 
@@ -66,14 +66,18 @@ export default function HomePage() {
               description="Pick a category and go straight to the products. Everything is in stock or marked clearly if not."
             />
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-12">
-              {CATEGORIES.map(category => (
+              {categoriesLoading ? (
+                [...Array(8)].map((_, i) => (
+                  <div key={i} className="h-24 rounded-[24px] bg-orange-50 animate-pulse" />
+                ))
+              ) : categories.map(category => (
                 <button
-                  key={category}
-                  onClick={() => navigate('/catalog')}
+                  key={category.id}
+                  onClick={() => navigate(`/catalog?cat=${encodeURIComponent(category.name)}`)}
                   className="group bg-white border border-orange-100 rounded-[24px] p-6 text-center hover:bg-brand-brown hover:border-brand-brown transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1"
                 >
                   <span className="text-xs sm:text-sm font-extrabold text-brand-darkGray group-hover:text-white font-display uppercase tracking-wider transition-colors">
-                    {category}
+                    {category.name}
                   </span>
                 </button>
               ))}

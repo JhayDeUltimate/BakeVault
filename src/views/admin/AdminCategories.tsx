@@ -8,7 +8,11 @@ export function AdminCategories() {
 
   const [editId,    setEditId]    = useState<string | null>(null)
   const [editName,  setEditName]  = useState('')
+  const [editSeoTitle, setEditSeoTitle] = useState('')
+  const [editSeoDescription, setEditSeoDescription] = useState('')
   const [newName,   setNewName]   = useState('')
+  const [newSeoTitle, setNewSeoTitle] = useState('')
+  const [newSeoDescription, setNewSeoDescription] = useState('')
   const [savingNew, setSavingNew] = useState(false)
   const [savingEdit,setSavingEdit]= useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -28,8 +32,13 @@ export function AdminCategories() {
       const nextOrder = categories.length > 0
         ? Math.max(...categories.map(c => c.display_order)) + 1
         : 0
-      await createCategory(name, nextOrder)
+      await createCategory(name, nextOrder, {
+        seo_title: newSeoTitle.trim() || null,
+        seo_description: newSeoDescription.trim() || null,
+      })
       setNewName('')
+      setNewSeoTitle('')
+      setNewSeoDescription('')
       await refetch()
       flash(`"${name}" added successfully.`)
     } catch (err) {
@@ -49,7 +58,11 @@ export function AdminCategories() {
     if (!name) return
     try {
       setSavingEdit(true); setFormError(null)
-      await updateCategory(cat.id, { name })
+      await updateCategory(cat.id, {
+        name,
+        seo_title: editSeoTitle.trim() || null,
+        seo_description: editSeoDescription.trim() || null,
+      })
       setEditId(null)
       await refetch()
       flash(`"${name}" updated successfully.`)
@@ -81,12 +94,16 @@ export function AdminCategories() {
   function startEdit(cat: DBCategory) {
     setEditId(cat.id)
     setEditName(cat.name)
+    setEditSeoTitle(cat.seo_title ?? '')
+    setEditSeoDescription(cat.seo_description ?? '')
     setFormError(null)
   }
 
   function cancelEdit() {
     setEditId(null)
     setEditName('')
+    setEditSeoTitle('')
+    setEditSeoDescription('')
     setFormError(null)
   }
 
@@ -101,7 +118,7 @@ export function AdminCategories() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-2xl min-w-0 space-y-5 pb-6">
+    <div className="mx-auto w-full max-w-4xl min-w-0 space-y-5 pb-6">
       <h1 className="text-2xl font-bold text-gray-800">Categories</h1>
 
       {/* Status messages */}
@@ -118,17 +135,30 @@ export function AdminCategories() {
       )}
 
       {/* Add form */}
-      <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={handleCreate} className="grid gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
         <input
           value={newName}
           onChange={e => { setNewName(e.target.value); setFormError(null) }}
           placeholder="New category name…"
           className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
+        <input
+          value={newSeoTitle}
+          onChange={e => { setNewSeoTitle(e.target.value); setFormError(null) }}
+          placeholder="SEO title (optional)"
+          className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+        />
+        <textarea
+          value={newSeoDescription}
+          onChange={e => { setNewSeoDescription(e.target.value); setFormError(null) }}
+          placeholder="SEO description (optional)"
+          rows={3}
+          className="min-w-0 flex-1 resize-none border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+        />
         <button
           type="submit"
           disabled={savingNew || !newName.trim()}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed sm:w-auto sm:shrink-0"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed sm:w-auto sm:justify-self-start"
         >
           {savingNew ? 'Adding…' : 'Add'}
         </button>
@@ -145,9 +175,9 @@ export function AdminCategories() {
           </div>
         ) : (
           categories.map(cat => (
-            <div key={cat.id} className="flex min-w-0 items-center gap-3 px-4 py-3 group">
+            <div key={cat.id} className="flex min-w-0 items-start gap-3 px-4 py-3 group">
               {editId === cat.id ? (
-                <>
+                <div className="grid flex-1 gap-3">
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
@@ -155,6 +185,20 @@ export function AdminCategories() {
                     className="min-w-0 flex-1 border border-orange-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     autoFocus
                   />
+                  <input
+                    value={editSeoTitle}
+                    onChange={e => setEditSeoTitle(e.target.value)}
+                    placeholder="SEO title"
+                    className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <textarea
+                    value={editSeoDescription}
+                    onChange={e => setEditSeoDescription(e.target.value)}
+                    placeholder="SEO description"
+                    rows={3}
+                    className="min-w-0 flex-1 resize-none border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <div className="flex gap-3">
                   <button
                     onClick={() => handleUpdate(cat)}
                     disabled={savingEdit || !editName.trim()}
@@ -165,10 +209,19 @@ export function AdminCategories() {
                   <button onClick={cancelEdit} className="text-sm text-gray-400 hover:text-gray-600 shrink-0">
                     Cancel
                   </button>
-                </>
+                  </div>
+                </div>
               ) : (
                 <>
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-700 font-medium">{cat.name}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-gray-700 font-medium">{cat.name}</span>
+                    {cat.seo_title && (
+                      <span className="mt-1 block truncate text-xs text-gray-500">{cat.seo_title}</span>
+                    )}
+                    {cat.seo_description && (
+                      <span className="mt-1 block line-clamp-2 text-xs text-gray-400">{cat.seo_description}</span>
+                    )}
+                  </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => startEdit(cat)}

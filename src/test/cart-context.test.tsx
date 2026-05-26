@@ -10,7 +10,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     id: '1',
     name: 'Test Flour',
     category: 'Baking Ingredients',
-    price: '',
+    price: 'Wholesale',
     image: '',
     ...overrides,
   }
@@ -37,7 +37,7 @@ describe('CartProvider', () => {
 
   it('clears expired cart on load', () => {
     const eightDaysAgo = Date.now() - (8 * 24 * 60 * 60 * 1000)
-    const old = { items: [{ id: '1', name: 'Old', category: 'Baking Ingredients', price: '', image: '', quantity: 2 }], ts: eightDaysAgo }
+    const old = { items: [{ id: '1', name: 'Old', category: 'Baking Ingredients', price: 'Wholesale', image: '', quantity: 2 }], ts: eightDaysAgo }
     localStorage.setItem(CART_KEY, JSON.stringify(old))
 
     const { result } = renderHook(() => useCart(), { wrapper: CartProvider })
@@ -46,7 +46,7 @@ describe('CartProvider', () => {
 
   it('preserves cart within the 7-day expiry window', () => {
     const sixDaysAgo = Date.now() - (6 * 24 * 60 * 60 * 1000)
-    const recent = { items: [{ id: '1', name: 'Fresh', category: 'Baking Ingredients', price: '', image: '', quantity: 1 }], ts: sixDaysAgo }
+    const recent = { items: [{ id: '1', name: 'Fresh', category: 'Baking Ingredients', price: 'Wholesale', image: '', quantity: 1 }], ts: sixDaysAgo }
     localStorage.setItem(CART_KEY, JSON.stringify(recent))
 
     const { result } = renderHook(() => useCart(), { wrapper: CartProvider })

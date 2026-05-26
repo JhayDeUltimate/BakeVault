@@ -18,13 +18,13 @@ begin
     from pg_policies
     where schemaname = 'public'
       and tablename = 'testimonials'
-      and policyname = 'Anyone can submit customer reviews'
+      and policyname = 'Anyone can submit pending customer reviews'
   ) then
-    create policy "Anyone can submit customer reviews"
+    create policy "Anyone can submit pending customer reviews"
       on public.testimonials
       for insert
       with check (
-        is_visible = true
+        is_visible = false
         and rating between 1 and 5
         and length(trim(customer_name)) > 0
         and length(trim(quote)) > 0

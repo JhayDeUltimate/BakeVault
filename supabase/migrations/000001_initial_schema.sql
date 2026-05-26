@@ -72,9 +72,26 @@ create index if not exists idx_products_slug     on public.products(slug);
 
 alter table public.products enable row level security;
 
-create policy "Anyone can read products"
+create policy "Anyone can read available products"
   on public.products for select
-  using (true);
+  using (is_available = true);
+
+create policy "Admins can read products"
+  on public.products for select
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can insert products"
+  on public.products for insert
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can update products"
+  on public.products for update
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can delete products"
+  on public.products for delete
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- ─── Enquiries ───────────────────────────────────────────────────────────────
 create table if not exists public.enquiries (
@@ -82,9 +99,14 @@ create table if not exists public.enquiries (
   items            jsonb not null,
   whatsapp_message text,
   customer_name    text,
+  idempotency_key  text,
   status           text not null default 'new',
   created_at       timestamptz not null default now()
 );
+
+create unique index if not exists enquiries_idempotency_key_key
+  on public.enquiries(idempotency_key)
+  where idempotency_key is not null;
 
 alter table public.enquiries enable row level security;
 
@@ -121,14 +143,31 @@ create policy "Anyone can read visible testimonials"
   on public.testimonials for select
   using (is_visible = true);
 
-create policy "Anyone can submit customer reviews"
+create policy "Anyone can submit pending customer reviews"
   on public.testimonials for insert
   with check (
-    is_visible = true
+    is_visible = false
     and rating between 1 and 5
     and length(trim(customer_name)) > 0
     and length(trim(quote)) > 0
   );
+
+create policy "Admins can read testimonials"
+  on public.testimonials for select
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can insert testimonials"
+  on public.testimonials for insert
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can update testimonials"
+  on public.testimonials for update
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create policy "Admins can delete testimonials"
+  on public.testimonials for delete
+  using (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- ─── Settings ────────────────────────────────────────────────────────────────
 create table if not exists public.settings (
@@ -184,6 +223,14 @@ create index if not exists idx_analytics_events_type
   on public.analytics_events(event_type);
 create index if not exists idx_analytics_events_created
   on public.analytics_events(created_at);
+create index if not exists idx_analytics_events_type_created
+  on public.analytics_events(event_type, created_at);
+create index if not exists idx_analytics_events_non_admin_created
+  on public.analytics_events(created_at)
+  where page is null or page not like '/admin%';
+create index if not exists idx_analytics_events_add_to_cart_product_id
+  on public.analytics_events((event_data->>'product_id'))
+  where event_type = 'add_to_cart' and event_data->>'product_id' is not null;
 
 alter table public.analytics_events enable row level security;
 

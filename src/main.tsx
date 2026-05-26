@@ -9,6 +9,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import './index.css'
 import { PostHogProvider } from '@posthog/react'
 import { validateEnv } from '@/lib/env'
+import useConsent from '@/hooks/useConsent'
 
 // ── Validate critical env vars before anything else ──────────────────────────
 validateEnv()
@@ -58,16 +59,31 @@ const posthogOptions = {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
 } as const
 
+function AppProviders() {
+  const { consent } = useConsent()
+  const app = (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  )
+
+  if (consent !== true || !import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN) {
+    return app
+  }
+
+  return (
+    <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN} options={posthogOptions}>
+      {app}
+    </PostHogProvider>
+  )
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
         <ErrorBoundary>
-          <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN} options={posthogOptions}>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          </PostHogProvider>
+          <AppProviders />
         </ErrorBoundary>
       </BrowserRouter>
     </HelmetProvider>

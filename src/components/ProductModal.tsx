@@ -127,7 +127,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
             </div>
           </div>
 
-          <ProductAssistant productName={product.name} productDescription={product.description ?? ''} />
+          <ProductAssistant key={product.id} productName={product.name} productDescription={product.description ?? ''} />
 
           <button
             onClick={() => { onAddToCart(mapped); onClose() }}
