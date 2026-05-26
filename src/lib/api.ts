@@ -442,31 +442,10 @@ export async function uploadProductImage(file: File): Promise<string> {
 export async function deleteProductImage(imageUrl: string): Promise<void> {
   if (!imageUrl) return
 
-  let parsed: URL
-  try {
-    parsed = new URL(imageUrl)
-  } catch {
-    // Not a valid URL — nothing to delete from storage
-    return
-  }
+  const { error } = await supabase.functions.invoke('delete-product-image', {
+    body: { imageUrl },
+  })
 
-  // Only attempt deletion for Supabase Storage URLs
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
-  if (supabaseUrl && !parsed.hostname.includes(new URL(supabaseUrl).hostname)) {
-    // External image (e.g. Unsplash) — do not attempt deletion
-    return
-  }
-
-  // Extract the storage path from the pathname
-  // Supabase Storage public URL format: /storage/v1/object/public/BUCKET/PATH
-  const STORAGE_PUBLIC_PREFIX = '/storage/v1/object/public/bakevault-images/'
-  const pathIndex = parsed.pathname.indexOf(STORAGE_PUBLIC_PREFIX)
-  if (pathIndex === -1) return
-
-  const storagePath = parsed.pathname.slice(pathIndex + STORAGE_PUBLIC_PREFIX.length)
-  if (!storagePath || !storagePath.startsWith('products/')) return
-
-  const { error } = await supabase.storage.from('bakevault-images').remove([storagePath])
   if (error) {
     console.error('[BakeVault] Failed to delete image from storage:', error.message)
   } else {
@@ -475,7 +454,7 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
         await logAdminActivity({
           action: 'image.delete',
           resource_type: 'image',
-          resource_id: storagePath,
+          resource_id: imageUrl,
         })
       } catch {}
     })()
