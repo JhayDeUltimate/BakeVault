@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { mapDBProduct } from '@/lib/utils'
@@ -21,6 +21,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<DBProductWithCategory | null>(null)
   const [loading, setLoading] = useState(true)
   const [slide, setSlide] = useState(0)
+  const assistantRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -70,6 +71,10 @@ export default function ProductPage() {
   const metaImage = images[0] ?? `${SITE_URL}/og-image.jpg`
   const metaUrl = `${SITE_URL}/products/${product.slug}`
   const categoryName = product.categories?.name ?? 'Baking Supply'
+
+  function scrollToAssistant() {
+    assistantRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <main className="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
@@ -209,13 +214,21 @@ export default function ProductPage() {
                   ? 'Enquire for pricing'
                   : 'Wholesale pricing available'}
             </span>
+            <button
+              type="button"
+              onClick={scrollToAssistant}
+              className="ml-3 mt-2 inline-flex text-[10px] font-bold text-brand-orange hover:text-brand-brown underline underline-offset-4 uppercase tracking-wide"
+            >
+              Ask a question
+            </button>
           </div>
 
-          {product.description && (
-            <p className="text-sm text-brand-darkGray/70 leading-relaxed whitespace-pre-line">
-              {product.description}
-            </p>
-          )}
+          <div id="product-assistant" ref={assistantRef} className="scroll-mt-24">
+            <ProductAssistant
+              productName={product.name}
+              productDescription={product.description ?? ''}
+            />
+          </div>
 
           <button
             onClick={() => {
@@ -231,10 +244,16 @@ export default function ProductPage() {
             Add to Order
           </button>
 
-          <ProductAssistant
-            productName={product.name}
-            productDescription={product.description ?? ''}
-          />
+          {product.description && (
+            <section>
+              <h2 className="text-xs font-black text-brand-darkGray/40 uppercase tracking-widest mb-2">
+                About this product
+              </h2>
+              <p className="text-sm text-brand-darkGray/70 leading-relaxed whitespace-pre-line">
+                {product.description}
+              </p>
+            </section>
+          )}
         </div>
       </div>
 

@@ -19,6 +19,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
   const { clearCart } = useCart()
   const [pricePrefs, setPricePrefs] = useState<Record<string, PricePref>>({})
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
 
   if (!isOpen) return null
 
@@ -36,47 +37,52 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
     setPricePrefs(prev => ({ ...prev, [id]: pref }))
   }
 
+  const prefs = items.map(item => getPref(item.id))
+  const hasMixedPricing = prefs.includes('piece') && prefs.includes('carton')
+
   async function handleCheckout() {
-    if (!WHATSAPP_NUMBER) {
-      alert('WhatsApp checkout is not configured. Please contact the store directly.')
-      return
-    }
+    if (!WHATSAPP_NUMBER || isCheckingOut) return
 
-    const orderText = items
-      .map(item => {
-        const pref = getPref(item.id)
-        const prefLabel = pref === 'piece' ? 'Single unit pricing' : 'Wholesale carton pricing'
-        return `• ${item.name} (Qty: ${item.quantity}) — Pricing requested: ${prefLabel}`
-      })
-      .join('\n')
-
-    const message = `Hello Bakevault! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
-    const encoded = encodeURIComponent(message)
-    const waUrl   = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`
-
-    // Attempt DB insert first — fire-and-forget but we wait briefly so the record exists
-    // before the WA window opens. Admin needs the record to fulfil the order.
-    const enquiryItems = items.map(i => ({
-      product_id:   i.id,
-      product_name: i.name,
-      category:     i.category,
-      quantity:     i.quantity,
-    }))
+    setIsCheckingOut(true)
+    setCheckoutSuccess(false)
 
     try {
-      await Promise.race([
-        logEnquiry(enquiryItems, message),
-        // Don't block the WA open for more than 3 seconds if Supabase is slow
-        new Promise<void>(resolve => setTimeout(resolve, 3000)),
-      ])
-    } catch {
-      // Insert failure must not block checkout — customer has already seen their quote
-      console.warn('[BakeVault] Enquiry insert failed — order may not appear in admin panel')
-    }
+      const orderText = items
+        .map(item => {
+          const pref = getPref(item.id)
+          const prefLabel = pref === 'piece' ? 'Single unit pricing' : 'Wholesale carton pricing'
+          return `\u2022 ${item.name} (Qty: ${item.quantity}) \u2014 Pricing requested: ${prefLabel}`
+        })
+        .join('\n')
 
-    trackEvent('cart_checkout', { item_count: totalItems })
-    window.open(waUrl, '_blank', 'noopener,noreferrer')
-    setCheckoutSuccess(true)
+      const message = `Hello Bakevault! I'd like to get a price quotation for:\n\n${orderText}\n\nPlease confirm availability and total price.`
+      const encoded = encodeURIComponent(message)
+      const waUrl   = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`
+
+      // Attempt DB insert first; admin needs this record to fulfil the order.
+      const enquiryItems = items.map(i => ({
+        product_id:   i.id,
+        product_name: i.name,
+        category:     i.category,
+        quantity:     i.quantity,
+      }))
+
+      try {
+        await Promise.race([
+          logEnquiry(enquiryItems, message),
+          // Don't block the WA open for more than 3 seconds if Supabase is slow.
+          new Promise<void>(resolve => setTimeout(resolve, 3000)),
+        ])
+      } catch {
+        console.warn('[BakeVault] Enquiry insert failed - order may not appear in admin panel')
+      }
+
+      trackEvent('cart_checkout', { item_count: totalItems })
+      window.open(waUrl, '_blank', 'noopener,noreferrer')
+      setCheckoutSuccess(true)
+    } finally {
+      setIsCheckingOut(false)
+    }
   }
 
   function handleClearAll() {
@@ -139,6 +145,28 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                             </div>
                             <p className="mt-1 text-xs font-bold text-brand-brown tracking-wide">{item.category}</p>
 
+                            <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-3">
+                              <span className="block text-xs font-bold text-brand-darkGray/60 uppercase tracking-wider mb-2">
+                                Pricing type - affects your quote:
+                              </span>
+                              <div className="flex rounded-lg overflow-hidden border border-orange-200 bg-white">
+                                {(['piece', 'carton'] as const).map(type => (
+                                  <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => setPref(item.id, type)}
+                                    className={`flex-1 px-3 py-2 text-xs font-extrabold uppercase tracking-wider transition-colors ${
+                                      getPref(item.id) === type
+                                        ? 'bg-brand-orange text-white'
+                                        : 'text-brand-darkGray/50 hover:text-brand-darkGray'
+                                    }`}
+                                  >
+                                    {type === 'piece' ? 'Per piece' : 'Per carton'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
                             <div className="flex-1 flex items-end justify-between text-sm mt-2">
                               <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
                                 <button onClick={() => onUpdateQuantity(item.id, -1)} aria-label="Decrease quantity"
@@ -158,29 +186,6 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                             </div>
                           </div>
                         </div>
-
-                        {/* Price preference toggle */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-brand-darkGray/50 uppercase tracking-wider">
-                            I want pricing for:
-                          </span>
-                          <div className="flex rounded-lg overflow-hidden border border-orange-200 bg-brand-cream">
-                            {(['piece', 'carton'] as const).map(type => (
-                              <button
-                                key={type}
-                                type="button"
-                                onClick={() => setPref(item.id, type)}
-                                className={`px-3 py-1 text-xs font-extrabold uppercase tracking-wider transition-colors ${
-                                  getPref(item.id) === type
-                                    ? 'bg-brand-orange text-white'
-                                    : 'text-brand-darkGray/50 hover:text-brand-darkGray'
-                                }`}
-                              >
-                                {type === 'piece' ? 'Per piece' : 'Per carton'}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
                       </li>
                     ))}
                   </ul>
@@ -195,24 +200,41 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                 <p>{totalItems} Items</p>
               </div>
               <p className="mt-2 text-xs text-brand-darkGray/50 leading-relaxed font-medium">
-                Prices and delivery costs are confirmed by our team via WhatsApp. Orders above ₦50,000 qualify for wholesale discounts.
+                Prices and delivery costs are confirmed by our team via WhatsApp. Orders above &#8358;50,000 qualify for wholesale discounts.
               </p>
+              {hasMixedPricing && (
+                <div className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-3 text-xs text-yellow-800">
+                  <p className="font-extrabold uppercase tracking-wide text-yellow-900">Mixed pricing preferences</p>
+                  <p className="mt-1 leading-relaxed">
+                    Your quote includes both per-piece and per-carton requests. Please review each product before sending.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-5 space-y-3">
                 <button
                   onClick={handleCheckout}
-                  disabled={items.length === 0 || !WHATSAPP_NUMBER}
+                  disabled={items.length === 0 || !WHATSAPP_NUMBER || isCheckingOut}
                   className="w-full flex justify-center items-center px-8 py-4 rounded-2xl shadow-lg text-base font-bold text-white bg-green-600 hover:bg-green-700 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed gap-3 uppercase"
                 >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.389l-1.071 3.914 4.024-1.056c.915.541 1.983.853 3.12.853 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767z" />
-                  </svg>
-                  Request a Quote on WhatsApp
+                  {isCheckingOut ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Preparing your quote...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.389l-1.071 3.914 4.024-1.056c.915.541 1.983.853 3.12.853 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767z" />
+                      </svg>
+                      Request a Quote on WhatsApp
+                    </>
+                  )}
                 </button>
 
                 {checkoutSuccess && (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
-                    <p className="text-sm font-bold text-green-700">✓ WhatsApp opened! Your order details have been sent.</p>
+                    <p className="text-sm font-bold text-green-700">&#10003; WhatsApp opened! Your order details have been sent.</p>
                     <button type="button" onClick={() => { clearCart(); setPricePrefs({}); setCheckoutSuccess(false) }}
                       className="mt-2 text-xs font-bold text-green-600 hover:text-green-800 underline transition-colors">
                       Clear cart &amp; close
@@ -229,7 +251,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                     <button type="button" onClick={handleClearAll}
                       className="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-widest transition-colors">
                       Clear All
-                    </ button>
+                    </button>
                   )}
                 </div>
               </div>

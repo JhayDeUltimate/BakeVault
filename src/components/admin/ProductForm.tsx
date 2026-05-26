@@ -24,8 +24,8 @@ export interface ProductFormData {
   display_order: number
 }
 
-function parseImageUrls(raw: unknown, fallback: string): string[] {
-  if (Array.isArray(raw) && raw.length > 0) return raw as string[]
+function parseImageUrls(raw: string[] | null | undefined, fallback: string): string[] {
+  if (raw?.length) return raw
   if (fallback) return [fallback]
   return []
 }

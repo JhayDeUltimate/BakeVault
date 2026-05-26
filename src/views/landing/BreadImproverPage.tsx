@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { WHATSAPP_URL } from '@/constants'
+import RelatedLandingLinks from '@/components/RelatedLandingLinks'
 
 export default function BreadImproverPage() {
   return (
@@ -100,6 +101,8 @@ export default function BreadImproverPage() {
             BakeVault stocks Dynamil Blue and other bread improver brands in both retail quantities (for small bakeries and home bakers) and wholesale bags (for commercial operations). WhatsApp us for current stock and bulk pricing.
           </p>
         </section>
+
+        <RelatedLandingLinks current="bread" />
 
         <section className="bg-brand-cream border border-orange-100 rounded-3xl px-6 py-8 text-center">
           <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-2">Order Bread Improver in Lagos</h2>

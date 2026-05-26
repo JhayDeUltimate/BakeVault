@@ -86,6 +86,21 @@ export function AdminSettings() {
             {saving ? 'Saving…' : 'Save Settings'}
           </button>
         </form>
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-500">
+          <p className="font-semibold text-gray-700 mb-1">SEO</p>
+          <p>
+            Sitemap:{' '}
+            <a href={SITEMAP_URL} target="_blank" rel="noreferrer" className="text-orange-500 hover:text-orange-600 underline">
+              {SITEMAP_URL}
+            </a>
+          </p>
+          <p className="mt-1">
+            Submit to:{' '}
+            <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer" className="text-orange-500 hover:underline">
+              Google Search Console
+            </a>
+          </p>
+        </div>
       </div>
 
 

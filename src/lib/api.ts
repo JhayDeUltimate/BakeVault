@@ -73,7 +73,7 @@ export async function createProduct(product: {
   is_available?: boolean; is_featured?: boolean; price_type?: string; display_order?: number
 }): Promise<DBProductWithCategory> {
   const slug = toSlug(product.name)
-  const payload = { ...product, slug, image_urls: (product.image_urls ?? []) as Json }
+  const payload = { ...product, slug, image_urls: product.image_urls ?? [] }
   const { data, error } = await supabase.from('products').insert(payload).select('*, categories(*)').single()
   if (error) {
     if (error.code === '23505') throw new Error('A product with this name already exists.')
@@ -103,7 +103,6 @@ export async function updateProduct(
   // Slug is intentionally NOT regenerated here.
   // Slugs are frozen at creation to preserve URL stability.
   // Renaming a product updates its display name only, not its URL.
-  if (updates.image_urls !== undefined) payload.image_urls = (updates.image_urls ?? []) as Json
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
   if (error) throw new Error(error.message)
   void (async () => {

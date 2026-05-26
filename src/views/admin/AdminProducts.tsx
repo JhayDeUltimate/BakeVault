@@ -91,9 +91,9 @@ export default function AdminProducts() {
     try {
       setSaving(product.id)
       setDeleteError(null)
-      const rawUrls = Array.isArray(product.image_urls) ? product.image_urls : []
+      const rawUrls = product.image_urls ?? []
       const urls = [
-        ...rawUrls.filter((u): u is string => typeof u === 'string'),
+        ...rawUrls,
         ...(product.image_url && !rawUrls.includes(product.image_url) ? [product.image_url] : []),
       ]
       await Promise.all(urls.map(u => deleteProductImage(u)))
@@ -274,8 +274,8 @@ export default function AdminProducts() {
                       )}
                       <div>
                         <p className="font-medium text-gray-800 text-sm">{p.name}</p>
-                        {Array.isArray(p.image_urls) && (p.image_urls as string[]).length > 1 && (
-                          <p className="text-[10px] text-gray-400">{(p.image_urls as string[]).length} photos</p>
+                        {(p.image_urls?.length ?? 0) > 1 && (
+                          <p className="text-[10px] text-gray-400">{p.image_urls?.length} photos</p>
                         )}
                       </div>
                     </div>

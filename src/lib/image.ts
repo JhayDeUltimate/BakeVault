@@ -79,10 +79,8 @@ export function optimizeImageUrl(
  * Deduplication via Set preserves insertion order.
  * Fixes M4: prevents the same image appearing twice in the modal carousel.
  */
-export function getProductImages(p: { image_url?: string | null; image_urls?: unknown }): string[] {
-  const extras = Array.isArray(p.image_urls)
-    ? (p.image_urls as unknown[]).filter((u): u is string => typeof u === 'string' && u.length > 0)
-    : []
+export function getProductImages(p: { image_url?: string | null; image_urls?: string[] | null }): string[] {
+  const extras = p.image_urls?.filter(u => u.length > 0) ?? []
 
   const candidates = extras.length > 0
     ? extras

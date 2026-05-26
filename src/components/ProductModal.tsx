@@ -127,6 +127,15 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
             </div>
           </div>
 
+          <ProductAssistant productName={product.name} productDescription={product.description ?? ''} />
+
+          <button
+            onClick={() => { onAddToCart(mapped); onClose() }}
+            className="hidden sm:block w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg"
+          >
+            Add to Order
+          </button>
+
           {product.description ? (
             <p className="text-sm text-brand-darkGray/70 leading-relaxed whitespace-pre-line">{product.description}</p>
           ) : (
@@ -136,15 +145,6 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
               <div className="h-3 bg-orange-50 rounded animate-pulse w-4/6" />
             </div>
           )}
-
-          <button
-            onClick={() => { onAddToCart(mapped); onClose() }}
-            className="hidden sm:block w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg"
-          >
-            Add to Order
-          </button>
-
-          <ProductAssistant productName={product.name} productDescription={product.description ?? ''} />
 
           {/* Similar Products — show section when loading or when there are other products in this category */}
           {onViewProduct && (similarProducts.length > 0 || productsLoading) && (

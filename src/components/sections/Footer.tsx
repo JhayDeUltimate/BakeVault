@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-brand-darkGray text-white mt-auto">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-12 sm:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-10 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-5 gap-10 sm:gap-8">
 
           {/* Brand */}
           <div className="sm:col-span-1 flex flex-col items-start gap-4">
@@ -27,7 +27,7 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          <div className="sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 border-t border-white/5 pt-6 sm:border-0 sm:pt-0">
+          <div className="sm:col-span-3 lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-8 border-t border-white/5 pt-6 sm:border-0 sm:pt-0">
             {/* Shop */}
             <div className="flex flex-col gap-2.5">
               <h5 className="font-display font-bold text-sm text-brand-orange uppercase tracking-widest mb-1">Shop</h5>
@@ -45,6 +45,14 @@ const Footer: React.FC = () => {
               <Link to="/contact" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Contact</Link>
               <Link to="/terms"  className="text-white/60 hover:text-white transition-colors font-medium text-xs">Terms</Link>
               <Link to="/privacy" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Privacy</Link>
+            </div>
+
+            {/* Popular Searches */}
+            <div className="flex flex-col gap-2.5">
+              <h5 className="font-display font-bold text-sm text-brand-orange uppercase tracking-widest mb-1">Popular Searches</h5>
+              <Link to="/yogurt-starter-lagos" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Yogurt Starter in Lagos</Link>
+              <Link to="/kefir-starter-lagos" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Kefir Starter in Lagos</Link>
+              <Link to="/bread-improver-lagos" className="text-white/60 hover:text-white transition-colors font-medium text-xs">Bread Improver in Lagos</Link>
             </div>
 
             {/* Find Us */}

@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { WHATSAPP_URL } from '@/constants'
+import RelatedLandingLinks from '@/components/RelatedLandingLinks'
 
 export default function YogurtStarterPage() {
   return (
@@ -119,6 +120,8 @@ export default function YogurtStarterPage() {
               quantities for your weekly production run, we have stock and we deliver same-day.
             </p>
           </section>
+
+          <RelatedLandingLinks current="yogurt" />
 
           {/* CTA */}
           <section className="bg-brand-cream border border-orange-100 rounded-3xl px-6 py-8 text-center">

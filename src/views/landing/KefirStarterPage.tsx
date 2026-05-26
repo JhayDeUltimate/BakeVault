@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { WHATSAPP_URL } from '@/constants'
+import RelatedLandingLinks from '@/components/RelatedLandingLinks'
 
 export default function KefirStarterPage() {
   return (
@@ -90,6 +91,8 @@ export default function KefirStarterPage() {
             Kefir is almost completely unknown to the mainstream Nigerian consumer, which means whoever builds a local kefir brand now has a significant first-mover advantage. Health-conscious buyers in Lagos and Abuja are already searching for it; the supply side is nearly empty. If you run a yogurt business or a health food brand, adding kefir is a low-cost product extension that commands premium pricing. BakeVault supplies starters at both retail and wholesale quantities. WhatsApp us to discuss commercial pricing.
           </p>
         </section>
+
+        <RelatedLandingLinks current="kefir" />
 
         <section className="bg-brand-cream border border-orange-100 rounded-3xl px-6 py-8 text-center">
           <h2 className="text-xl font-extrabold text-brand-darkGray font-display mb-2">Get Your Kefir Starter in Lagos Today</h2>

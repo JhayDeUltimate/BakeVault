@@ -25,19 +25,19 @@ export interface Database {
         Row: {
           id: string; name: string; slug: string; description: string | null
           category_id: string | null; image_url: string | null
-          image_urls: Json | null
+          image_urls: string[] | null
           is_available: boolean; is_featured: boolean; price_type: string
           display_order: number; created_at: string; updated_at: string
         }
         Insert: {
           id?: string; name: string; slug: string; description?: string | null
-          category_id?: string | null; image_url?: string | null; image_urls?: Json | null
+          category_id?: string | null; image_url?: string | null; image_urls?: string[] | null
           is_available?: boolean; is_featured?: boolean; price_type?: string
           display_order?: number; created_at?: string; updated_at?: string
         }
         Update: {
           id?: string; name?: string; slug?: string; description?: string | null
-          category_id?: string | null; image_url?: string | null; image_urls?: Json | null
+          category_id?: string | null; image_url?: string | null; image_urls?: string[] | null
           is_available?: boolean; is_featured?: boolean; price_type?: string
           display_order?: number; updated_at?: string
         }

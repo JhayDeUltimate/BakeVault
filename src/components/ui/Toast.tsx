@@ -24,7 +24,7 @@ export default function Toast() {
   if (toasts.length === 0) return null
 
   return (
-    <div aria-live="polite" role="status" className="fixed left-1/2 -translate-x-1/2 bottom-6 sm:bottom-12 z-50 flex flex-col items-center gap-3 pointer-events-none">
+    <div aria-live="polite" role="status" className="fixed left-1/2 -translate-x-1/2 bottom-24 sm:bottom-12 z-50 flex flex-col items-center gap-3 pointer-events-none">
       {toasts.map(t => (
         <div key={t.id} className="pointer-events-auto max-w-[90vw] sm:max-w-md bg-white border border-orange-50 text-brand-darkGray px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3 transition-all transform">
           <svg className="w-5 h-5 text-brand-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
