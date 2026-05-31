@@ -18,6 +18,7 @@ function parseAdminEmails(raw: string | undefined): Set<string> {
   )
 }
 const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
+const adminCheckInFlight = new Map<string, Promise<boolean>>()
 
 /**
  * Checks the `admins` table for an admin role.
@@ -26,33 +27,43 @@ const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
  * - 4-second timeout prevents long waits if Supabase is slow
  */
 async function fetchIsAdmin(uid: string): Promise<boolean> {
-  try {
-    const timeout = new Promise<false>(resolve => setTimeout(() => {
-      logger.warn('fetchIsAdmin timed out after 4s', { event: 'admin_check_timeout', user_id: uid })
-      resolve(false)
-    }, 4000))
-    const query = supabase
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', uid)
-      .maybeSingle()
-      .then(({ data, error }: { data: { user_id: string } | null; error: unknown }) => {
-        if (error) {
-          logger.warn('fetchIsAdmin query error', { event: 'admin_check_error', user_id: uid, error: String(error), errorObj: JSON.stringify(error) })
-          return false
-        }
-        if (!data) {
-          logger.warn('fetchIsAdmin: no row found', { event: 'admin_check_no_row', user_id: uid })
-          return false
-        }
-        logger.info('fetchIsAdmin: admin confirmed', { event: 'admin_check_pass', user_id: uid })
-        return true
-      })
-    return await Promise.race([query, timeout])
-  } catch (err) {
-    logger.error('fetchIsAdmin caught exception', err as Error, { event: 'admin_check_exception', user_id: uid })
-    return false
-  }
+  const existing = adminCheckInFlight.get(uid)
+  if (existing) return existing
+
+  const check = (async () => {
+    try {
+      const timeout = new Promise<false>(resolve => setTimeout(() => {
+        logger.warn('fetchIsAdmin timed out after 10s', { event: 'admin_check_timeout', user_id: uid })
+        resolve(false)
+      }, 10_000))
+      const query = supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', uid)
+        .maybeSingle()
+        .then(({ data, error }: { data: { user_id: string } | null; error: unknown }) => {
+          if (error) {
+            logger.warn('fetchIsAdmin query error', { event: 'admin_check_error', user_id: uid, error: String(error), errorObj: JSON.stringify(error) })
+            return false
+          }
+          if (!data) {
+            logger.warn('fetchIsAdmin: no row found', { event: 'admin_check_no_row', user_id: uid })
+            return false
+          }
+          logger.info('fetchIsAdmin: admin confirmed', { event: 'admin_check_pass', user_id: uid })
+          return true
+        })
+      return await Promise.race([query, timeout])
+    } catch (err) {
+      logger.error('fetchIsAdmin caught exception', err as Error, { event: 'admin_check_exception', user_id: uid })
+      return false
+    } finally {
+      adminCheckInFlight.delete(uid)
+    }
+  })()
+
+  adminCheckInFlight.set(uid, check)
+  return check
 }
 
 
@@ -61,6 +72,7 @@ interface AuthState {
   user: User | null
   loading: boolean
   isAdmin: boolean
+  isAdminChecking: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
@@ -73,8 +85,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdminChecking, setIsAdminChecking] = useState(false)
 
   const confirmedAdminRef = React.useRef<string | null>(null)
+  const adminCheckCountRef = React.useRef(0)
+
+  function beginAdminCheck() {
+    adminCheckCountRef.current += 1
+    setIsAdminChecking(true)
+  }
+
+  function endAdminCheck() {
+    adminCheckCountRef.current = Math.max(0, adminCheckCountRef.current - 1)
+    if (adminCheckCountRef.current === 0) setIsAdminChecking(false)
+  }
 
   /** Resolves admin status: admins table first, env-var fallback second */
   async function resolveAdmin(u: User): Promise<boolean> {
@@ -129,8 +153,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = session?.user ?? null
         setUser(currentUser)
         if (currentUser) {
-          const admin = await resolveAdmin(currentUser)
-          if (!cancelled) setIsAdmin(admin)
+          beginAdminCheck()
+          try {
+            const admin = await resolveAdmin(currentUser)
+            if (!cancelled) setIsAdmin(admin)
+          } finally {
+            if (!cancelled) endAdminCheck()
+          }
         }
       } catch (err) {
         logger.error('Auth init failed', err, { event: 'auth_init' })
@@ -168,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmedAdminRef.current = null
           setUser(null)
           setIsAdmin(false)
+          setIsAdminChecking(false)
           setLoading(false)
           logger.info('User signed out', { event: 'auth_sign_out' })
           // Do NOT log admin activity here; the session is already null
@@ -183,30 +213,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (_event !== 'SIGNED_IN') {
           // For TOKEN_REFRESHED, INITIAL_SESSION, etc. just use cached admin status
           if (!initialized) {
-            const admin = await resolveAdmin(currentUser) // will hit cache if already confirmed
-            if (!cancelled) {
-              setIsAdmin(admin)
-              setLoading(false)
-              initialized = true
+            beginAdminCheck()
+            try {
+              const admin = await resolveAdmin(currentUser) // will hit cache if already confirmed
+              if (!cancelled) {
+                setIsAdmin(admin)
+                setLoading(false)
+                initialized = true
+              }
+            } finally {
+              if (!cancelled) {
+                endAdminCheck()
+              }
             }
           }
           return
         }
 
         if (!initialized) setLoading(true)
-        confirmedAdminRef.current = null // force fresh check on new sign-in
-        const admin = await resolveAdmin(currentUser)
-        if (!cancelled) {
-          setIsAdmin(admin)
-          if (!initialized) {
-            setLoading(false)
-            initialized = true
+        if (confirmedAdminRef.current !== currentUser.id) {
+          confirmedAdminRef.current = null
+        }
+        beginAdminCheck()
+        try {
+          const admin = await resolveAdmin(currentUser)
+          if (!cancelled) {
+            setIsAdmin(admin)
+            if (!initialized) {
+              setLoading(false)
+              initialized = true
+            }
+            logger.info('User authenticated', {
+              event: 'auth_sign_in',
+              user_id: currentUser.id,
+            })
+            void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch { } })()
           }
-          logger.info('User authenticated', {
-            event: 'auth_sign_in',
-            user_id: currentUser.id,
-          })
-          void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch { } })()
+        } finally {
+          if (!cancelled) {
+            endAdminCheck()
+          }
         }
       },
     )
@@ -231,6 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try { await logAdminActivity({ action: 'auth.sign_out', resource_type: 'auth' }) } catch { /* best-effort */ }
     await supabase.auth.signOut()
     setIsAdmin(false)
+    setIsAdminChecking(false)
   }
 
   async function signUp(email: string, password: string) {
@@ -242,7 +289,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signIn, signOut, signUp }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isAdminChecking, signIn, signOut, signUp }}>
       {children}
     </AuthContext.Provider>
   )

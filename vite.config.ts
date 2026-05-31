@@ -34,6 +34,22 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react-helmet-async')) {
+              return 'react-vendor'
+            }
+            if (id.includes('@supabase')) return 'supabase-vendor'
+            if (id.includes('posthog-js') || id.includes('@posthog')) return 'analytics-vendor'
+            if (id.includes('@sentry')) return 'sentry-vendor'
+            if (id.includes('recharts') || id.includes('d3-')) return 'charts-vendor'
+          },
+        },
+      },
+    },
     test: {
       environment: 'jsdom',
       globals: true,

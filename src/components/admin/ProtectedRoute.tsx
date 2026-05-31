@@ -3,9 +3,9 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks'
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isAdmin } = useAuth()
+  const { user, loading, isAdmin, isAdminChecking } = useAuth()
 
-  if (loading) {
+  if (loading || isAdminChecking) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gray-50">
         <div className="w-10 h-10 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
