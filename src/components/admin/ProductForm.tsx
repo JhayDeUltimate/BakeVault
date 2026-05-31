@@ -3,6 +3,7 @@ import { useCategories } from '@/hooks'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import { supabase } from '@/lib/supabase'
+import { normalizeProductDescription } from '@/lib/product-description'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
 interface Props {
@@ -100,12 +101,14 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.image_url?.trim()) { setError('Please upload a product photo before saving.'); return }
+    const description = normalizeProductDescription(form.description ?? '')
+    if (!description.ok) { setError(description.error); return }
     try {
       setSaving(true); setError(null)
       await onSave({
         ...form,
         name:        form.name.trim(),
-        description: form.description?.trim() ?? '',
+        description: description.value,
         image_url:   form.image_urls[0] ?? form.image_url,
         image_urls:  form.image_urls,
       })

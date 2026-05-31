@@ -30,6 +30,7 @@ const AdminCategories     = lazy(() => import('@/views/admin/AdminCategories'))
 const AdminEnquiries      = lazy(() => import('@/views/admin/AdminEnquiries'))
 const AdminProductRequests = lazy(() => import('@/views/admin/AdminProductRequests'))
 const AdminTestimonials   = lazy(() => import('@/views/admin/AdminTestimonials'))
+const AdminFAQ            = lazy(() => import('@/views/admin/AdminFAQ'))
 const AdminSettings       = lazy(() => import('@/views/admin/AdminSettings'))
 const AdminActivityLogs   = lazy(() => import('@/views/admin/AdminActivityLogs'))
 
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="enquiries" element={<AdminEnquiries />} />
             <Route path="requests" element={<AdminProductRequests />} />
             <Route path="testimonials" element={<AdminTestimonials />} />
+            <Route path="faq" element={<AdminFAQ />} />
             <Route path="settings"     element={<AdminSettings />} />
             <Route path="activity"     element={<AdminActivityLogs />} />
           </Route>

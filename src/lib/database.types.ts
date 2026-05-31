@@ -61,6 +61,67 @@ export interface Database {
         Update: { value?: string; updated_at?: string }
         Relationships: []
       }
+      faq_categories: {
+        Row: {
+          id: string
+          title: string
+          icon: string
+          display_order: number
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          icon?: string
+          display_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          icon?: string
+          display_order?: number
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      faq_items: {
+        Row: {
+          id: string
+          category_id: string
+          question: string
+          answer: string
+          display_order: number
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          question: string
+          answer: string
+          display_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          question?: string
+          answer?: string
+          display_order?: number
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: 'faq_items_category_id_fkey'; columns: ['category_id']; isOneToOne: false; referencedRelation: 'faq_categories'; referencedColumns: ['id'] }]
+      }
       product_requests: {
         Row: {
           id: string; product_name: string; product_size: string | null
@@ -158,4 +219,7 @@ export type DBTestimonial     = Database['public']['Tables']['testimonials']['Ro
 export type DBProductRequest  = Database['public']['Tables']['product_requests']['Row']
 export type DBAnalyticsEvent  = Database['public']['Tables']['analytics_events']['Row']
 export type DBAdminActivity   = Database['public']['Tables']['admin_activity_logs']['Row']
+export type DBFAQCategory     = Database['public']['Tables']['faq_categories']['Row']
+export type DBFAQItem         = Database['public']['Tables']['faq_items']['Row']
 export type DBProductWithCategory = DBProduct & { categories: DBCategory | null }
+export type DBFAQCategoryWithItems = DBFAQCategory & { faq_items: DBFAQItem[] }

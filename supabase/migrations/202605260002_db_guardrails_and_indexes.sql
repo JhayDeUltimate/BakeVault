@@ -67,4 +67,4 @@ create index if not exists idx_analytics_events_add_to_cart_product_id
 create extension if not exists pg_trgm with schema extensions;
 
 create index if not exists idx_products_name_trgm
-  on public.products using gin (name gin_trgm_ops);
+  on public.products using gin (name extensions.gin_trgm_ops);

@@ -26,21 +26,19 @@ function loadCart(): CartItem[] {
       return items
     }
 
-    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as StoredCart).items)) {
-      const stored = parsed as StoredCart
-      if (typeof stored.ts === 'number') {
-        if (Date.now() - stored.ts > CART_EXPIRY_MS) {
-          try { localStorage.removeItem(CART_STORAGE_KEY) } catch { }
-          return []
-        }
-      }
-      if (typeof stored.ts !== 'number') {
-        saveCart(stored.items)
-      }
-      return stored.items
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as StoredCart).items)) {
+      return []
     }
 
-    return []
+    const stored = parsed as StoredCart
+    if (typeof stored.ts === 'number' && Date.now() - stored.ts > CART_EXPIRY_MS) {
+      try { localStorage.removeItem(CART_STORAGE_KEY) } catch { }
+      return []
+    }
+    if (typeof stored.ts !== 'number') {
+      saveCart(stored.items)
+    }
+    return stored.items
   } catch {
     return []
   }

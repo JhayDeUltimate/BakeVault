@@ -40,47 +40,50 @@ export const logger = {
   },
 
   info(message: string, context: LogContext = {}) {
-    if (isProd) {
-      // In production, add a breadcrumb so Sentry traces the path to any error
-      Sentry.addBreadcrumb({
-        category: context.event ?? 'app',
-        message,
-        level: 'info',
-        data: sanitize(context),
-      })
-    } else {
+    if (!isProd) {
       console.info(`%c[INFO]  ${message}`, 'color: #2196f3', context)
+      return
     }
+
+    // In production, add a breadcrumb so Sentry traces the path to any error
+    Sentry.addBreadcrumb({
+      category: context.event ?? 'app',
+      message,
+      level: 'info',
+      data: sanitize(context),
+    })
   },
 
   warn(message: string, context: LogContext = {}) {
     const clean = sanitize(context)
-    if (isProd) {
-      Sentry.addBreadcrumb({ category: 'warn', message, level: 'warning', data: clean })
-      // Also write to console so it shows in Supabase edge function output
-      console.warn(JSON.stringify({ level: 'WARN', message, ...clean }))
-    } else {
+    if (!isProd) {
       console.warn(`%c[WARN]  ${message}`, 'color: #ff9800', context)
+      return
     }
+
+    Sentry.addBreadcrumb({ category: 'warn', message, level: 'warning', data: clean })
+    // Also write to console so it shows in Supabase edge function output
+    console.warn(JSON.stringify({ level: 'WARN', message, ...clean }))
   },
 
   error(message: string, error?: unknown, context: LogContext = {}) {
     const clean = sanitize(context)
 
-    if (isProd) {
-      // Capture to Sentry with full context
-      Sentry.withScope(scope => {
-        Object.entries(clean).forEach(([k, v]) => scope.setExtra(k, v))
-        if (error instanceof Error) {
-          scope.setExtra('message_override', message)
-          Sentry.captureException(error)
-        } else {
-          Sentry.captureMessage(message, 'error')
-        }
-      })
-    } else {
+    if (!isProd) {
       console.error(`%c[ERROR] ${message}`, 'color: #f44336; font-weight: bold', error, context)
+      return
     }
+
+    // Capture to Sentry with full context
+    Sentry.withScope(scope => {
+      Object.entries(clean).forEach(([k, v]) => scope.setExtra(k, v))
+      if (error instanceof Error) {
+        scope.setExtra('message_override', message)
+        Sentry.captureException(error)
+      } else {
+        Sentry.captureMessage(message, 'error')
+      }
+    })
   },
 }
 

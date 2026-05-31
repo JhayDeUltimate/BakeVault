@@ -2,7 +2,8 @@ import { supabase } from './supabase'
 import { logger } from './logger'
 import { SESSION_ID } from './analytics'
 import { logAdminActivity } from './admin-activity'
-import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent, DBAdminActivity } from './database.types'
+import { mapDBFAQs, type FAQCategoryData } from './faq'
+import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent, DBAdminActivity, DBFAQCategory, DBFAQItem, DBFAQCategoryWithItems } from './database.types'
 
 // Re-export from image.ts so existing imports from @/lib/api still work
 export { getProductImages } from './image'
@@ -224,30 +225,31 @@ export async function logEnquiry(items: EnquiryItem[], whatsappMessage: string):
     success = await attemptInsert()
   }
 
-  if (!success) {
-    logger.error('Failed to log enquiry after retry — order is invisible to admin', undefined, {
-      event:      'enquiry.log_failed',
-      item_count: items.length,
-    })
-    // Surface failure in a visible way for the admin (PostHog / Sentry will capture it)
-    // Also attempt to write a failure event so it's visible in admin analytics
-    void (async () => {
-      try {
-        await supabase.from('analytics_events').insert({
-          event_type: 'enquiry.log_failed',
-          event_data: { item_count: items.length },
-          session_id: typeof window !== 'undefined' ? SESSION_ID : null,
-          page: typeof window !== 'undefined' ? window.location.pathname : null,
-        })
-      } catch {}
-    })()
-  } else {
+  if (success) {
     logger.info('Enquiry logged', {
       event:       'enquiry.created',
       item_count:  items.length,
       duration_ms: Date.now() - start,
     })
+    return
   }
+
+  logger.error('Failed to log enquiry after retry — order is invisible to admin', undefined, {
+    event:      'enquiry.log_failed',
+    item_count: items.length,
+  })
+  // Surface failure in a visible way for the admin (PostHog / Sentry will capture it)
+  // Also attempt to write a failure event so it's visible in admin analytics
+  void (async () => {
+    try {
+      await supabase.from('analytics_events').insert({
+        event_type: 'enquiry.log_failed',
+        event_data: { item_count: items.length },
+        session_id: typeof window !== 'undefined' ? SESSION_ID : null,
+        page: typeof window !== 'undefined' ? window.location.pathname : null,
+      })
+    } catch {}
+  })()
 }
 
 export async function getEnquiries(): Promise<DBEnquiry[]> {
@@ -359,6 +361,118 @@ export async function upsertSetting(key: string, value: string): Promise<void> {
   void (async () => { try { await logAdminActivity({ action: 'setting.upsert', resource_type: 'setting', resource_id: key, details: { value } }) } catch {} })()
 }
 
+async function fetchFAQRows(visibleOnly: boolean): Promise<DBFAQCategoryWithItems[]> {
+  let query = supabase
+    .from('faq_categories')
+    .select('*, faq_items(*)')
+    .order('display_order', { ascending: true })
+
+  if (visibleOnly) query = query.eq('is_visible', true)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  const rows = (data ?? []) as DBFAQCategoryWithItems[]
+  if (!visibleOnly) return rows
+
+  return rows.map(category => ({
+    ...category,
+    faq_items: (category.faq_items ?? []).filter(item => item.is_visible),
+  }))
+}
+
+export async function getFAQs(): Promise<FAQCategoryData[]> {
+  return mapDBFAQs(await fetchFAQRows(true)).filter(category => category.items.length > 0)
+}
+
+export async function getAdminFAQs(): Promise<FAQCategoryData[]> {
+  return mapDBFAQs(await fetchFAQRows(false))
+}
+
+export async function createFAQCategory(input: {
+  title: string
+  icon?: string
+  display_order?: number
+  is_visible?: boolean
+}): Promise<DBFAQCategory> {
+  const payload: Database['public']['Tables']['faq_categories']['Insert'] = {
+    title: input.title.trim(),
+    icon: input.icon?.trim() || 'M8 10h.01M12 10h.01M16 10h.01M9 16h6',
+    display_order: input.display_order ?? 0,
+    is_visible: input.is_visible ?? true,
+  }
+  const { data, error } = await supabase.from('faq_categories').insert(payload).select().single()
+  if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'faq_category.create', resource_type: 'faq_category', resource_id: (data as DBFAQCategory).id, details: payload }) } catch {} })()
+  return data as DBFAQCategory
+}
+
+export async function updateFAQCategory(
+  id: string,
+  updates: Database['public']['Tables']['faq_categories']['Update']
+): Promise<DBFAQCategory> {
+  const payload = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  }
+  if (typeof payload.title === 'string') payload.title = payload.title.trim()
+  if (typeof payload.icon === 'string') payload.icon = payload.icon.trim()
+
+  const { data, error } = await supabase.from('faq_categories').update(payload).eq('id', id).select().single()
+  if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'faq_category.update', resource_type: 'faq_category', resource_id: id, details: updates as Json }) } catch {} })()
+  return data as DBFAQCategory
+}
+
+export async function deleteFAQCategory(id: string): Promise<void> {
+  const { error } = await supabase.from('faq_categories').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'faq_category.delete', resource_type: 'faq_category', resource_id: id }) } catch {} })()
+}
+
+export async function createFAQItem(input: {
+  category_id: string
+  question: string
+  answer: string
+  display_order?: number
+  is_visible?: boolean
+}): Promise<DBFAQItem> {
+  const payload: Database['public']['Tables']['faq_items']['Insert'] = {
+    category_id: input.category_id,
+    question: input.question.trim(),
+    answer: input.answer.trim(),
+    display_order: input.display_order ?? 0,
+    is_visible: input.is_visible ?? true,
+  }
+  const { data, error } = await supabase.from('faq_items').insert(payload).select().single()
+  if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'faq_item.create', resource_type: 'faq_item', resource_id: (data as DBFAQItem).id, details: payload }) } catch {} })()
+  return data as DBFAQItem
+}
+
+export async function updateFAQItem(
+  id: string,
+  updates: Database['public']['Tables']['faq_items']['Update']
+): Promise<DBFAQItem> {
+  const payload = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  }
+  if (typeof payload.question === 'string') payload.question = payload.question.trim()
+  if (typeof payload.answer === 'string') payload.answer = payload.answer.trim()
+
+  const { data, error } = await supabase.from('faq_items').update(payload).eq('id', id).select().single()
+  if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'faq_item.update', resource_type: 'faq_item', resource_id: id, details: updates as Json }) } catch {} })()
+  return data as DBFAQItem
+}
+
+export async function deleteFAQItem(id: string): Promise<void> {
+  const { error } = await supabase.from('faq_items').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  void (async () => { try { await logAdminActivity({ action: 'faq_item.delete', resource_type: 'faq_item', resource_id: id }) } catch {} })()
+}
+
 // ─── Product Requests ─────────────────────────────────────────────────────────
 export async function createProductRequest(req: {
   product_name: string; product_size?: string; quantity?: number
@@ -448,17 +562,18 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
 
   if (error) {
     console.error('[BakeVault] Failed to delete image from storage:', error.message)
-  } else {
-    void (async () => {
-      try {
-        await logAdminActivity({
-          action: 'image.delete',
-          resource_type: 'image',
-          resource_id: imageUrl,
-        })
-      } catch {}
-    })()
+    return
   }
+
+  void (async () => {
+    try {
+      await logAdminActivity({
+        action: 'image.delete',
+        resource_type: 'image',
+        resource_id: imageUrl,
+      })
+    } catch {}
+  })()
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
@@ -605,15 +720,13 @@ export async function getProductsPage(options?: {
   if (options?.search?.trim())      query = query.ilike('name', `%${options.search.trim()}%`)
 
   // All sorting is server-side -- including category (via referencedTable)
-  if (options?.sortKey) {
-    const ascending = options.sortDir !== 'desc'
-    if (options.sortKey === 'category') {
-      query = query.order('name', { referencedTable: 'categories', ascending })
-    } else {
-      query = query.order(options.sortKey as string, { ascending })
-    }
-  } else {
+  if (!options?.sortKey) {
     query = query.order('display_order', { ascending: true })
+  } else {
+    const ascending = options.sortDir !== 'desc'
+    query = options.sortKey === 'category'
+      ? query.order('name', { referencedTable: 'categories', ascending })
+      : query.order(options.sortKey as string, { ascending })
   }
 
   query = query.range(from, to)

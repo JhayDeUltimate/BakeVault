@@ -93,11 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (ADMIN_EMAILS.size > 0 && u.email) {
       const emailMatch = ADMIN_EMAILS.has(u.email.toLowerCase())
-      if (emailMatch) {
-        confirmedAdminRef.current = u.id
-        logger.debug('resolveAdmin: env fallback passed', { user_email: u.email })
-        return true
+      if (!emailMatch) {
+        confirmedAdminRef.current = null
+        logger.debug('resolveAdmin: no admin match', { user_id: u.id, user_email: u.email ?? null })
+        return false
       }
+      confirmedAdminRef.current = u.id
+      logger.debug('resolveAdmin: env fallback passed', { user_email: u.email })
+      return true
     }
 
     confirmedAdminRef.current = null
@@ -155,40 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const currentUser = session?.user ?? null
 
-        if (currentUser) {
-          setUser(currentUser)
-
-          // Only re-check admin on actual SIGNED_IN events.
-          // TOKEN_REFRESHED and INITIAL_SESSION don't need a re-check;
-          // init() already handled the initial load, and the cache covers the rest.
-          if (_event === 'SIGNED_IN') {
-            if (!initialized) setLoading(true)
-            confirmedAdminRef.current = null // force fresh check on new sign-in
-            const admin = await resolveAdmin(currentUser)
-            if (!cancelled) {
-              setIsAdmin(admin)
-              if (!initialized) {
-                setLoading(false)
-                initialized = true
-              }
-              logger.info('User authenticated', {
-                event: 'auth_sign_in',
-                user_id: currentUser.id,
-              })
-              void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch { } })()
-            }
-          } else {
-            // For TOKEN_REFRESHED, INITIAL_SESSION, etc. just use cached admin status
-            if (!initialized) {
-              const admin = await resolveAdmin(currentUser) // will hit cache if already confirmed
-              if (!cancelled) {
-                setIsAdmin(admin)
-                setLoading(false)
-                initialized = true
-              }
-            }
-          }
-        } else {
+        if (!currentUser) {
           // If we haven't finished initialising, ignore transient null sessions
           if (!initialized) {
             logger.debug('onAuthStateChange ignored', { event: _event, reason: 'not-initialized' })
@@ -202,6 +172,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           logger.info('User signed out', { event: 'auth_sign_out' })
           // Do NOT log admin activity here; the session is already null
           // so any authenticated insert will fail with 401.
+          return
+        }
+
+        setUser(currentUser)
+
+        // Only re-check admin on actual SIGNED_IN events.
+        // TOKEN_REFRESHED and INITIAL_SESSION don't need a re-check;
+        // init() already handled the initial load, and the cache covers the rest.
+        if (_event !== 'SIGNED_IN') {
+          // For TOKEN_REFRESHED, INITIAL_SESSION, etc. just use cached admin status
+          if (!initialized) {
+            const admin = await resolveAdmin(currentUser) // will hit cache if already confirmed
+            if (!cancelled) {
+              setIsAdmin(admin)
+              setLoading(false)
+              initialized = true
+            }
+          }
+          return
+        }
+
+        if (!initialized) setLoading(true)
+        confirmedAdminRef.current = null // force fresh check on new sign-in
+        const admin = await resolveAdmin(currentUser)
+        if (!cancelled) {
+          setIsAdmin(admin)
+          if (!initialized) {
+            setLoading(false)
+            initialized = true
+          }
+          logger.info('User authenticated', {
+            event: 'auth_sign_in',
+            user_id: currentUser.id,
+          })
+          void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch { } })()
         }
       },
     )

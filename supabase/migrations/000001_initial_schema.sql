@@ -104,6 +104,11 @@ create table if not exists public.enquiries (
   created_at       timestamptz not null default now()
 );
 
+alter table public.enquiries
+  add column if not exists customer_name text,
+  add column if not exists idempotency_key text,
+  add column if not exists status text not null default 'new';
+
 create unique index if not exists enquiries_idempotency_key_key
   on public.enquiries(idempotency_key)
   where idempotency_key is not null;

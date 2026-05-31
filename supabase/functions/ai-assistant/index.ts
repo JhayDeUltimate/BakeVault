@@ -308,40 +308,25 @@ function extractJsonObjectCandidates(input: string): string[] {
     const char = input[i]
 
     if (depth === 0) {
-      if (char === '{') {
-        start = i
-        depth = 1
-      }
+      if (char === '{') { start = i; depth = 1 }
       continue
     }
 
     if (inString) {
-      if (escaped) {
-        escaped = false
-      } else if (char === '\\') {
-        escaped = true
-      } else if (char === '"') {
-        inString = false
-      }
+      if (escaped) { escaped = false; continue }
+      if (char === '\\') { escaped = true; continue }
+      if (char === '"') { inString = false }
       continue
     }
 
-    if (char === '"') {
-      inString = true
-      continue
-    }
+    if (char === '"') { inString = true; continue }
+    if (char === '{') { depth++; continue }
 
-    if (char === '{') {
-      depth++
-      continue
-    }
-
-    if (char === '}' && depth > 0) {
-      depth--
-      if (depth === 0 && start >= 0) {
-        candidates.push(input.slice(start, i + 1))
-        start = -1
-      }
+    if (char !== '}' || depth <= 0) continue
+    depth--
+    if (depth === 0 && start >= 0) {
+      candidates.push(input.slice(start, i + 1))
+      start = -1
     }
   }
 
