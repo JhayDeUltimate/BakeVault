@@ -118,6 +118,55 @@ Line 2: (blank line)
 Line 3: "Key Features:"
 Lines 4+: Each feature on its own line, prefixed with "• " (bullet). List 3-6 concise features.
 
+For BakeVault, prefer a fuller Ubuy-style product detail description. After the Key Features list, add these sections when the information can be inferred from the image or web research:
+"Product Description:" with 2-3 useful sentences.
+"Product Details:" with 4-10 bullet lines written as "Label: Value" rows, for example "Pack Size: 16 sachets of 3g each", "Form: Powdered starter culture", "Storage: Keep refrigerated or frozen", "Best Use: Homemade yogurt". These rows power the storefront product details grid.
+"Best For:" with 2-5 bullet lines describing who should buy or use it.
+"Usage Tips:" with 2-4 practical bullet lines.
+"Storage Tips:" with 1-3 practical bullet lines.
+Do not invent exact ingredients, certifications, allergens, dosage, manufacturer claims, or pack sizes unless visible in the image or strongly supported by web research. If uncertain, keep details general.
+
+STRICT STRUCTURE OVERRIDE:
+For every product, the description must use these exact sections in this exact order:
+Summary sentence
+
+Key Features:
+• 3 to 6 concise product features
+
+Product Details:
+• 5 to 8 Ubuy-style detail bullets with uppercase lead-ins, for example "CONTAINS:", "MAKING HOMEMADE YOGURT?", "EASY AND ECONOMICAL:", "NATURAL PRODUCT:", "HIGH QUALITY:", "CERTIFIED PRODUCT:".
+
+Specifications:
+Package Dimensions:
+Manufacturer:
+Country of origin:
+Brand Name:
+Flavour:
+Container Type:
+Age Range Description:
+Set Name:
+Unit Count:
+Item Form:
+Cuisine:
+Item Package Weight:
+Number of Items:
+Number of Pieces:
+Size:
+
+Product Description:
+2 to 4 useful sentences in paragraph form.
+
+Best For:
+• 2 to 5 bullets
+
+Usage Tips:
+• 2 to 4 bullets
+
+Storage Tips:
+• 1 to 3 bullets
+
+The Specifications section must always include all labels above in that order. Use "Not specified" for unknown values. Do not invent values.
+
 Example description value:
 "Premium leavening agent for light and airy baked goods.\n\nKey Features:\n• Double-acting formula for consistent rise\n• Ideal for cakes, cookies, and pastries\n• Aluminium-free formulation\n• 1LB (454g) pack size"
 
@@ -370,6 +419,37 @@ function parseAnalyzeJson(raw: string): { payload: AnalyzeJsonPayload; candidate
   return null
 }
 
+const ANALYZE_REPAIR_SYSTEM = `
+You repair malformed JSON from a product catalog assistant.
+Return ONLY valid JSON with exactly these string keys:
+{"name":"Product name","description":"Product description"}
+Do not add markdown, comments, code fences, or extra keys.
+Preserve the original meaning and newline structure as much as possible.
+`.trim()
+
+async function repairAnalyzeJson(apiKey: string, raw: string): Promise<{ payload: AnalyzeJsonPayload; candidate: string } | null> {
+  const repairContents: GeminiContent[] = [{
+    role: 'user',
+    parts: [{
+      text: [
+        'Repair this malformed product JSON into valid JSON only.',
+        '<RAW_OUTPUT>',
+        raw.slice(0, 8000),
+        '</RAW_OUTPUT>',
+      ].join('\n'),
+    }],
+  }]
+
+  const repairRes = await callGemini(apiKey, ANALYZE_REPAIR_SYSTEM, repairContents, {
+    maxOutputTokens: 4096,
+    temperature: 0,
+    responseMimeType: 'application/json',
+  })
+  const repairData = await repairRes.json() as Record<string, unknown>
+  if (!repairRes.ok) return null
+  return parseAnalyzeJson(extractText(repairData))
+}
+
 // ── SSRF-safe image fetcher ───────────────────────────────────────────────────
 
 function assertSupabaseStorageImageUrl(url: string, supabaseUrl: string): URL {
@@ -543,6 +623,7 @@ serve(async (req: Request) => {
       }]
 
       const finalRes = await callGemini(GEMINI_API_KEY, ANALYZE_FINAL_SYSTEM(searchContext), finalContents, {
+        maxOutputTokens: 4096,
         temperature: 0.2,
         responseMimeType: 'application/json',
       })
@@ -554,11 +635,16 @@ serve(async (req: Request) => {
       }
 
       const raw = extractText(finalData)
-      const parsed = parseAnalyzeJson(raw)
+      let parsed = parseAnalyzeJson(raw)
 
       if (!parsed) {
-        log('WARN', 'AI returned unparseable JSON', { raw: raw.slice(0, 500) })
-        return respond({ error: 'AI returned unparseable JSON. Try again.' }, origin)
+        log('WARN', 'AI returned unparseable JSON; attempting repair', { raw: raw.slice(0, 500) })
+        parsed = await repairAnalyzeJson(GEMINI_API_KEY, raw)
+      }
+
+      if (!parsed) {
+        log('WARN', 'AI returned unparseable JSON after repair', { raw: raw.slice(0, 500), productName })
+        return respond({ error: 'AI returned unparseable JSON. Try again.', code: 'ANALYZE_JSON_PARSE_FAILED', productName }, origin)
       }
 
       return respond({ name: parsed.payload.name, description: parsed.payload.description }, origin)

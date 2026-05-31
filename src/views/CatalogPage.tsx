@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import ProductCard from '@/components/ProductCard'
 import SkeletonProductCard from '@/components/ui/SkeletonProductCard'
-import ProductModal from '@/components/ProductModal'
 import ProductRequestModal from '@/components/ProductRequestModal'
 import SectionHeading from '@/components/ui/SectionHeading'
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton'
@@ -47,6 +46,7 @@ function CatalogHelmet({ category, searchInput }: { category: DBCategory | null;
 
 export default function CatalogPage() {
   const { addToCart } = useCart()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { items: recentItems } = useRecentlyViewed()
 
@@ -56,7 +56,6 @@ export default function CatalogPage() {
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const debouncedSearch = useDebounce(searchInput, 350)
-  const [selectedRaw, setSelectedRaw] = useState<DBProductWithCategory | null>(null)
   const [showRequest, setShowRequest] = useState(false)
   const [catExpanded, setCatExpanded] = useState(true)
 
@@ -132,12 +131,11 @@ export default function CatalogPage() {
     setCatExpanded(true)
   }
 
-  const handleCloseModal = useCallback(() => setSelectedRaw(null), [])
-
   function openDetails(p: ReturnType<typeof mapDBProduct>) {
     const raw = rawByIdMap.get(p.id) ?? null
-    setSelectedRaw(raw)
-    if (raw) trackEvent('product_view', { product_id: raw.id, product_name: raw.name, category: raw.categories?.name ?? '' })
+    if (!raw) return
+    trackEvent('product_view', { product_id: raw.id, product_name: raw.name, category: raw.categories?.name ?? '' })
+    navigate(`/products/${raw.slug}`)
   }
 
   const activeCategory = categoryId
@@ -305,21 +303,6 @@ export default function CatalogPage() {
       </section>
 
       {/* Modals */}
-      {selectedRaw && (
-        <ProductModal
-          product={selectedRaw}
-          onClose={handleCloseModal}
-          onAddToCart={p => {
-            addToCart(p)
-            trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
-            handleCloseModal()
-          }}
-          onViewProduct={p => {
-            setSelectedRaw(p)
-            trackEvent('product_view', { product_id: p.id, product_name: p.name, category: p.categories?.name ?? '' })
-          }}
-        />
-      )}
       {showRequest && <ProductRequestModal onClose={() => setShowRequest(false)} />}
       <ScrollToTopButton />
     </main>

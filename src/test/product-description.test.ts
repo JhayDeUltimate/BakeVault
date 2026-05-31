@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeProductDescription } from '@/lib/product-description'
+import { normalizeProductDescription, parseProductDescription } from '@/lib/product-description'
 
 describe('normalizeProductDescription', () => {
   it('accepts AI-style descriptions', () => {
@@ -30,6 +30,29 @@ Key Features:
 Key Features:
 • Consistent rise
 • Works for cakes and pastries`)
+    }
+  })
+
+  it('keeps richer product detail sections after key features', () => {
+    const result = normalizeProductDescription(`Starter culture for homemade probiotic yogurt.
+
+Key Features:
+- Contains live cultures
+- Suitable for dairy yogurt
+
+Product Details:
+- Sachet format
+- Used for milk fermentation
+
+Best For:
+- Home yogurt makers
+- Small dairy businesses`)
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value).toContain('Product Details:')
+      expect(result.value).toContain('• Sachet format')
+      expect(result.value).toContain('Best For:')
     }
   })
 
@@ -65,6 +88,28 @@ Key Features:
 • Four
 • Five
 • Six
-• Seven`).ok).toBe(false)
+• Seven
+• Eight
+• Nine`).ok).toBe(false)
+  })
+})
+
+describe('parseProductDescription', () => {
+  it('extracts summary, key features, and sections', () => {
+    const parsed = parseProductDescription(`Starter culture for homemade probiotic yogurt.
+
+Key Features:
+• Contains live cultures
+• Suitable for dairy yogurt
+
+Usage Tips:
+• Mix with warm milk
+• Incubate according to recipe`)
+
+    expect(parsed.summary).toBe('Starter culture for homemade probiotic yogurt.')
+    expect(parsed.features).toEqual(['Contains live cultures', 'Suitable for dairy yogurt'])
+    expect(parsed.sections).toEqual([
+      { heading: 'Usage Tips', lines: ['• Mix with warm milk', '• Incubate according to recipe'] },
+    ])
   })
 })

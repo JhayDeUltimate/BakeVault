@@ -28,6 +28,7 @@ const AdminResetPassword  = lazy(() => import('@/views/admin/AdminResetPassword'
 const AdminLayout         = lazy(() => import('@/views/admin/AdminLayout'))
 const AdminDashboard      = lazy(() => import('@/views/admin/AdminDashboard'))
 const AdminProducts       = lazy(() => import('@/views/admin/AdminProducts'))
+const AdminProductEditor  = lazy(() => import('@/views/admin/AdminProductEditor'))
 const AdminCategories     = lazy(() => import('@/views/admin/AdminCategories'))
 const AdminEnquiries      = lazy(() => import('@/views/admin/AdminEnquiries'))
 const AdminProductRequests = lazy(() => import('@/views/admin/AdminProductRequests'))
@@ -98,6 +99,8 @@ export default function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
+            <Route path="products/new" element={<AdminProductEditor />} />
+            <Route path="products/:id/edit" element={<AdminProductEditor />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="enquiries" element={<AdminEnquiries />} />
             <Route path="requests" element={<AdminProductRequests />} />

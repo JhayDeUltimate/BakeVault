@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { createProduct, updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
-import ProductForm, { type ProductFormData } from '../../components/admin/ProductForm'
+import { useNavigate } from 'react-router-dom'
+import { updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import type { DBProductWithCategory } from '../../lib/database.types'
 
-type Modal = { mode: 'add' } | { mode: 'edit'; product: DBProductWithCategory } | null
 type SortKey = 'name' | 'category' | 'updated_at' | 'created_at' | 'is_available' | 'is_featured'
 type SortDir = 'asc' | 'desc'
 
@@ -17,6 +16,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ]
 
 export default function AdminProducts() {
+  const navigate = useNavigate()
   const [products, setProducts] = useState<DBProductWithCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +24,6 @@ export default function AdminProducts() {
   const [availableCount, setAvailableCount] = useState<number | null>(null)
   const [page, setPage] = useState<number>(1)
   const [pageSize] = useState<number>(20)
-  const [modal, setModal] = useState<Modal>(null)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -80,11 +79,6 @@ export default function AdminProducts() {
     fetchPage().finally(() => { if (initialLoad) setInitialLoad(false) })
   }, [fetchPage])
 
-  async function handleSave(data: ProductFormData) {
-    if (modal?.mode === 'add') await createProduct(data)
-    if (modal?.mode === 'edit') await updateProduct(modal.product.id, data)
-    setModal(null); fetchPage()
-  }
 
   async function handleDelete(product: DBProductWithCategory) {
     if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return
@@ -137,7 +131,7 @@ export default function AdminProducts() {
             {total} total · {availableCount !== null ? `${availableCount} available` : '— available'}
           </p>
         </div>
-        <button onClick={() => setModal({ mode: 'add' })}
+        <button onClick={() => navigate('/admin/products/new')}
           className="flex w-full items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors sm:w-auto">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -221,7 +215,7 @@ export default function AdminProducts() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 shrink-0">
-                <button onClick={() => setModal({ mode: 'edit', product: p })}
+                <button onClick={() => navigate(`/admin/products/${p.id}/edit`)}
                   className="p-2 rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -300,7 +294,7 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => setModal({ mode: 'edit', product: p })}
+                      <button onClick={() => navigate(`/admin/products/${p.id}/edit`)}
                         className="text-gray-400 hover:text-orange-500 transition-colors" title="Edit">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -341,34 +335,7 @@ export default function AdminProducts() {
             className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Next</button>
         </div>
       </div>
-
-      {/* Add/Edit Modal */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-bold text-gray-800">
-                {modal.mode === 'add' ? 'Add Product' : `Edit — ${modal.product.name}`}
-              </h2>
-              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="px-6 py-5">
-              <ProductForm
-                key={modal.mode === 'edit' ? modal.product.id : '__new__'}
-                initial={modal.mode === 'edit' ? modal.product : null}
-                nextDisplayOrder={total}
-                onSave={handleSave}
-                onCancel={() => setModal(null)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
+

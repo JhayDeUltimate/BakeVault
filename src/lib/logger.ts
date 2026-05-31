@@ -31,17 +31,19 @@ const isProd = import.meta.env.PROD
  */
 export const logger = {
   debug(message: string, context: LogContext = {}) {
+    const clean = sanitize(context)
     if (isProd) return // never emit DEBUG in production
     console.debug(
       `%c[DEBUG] ${message}`,
       'color: #888',
-      context,
+      clean,
     )
   },
 
   info(message: string, context: LogContext = {}) {
+    const clean = sanitize(context)
     if (!isProd) {
-      console.info(`%c[INFO]  ${message}`, 'color: #2196f3', context)
+      console.info(`%c[INFO]  ${message}`, 'color: #2196f3', clean)
       return
     }
 
@@ -50,14 +52,14 @@ export const logger = {
       category: context.event ?? 'app',
       message,
       level: 'info',
-      data: sanitize(context),
+      data: clean,
     })
   },
 
   warn(message: string, context: LogContext = {}) {
     const clean = sanitize(context)
     if (!isProd) {
-      console.warn(`%c[WARN]  ${message}`, 'color: #ff9800', context)
+      console.warn(`%c[WARN]  ${message}`, 'color: #ff9800', clean)
       return
     }
 
@@ -70,7 +72,7 @@ export const logger = {
     const clean = sanitize(context)
 
     if (!isProd) {
-      console.error(`%c[ERROR] ${message}`, 'color: #f44336; font-weight: bold', error, context)
+      console.error(`%c[ERROR] ${message}`, 'color: #f44336; font-weight: bold', error, clean)
       return
     }
 
@@ -96,6 +98,7 @@ function sanitize(ctx: LogContext): LogContext {
     'password', 'token', 'access_token', 'refresh_token',
     'api_key', 'secret', 'credit_card', 'card_number',
     'authorization', 'cookie', 'session_token',
+    'user_id', 'user_email', 'email',
   ])
 
   return Object.fromEntries(

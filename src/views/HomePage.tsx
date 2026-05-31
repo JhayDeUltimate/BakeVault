@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ProductCard from '@/components/ProductCard'
-import ProductModal from '@/components/ProductModal'
 import AboutSection from '@/components/sections/AboutSection'
 import HeroSection from '@/components/sections/HeroSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
@@ -13,7 +12,6 @@ import { useProducts, useTestimonials, useRecentlyViewed, useCategories } from '
 import { mapDBProduct } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 import { Helmet } from 'react-helmet-async'
-import type { DBProductWithCategory } from '@/lib/database.types'
 
 export default function HomePage() {
   const { addToCart } = useCart()
@@ -31,9 +29,6 @@ export default function HomePage() {
     return () => { if (t) clearTimeout(t) }
   }, [featuredLoading])
 
-  // Modal state for "Read description" on featured cards
-  const [selectedRaw, setSelectedRaw] = useState<DBProductWithCategory | null>(null)
-
   // Hero and featured draw from the same list — hero shows up to 5 slides,
   // featured section mirrors those exact products in the same order.
   const heroSlides = useMemo(() => featuredFromDB.slice(0, 5), [featuredFromDB])
@@ -42,8 +37,9 @@ export default function HomePage() {
 
   function openDetails(p: ReturnType<typeof mapDBProduct>) {
     const raw = rawByIdMap.get(p.id) ?? null
-    setSelectedRaw(raw)
-    if (raw) trackEvent('product_view', { product_id: raw.id, product_name: raw.name, category: raw.categories?.name ?? '' })
+    if (!raw) return
+    trackEvent('product_view', { product_id: raw.id, product_name: raw.name, category: raw.categories?.name ?? '' })
+    navigate(`/products/${raw.slug}`)
   }
 
   return (
@@ -140,22 +136,6 @@ export default function HomePage() {
 
       <TestimonialsSection testimonials={testimonials} />
 
-      {/* Product detail modal — opened from featured cards */}
-      {selectedRaw && (
-        <ProductModal
-          product={selectedRaw}
-          onClose={() => setSelectedRaw(null)}
-          onAddToCart={p => {
-            addToCart(p)
-            trackEvent('add_to_cart', { product_id: p.id, product_name: p.name, category: p.category })
-            setSelectedRaw(null)
-          }}
-          onViewProduct={p => {
-            setSelectedRaw(p)
-            trackEvent('product_view', { product_id: p.id, product_name: p.name, category: p.categories?.name ?? '' })
-          }}
-        />
-      )}
     </>
   )
 }
