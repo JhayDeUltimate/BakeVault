@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { createProductRequest } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
 
-const SIZES = ['100g', '200ml', '250g', '500g', '500ml', '1kg', '1ltr', '2kg', '5kg', '5ltr', '10kg', '25kg', '50kg', 'Other']
+const SIZE_SUGGESTIONS = ['100g', '200ml', '250g', '500g', '500ml', '1kg', '1ltr', '2kg', '5kg', '5ltr', '10kg', '25kg', '50kg']
 
 interface Props { onClose: () => void }
 
@@ -37,15 +37,16 @@ export default function ProductRequestModal({ onClose }: Props) {
       trackEvent('product_request_submitted', { product_name: form.product_name })
       setDone(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed. Please try again.')
+      const msg = err instanceof Error ? err.message : 'Submission failed.'
+      setError(msg.includes('Load failed') || msg.includes('fetch') || msg.includes('network')
+        ? 'Network error — please check your internet connection and try again.'
+        : msg)
     } finally {
       setSaving(false)
     }
   }
 
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 bg-brand-cream/30'
-  const isCustomSize = form.product_size === 'Other' || (form.product_size !== '' && !SIZES.includes(form.product_size))
-  const selectedSize = isCustomSize ? 'Other' : form.product_size
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-orange/30 bg-brand-cream/30'
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -103,24 +104,17 @@ export default function ProductRequestModal({ onClose }: Props) {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-brand-brown mb-1.5">
                     Size / Weight
                   </label>
-                  <select
-                    value={selectedSize}
+                  <input
+                    type="text"
+                    list="size-suggestions"
+                    value={form.product_size}
                     onChange={e => set('product_size', e.target.value)}
+                    placeholder="e.g. 1kg, 500ml"
                     className={inputCls}
-                  >
-                    <option value="">Select size</option>
-                    {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  {/* Show free-text input when user selects "Other" */}
-                  {isCustomSize && (
-                    <input
-                      type="text"
-                      value={form.product_size === 'Other' ? '' : form.product_size}
-                      placeholder="Please specify the size or weight…"
-                      onChange={e => set('product_size', e.target.value || 'Other')}
-                      className={`${inputCls} mt-2`}
-                    />
-                  )}
+                  />
+                  <datalist id="size-suggestions">
+                    {SIZE_SUGGESTIONS.map(s => <option key={s} value={s} />)}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-brand-brown mb-1.5">

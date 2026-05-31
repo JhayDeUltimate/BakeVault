@@ -247,13 +247,18 @@ export default function ProductPage() {
       </Helmet>
 
       <nav className="flex items-center gap-2 text-xs text-brand-darkGray/40 font-bold uppercase tracking-wider mb-8">
+        <button onClick={() => navigate(-1)} className="hover:text-brand-orange transition-colors mr-1" aria-label="Go back">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
         <button onClick={() => navigate('/catalog')} className="hover:text-brand-orange transition-colors">
           Catalog
         </button>
         {product.categories?.name && (
           <>
             <span>/</span>
-            <span>{product.categories.name}</span>
+            <button onClick={() => navigate(`/catalog?cat=${encodeURIComponent(product.categories!.name)}`)} className="hover:text-brand-orange transition-colors">
+              {product.categories.name}
+            </button>
           </>
         )}
         <span>/</span>
