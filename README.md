@@ -35,11 +35,12 @@ src/
     admin/                        # Protected route, product form, image uploads
   hooks/                          # Data hooks, tracking hooks, consent, recently viewed
   lib/
-    api.ts                        # Supabase reads/writes, storage uploads, analytics summaries
+    api.ts                        # Supabase reads/writes, function calls, storage uploads, analytics summaries
     auth-context.tsx              # Supabase Auth plus admin resolution
     cart-context.tsx              # Local cart state with 7-day localStorage expiry
     analytics.ts                  # Consent-gated first-party event logging
     admin-activity.ts             # Best-effort immutable admin action logging
+    faq.ts                        # FAQ fallback content and database mapping
     image.ts                      # Image fallback, galleries, lightweight proxy optimization
     supabase.ts                   # Typed Supabase client
     database.types.ts             # Local database type definitions
@@ -48,7 +49,7 @@ src/
     landing/                      # SEO landing pages
     admin/                        # Admin dashboard and CRUD screens
 
-supabase/functions/ai-assistant/  # Deno Edge Function for AI chat and product-image analysis
+supabase/functions/               # Deno Edge Functions for AI, notifications, and image deletion
 scripts/generate-sitemap.mjs      # Build-time sitemap generator
 public/                           # Static assets, manifest, robots.txt, generated sitemap
 ```
@@ -74,6 +75,7 @@ public/                           # Static assets, manifest, robots.txt, generat
 - `/admin/requests` - customer product requests with contact details and workflow statuses.
 - `/admin/activity` - recent admin activity log with filtering.
 - `/admin/testimonials` - testimonial create, edit, hide/show, and delete.
+- `/admin/faq` - FAQ category and question management with ordering and visibility controls.
 - `/admin/settings` - WhatsApp number, Instagram handle, contact email, business hours, and legal-page dates.
 
 Admin routes are protected by `ProtectedRoute`. Users are created in Supabase Authentication, then promoted by inserting their auth user id into the public `admins` table. `VITE_ADMIN_EMAILS` exists as a local fallback, but it is intentionally warned against in production because it exposes admin emails in the client bundle.
@@ -86,6 +88,7 @@ Admin routes are protected by `ProtectedRoute`. Users are created in Supabase Au
 - Order bag stored in `localStorage` under `bakevault:cart`, with a 7-day expiry.
 - WhatsApp checkout that formats quote requests and logs enquiries to Supabase without blocking the user.
 - Product request form for out-of-stock or missing products.
+- Database-backed FAQ content with public fallbacks and admin-managed visibility.
 - Cookie/analytics consent banner. First-party analytics events are only inserted after consent is accepted.
 - Admin product image upload to Supabase Storage with JPEG/PNG/WebP validation and a 5 MB limit.
 - Best-effort admin activity logging for product, category, enquiry, testimonial, setting, image, and auth actions.
@@ -129,6 +132,8 @@ The runtime app expects these public Postgres tables:
 - `testimonials`
 - `settings`
 - `product_requests`
+- `faq_categories`
+- `faq_items`
 - `analytics_events`
 - `admin_activity_logs`
 
@@ -159,7 +164,13 @@ Migration files (run in lexicographic order):
 | `202605210001_reviews_and_notifications.sql` | Testimonial rating column, review insert policy |
 | `202605220001_analytics_views.sql` | Analytics summary and top products views |
 | `202605220002_analytics_totals_fn.sql` | `get_analytics_totals` RPC function |
+| `202605220004_image_urls_as_array.sql` | Product gallery image array support |
 | `202605250001_admin_rls_policies.sql` | Admin-only SELECT/UPDATE RLS for sensitive tables |
+| `202605260001_testimonial_moderation_rls.sql` | Review moderation and public testimonial visibility rules |
+| `202605260002_db_guardrails_and_indexes.sql` | Database constraints, indexes, and hardening updates |
+| `202605260003_category_seo_metadata.sql` | Category SEO metadata fields |
+| `202605260004_admin_write_policies.sql` | Admin write policies and image-deletion guardrails |
+| `202605260005_faq_cms.sql` | FAQ categories/items CMS tables, seed data, and RLS policies |
 
 Storage requirement:
 
@@ -168,9 +179,13 @@ Storage requirement:
 - Accepted upload types: JPEG, PNG, WebP
 - Max client-side upload size: 5 MB
 
-## AI Edge Function
+## Supabase Edge Functions
 
-The Supabase Edge Function lives at `supabase/functions/ai-assistant/index.ts`.
+Edge Functions live in `supabase/functions/`.
+
+### `ai-assistant`
+
+`supabase/functions/ai-assistant/index.ts` supports AI chat and product-image analysis.
 
 It supports two modes:
 
@@ -201,6 +216,36 @@ supabase functions deploy ai-assistant --no-verify-jwt
 ```
 
 `--no-verify-jwt` is required because the browser calls the function with the public anon key.
+
+### `notify-admin`
+
+`supabase/functions/notify-admin/index.ts` sends best-effort admin notifications after customer actions such as product requests. Deploy it with the normal Supabase function JWT verification defaults unless the calling flow changes.
+
+Set function secrets:
+
+```bash
+supabase secrets set RESEND_API_KEY=your-resend-key
+supabase secrets set ADMIN_EMAIL="admin@example.com"
+supabase secrets set RESEND_FROM_EMAIL="BakeVault <orders@example.com>"
+```
+
+```bash
+supabase functions deploy notify-admin
+```
+
+### `delete-product-image`
+
+`supabase/functions/delete-product-image/index.ts` deletes product images from Supabase Storage through a server-side guardrail. This keeps privileged storage deletion out of the browser.
+
+The function expects the standard Supabase runtime secrets plus service-role access:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+```bash
+supabase functions deploy delete-product-image
+```
 
 ## Development
 
@@ -234,24 +279,38 @@ Build:
 npm run build
 ```
 
+Build and regenerate the sitemap:
+
+```bash
+npm run build:full
+```
+
 Preview the production build:
 
 ```bash
 npm run preview
 ```
 
+Run tests:
+
+```bash
+npm test
+```
+
 Available npm scripts:
 
 - `npm run dev` - start Vite.
 - `npm run sitemap` - generate `public/sitemap.xml`.
-- `npm run build` - run sitemap generation, then `vite build`.
+- `npm run build` - run `vite build`.
+- `npm run build:full` - generate the sitemap, then run `vite build`.
 - `npm run preview` - serve the production build locally.
-
-There is no dedicated test script in `package.json` at the moment.
+- `npm test` - start Vitest in watch mode.
+- `npm run test:run` - run the Vitest suite once.
+- `npm run gen:types` - regenerate Supabase TypeScript types into `src/lib/database.types.ts`.
 
 ## Sitemap and SEO
 
-`npm run build` runs `scripts/generate-sitemap.mjs` before Vite builds. The script:
+`npm run build:full` runs `scripts/generate-sitemap.mjs` before Vite builds. You can also run the sitemap script directly with `npm run sitemap`. The script:
 
 - Writes static public routes.
 - Fetches available product slugs from Supabase when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are present.
