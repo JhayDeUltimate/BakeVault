@@ -478,7 +478,11 @@ export async function createProductRequest(req: {
   product_name: string; product_size?: string; quantity?: number
   notes?: string; contact_info?: string
 }): Promise<DBProductRequest> {
-  const { data, error } = await supabase.from('product_requests').insert(req).select().single()
+  const timeout = new Promise<never>((_, reject) => {
+    globalThis.setTimeout(() => reject(new Error('Product request timed out after 15 seconds.')), 15_000)
+  })
+  const insert = supabase.from('product_requests').insert(req).select().single()
+  const { data, error } = await Promise.race([insert, timeout])
   if (error) throw new Error(error.message)
   void notifyAdminOfSubmission('product_request', (data as DBProductRequest).id)
   return data

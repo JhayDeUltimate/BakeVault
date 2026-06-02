@@ -101,7 +101,7 @@ export default function ProductPage() {
       const { data, error } = await supabase
         .from('products')
         .select('*, categories(*)')
-        .eq('category_id', product!.category_id)
+        .eq('category_id', product!.category_id!)
         .eq('is_available', true)
         .neq('id', product!.id)
         .order('display_order', { ascending: true })
@@ -181,6 +181,7 @@ export default function ProductPage() {
   const metaUrl = `${SITE_URL}/products/${product.slug}`
 
   function addProductToCart() {
+    if (!product) return
     addToCart(mapped)
     trackEvent('add_to_cart', {
       product_id: product.id,

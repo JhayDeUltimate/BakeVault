@@ -165,7 +165,7 @@ Usage Tips:
 Storage Tips:
 • 1 to 3 bullets
 
-The Specifications section must always include all labels above in that order. Use "Not specified" for unknown values. Do not invent values.
+The Specifications section must always include all labels above in that order. Before using "Not specified", inspect all search passes and the product image for that exact field or a close equivalent. Prefer a sourced value from search results over "Not specified". Use "Not specified" only when the value is genuinely absent from the image and all web research. Do not invent values.
 
 Example description value:
 "Premium leavening agent for light and airy baked goods.\n\nKey Features:\n• Double-acting formula for consistent rise\n• Ideal for cakes, cookies, and pastries\n• Aluminium-free formulation\n• 1LB (454g) pack size"
@@ -218,11 +218,12 @@ interface TavilyResult {
   title: string
   url: string
   content: string
+  raw_content?: string | null
 }
 
-async function searchTavily(apiKey: string, query: string): Promise<string> {
+async function searchTavily(apiKey: string, query: string, options: { deep?: boolean } = {}): Promise<string> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8_000) // shorter timeout for search
+  const timeout = setTimeout(() => controller.abort(), options.deep ? 15_000 : 8_000)
 
   try {
     const res = await fetch(TAVILY_API_URL, {
@@ -231,9 +232,10 @@ async function searchTavily(apiKey: string, query: string): Promise<string> {
       body: JSON.stringify({
         api_key: apiKey,
         query: query,
-        search_depth: 'basic',
-        max_results: 5,
-        include_answer: false,
+        search_depth: options.deep ? 'advanced' : 'basic',
+        max_results: options.deep ? 8 : 5,
+        include_answer: options.deep,
+        include_raw_content: options.deep,
       }),
       signal: controller.signal,
     })
@@ -243,14 +245,23 @@ async function searchTavily(apiKey: string, query: string): Promise<string> {
       return ''
     }
 
-    const data = await res.json() as { results?: TavilyResult[] }
-    if (!data.results?.length) return ''
+    const data = await res.json() as { answer?: string; results?: TavilyResult[] }
+    if (!data.results?.length) return data.answer ? `[Tavily Answer]\n${data.answer}` : ''
 
     // Format as plain-text context paragraphs for Gemini
-    return data.results
-      .slice(0, 4)
-      .map(r => `[${r.title}]\n${r.content}`)
-      .join('\n\n')
+    const results = data.results
+      .slice(0, options.deep ? 8 : 4)
+      .map(r => [
+        `[${r.title}]`,
+        `URL: ${r.url}`,
+        r.content,
+        options.deep && r.raw_content ? `RAW: ${r.raw_content.slice(0, 1800)}` : '',
+      ].filter(Boolean).join('\n'))
+
+    return [
+      data.answer ? `[Tavily Answer]\n${data.answer}` : '',
+      ...results,
+    ].filter(Boolean).join('\n\n')
 
   } catch (err) {
     // Search failure is non-fatal. Gemini will still answer from training knowledge.
@@ -259,6 +270,22 @@ async function searchTavily(apiKey: string, query: string): Promise<string> {
   } finally {
     clearTimeout(timeout)
   }
+}
+
+async function searchAnalyzeProduct(apiKey: string, productName: string): Promise<string> {
+  const base = productName.trim() || 'baking ingredient product'
+  const queries = [
+    `${base} product specifications package dimensions manufacturer country origin unit count item form`,
+    `${base} product details ingredients certifications halal kosher gluten free non gmo storage`,
+    `${base} Ubuy Amazon product information size weight flavour container type`,
+  ]
+
+  const chunks = await Promise.all(queries.map(query => searchTavily(apiKey, query.slice(0, 250), { deep: true })))
+  return chunks
+    .map((chunk, index) => chunk ? `SEARCH PASS ${index + 1}\n${chunk}` : '')
+    .filter(Boolean)
+    .join('\n\n---\n\n')
+    .slice(0, 18_000)
 }
 
 // ── Gemini API call (with model fallback) ─────────────────────────────────────
@@ -607,11 +634,8 @@ serve(async (req: Request) => {
         ? extractText(identifyData).split('\n')[0].trim()
         : ''
 
-      // Step 2: Search Tavily for that product name to get enriched info.
-      const searchQuery = productName
-        ? `${productName} baking ingredient uses storage tips`
-        : 'baking ingredient product information'
-      const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
+      // Step 2: Run deeper product research so specifications are filled when public sources have them.
+      const searchContext = await searchAnalyzeProduct(TAVILY_API_KEY, productName)
 
       // Step 3: Call Gemini again with image + search context → final structured JSON.
       const finalContents: GeminiContent[] = [{
