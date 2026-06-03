@@ -141,27 +141,33 @@ export default function ProductAssistant({ productName, productDescription }: Pr
 
           {/* Input */}
           <div className="border-t border-orange-100 flex flex-col bg-white">
-            <div className="px-3 pt-2 pb-1 flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                placeholder="Ask a question…"
-                disabled={loading}
-                className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-orange/30 disabled:opacity-50"
-              />
-              <button
-                type="button"
-                onClick={send}
-                disabled={loading || !input.trim()}
-                aria-label="Send"
-                className="w-8 h-8 bg-brand-orange hover:bg-brand-brown text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 shrink-0"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
+            <div className="px-3 pt-2 pb-1 flex gap-2 flex-col">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value.slice(0, 500))}
+                  onKeyDown={handleKey}
+                  placeholder="Ask a question…"
+                  disabled={loading}
+                  maxLength={500}
+                  className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-orange/30 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={send}
+                  disabled={loading || !input.trim()}
+                  aria-label="Send"
+                  className="w-8 h-8 bg-brand-orange hover:bg-brand-brown text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 shrink-0"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
+              {input.length > 400 && (
+                <p className="text-[10px] text-gray-400 text-right">{500 - input.length} characters remaining</p>
+              )}
             </div>
             <p className="text-center text-xs text-brand-darkGray/60 pb-1.5 px-2">
               AI assistant — responses may be inaccurate. Always verify critical details.

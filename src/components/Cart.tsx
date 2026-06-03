@@ -101,9 +101,9 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
           <div className="h-full flex flex-col bg-white shadow-2xl">
 
             {/* Header */}
-            <div className="flex-1 py-8 overflow-y-auto px-6 sm:px-8">
+            <div className="flex-1 py-5 overflow-y-auto px-4 sm:py-8 sm:px-8">
               <div className="flex items-start justify-between">
-                <h2 className="text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
+                <h2 className="text-lg sm:text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
                   Your Order
                 </h2>
                 <button onClick={onClose} aria-label="Close cart"
@@ -115,7 +115,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
               </div>
 
               {/* Items */}
-              <div className="mt-10">
+              <div className="mt-6 sm:mt-10">
                 {items.length === 0 ? (
                   <div className="text-center py-16">
                     <div className="bg-brand-cream w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -142,10 +142,10 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                 ) : (
                   <ul className="divide-y divide-orange-50">
                     {items.map(item => (
-                      <li key={item.id} className="py-6 flex flex-col gap-3 group">
+                      <li key={item.id} className="py-4 sm:py-6 flex flex-col gap-3 group">
                         {/* Product row */}
-                        <div className="flex gap-4">
-                          <div className="flex-shrink-0 w-24 h-24 bg-brand-cream border border-orange-50 rounded-2xl overflow-hidden">
+                        <div className="flex gap-3 sm:gap-4">
+                          <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-brand-cream border border-orange-50 rounded-xl sm:rounded-2xl overflow-hidden">
                             <img
                               src={item.image}
                               alt={item.name}
@@ -154,13 +154,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                             />
                           </div>
                           <div className="flex-1 flex flex-col min-w-0">
-                            <div className="flex justify-between text-sm font-bold text-brand-darkGray font-display">
+                            <div className="flex justify-between text-[13px] sm:text-sm leading-tight font-bold text-brand-darkGray font-display">
                               <h3 className="truncate pr-2">{item.name}</h3>
                             </div>
-                            <p className="mt-1 text-xs font-bold text-brand-brown tracking-wide">{item.category}</p>
+                            <p className="mt-1 text-[11px] sm:text-xs font-bold text-brand-brown tracking-wide">{item.category}</p>
 
-                            <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-3">
-                              <span className="block text-xs font-bold text-brand-darkGray/60 uppercase tracking-wider mb-2">
+                            <div className="mt-2 rounded-xl sm:rounded-2xl border border-orange-200 bg-orange-50/70 p-2 sm:p-3">
+                              <span className="block text-[10px] sm:text-xs font-bold text-brand-darkGray/60 uppercase tracking-wider mb-1.5 sm:mb-2">
                                 Pricing type - affects your quote:
                               </span>
                               <div className="flex rounded-lg overflow-hidden border border-orange-200 bg-white">
@@ -169,7 +169,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                                     key={type}
                                     type="button"
                                     onClick={() => setPref(item.id, type)}
-                                    className={`flex-1 px-3 py-2 text-xs font-extrabold uppercase tracking-wider transition-colors ${
+                                    className={`flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider transition-colors ${
                                       getPref(item.id) === type
                                         ? 'bg-brand-orange text-white'
                                         : 'text-brand-darkGray/50 hover:text-brand-darkGray'
@@ -182,19 +182,19 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                             </div>
 
                             <div className="flex-1 flex items-end justify-between text-sm mt-2">
-                              <div className="flex items-center gap-4 bg-brand-cream rounded-xl p-1.5 border border-orange-100/50">
+                              <div className="flex items-center gap-2 sm:gap-4 bg-brand-cream rounded-xl p-1 border border-orange-100/50">
                                 <button onClick={() => onUpdateQuantity(item.id, -1)} aria-label="Decrease quantity"
-                                  className="w-11 h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                  className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
                                   -
                                 </button>
-                                <span className="font-extrabold w-6 text-center text-brand-darkGray">{item.quantity}</span>
+                                <span className="font-extrabold w-5 sm:w-6 text-sm sm:text-base text-center text-brand-darkGray">{item.quantity}</span>
                                 <button onClick={() => onUpdateQuantity(item.id, 1)} aria-label="Increase quantity"
-                                  className="w-11 h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
+                                  className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all text-brand-darkGray font-bold shadow-sm">
                                   +
                                 </button>
                               </div>
                               <button type="button" onClick={() => onRemove(item.id)}
-                                className="font-bold text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
+                                className="font-bold text-[10px] sm:text-xs uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors">
                                 Remove
                               </button>
                             </div>
@@ -208,8 +208,8 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
             </div>
 
             {/* Footer */}
-            <div className="bg-brand-cream/30 border-t border-orange-100 py-6 px-6 sm:px-8">
-              <div className="flex flex-wrap gap-2 mb-4">
+            <div className="bg-brand-cream/30 border-t border-orange-100 py-4 px-4 sm:py-6 sm:px-8">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 {[
                   { icon: '/transport.png', text: 'Same-day Lagos delivery' },
                   { icon: '/shield.png', text: 'Verified authentic products' },
@@ -217,18 +217,18 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                 ].map(({ icon, text }) => (
                   <span
                     key={text}
-                    className="flex items-center gap-1.5 text-[10px] font-bold text-brand-darkGray/60 bg-brand-cream/60 border border-orange-100 rounded-full px-3 py-1"
+                    className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-brand-darkGray/60 bg-brand-cream/60 border border-orange-100 rounded-full px-2 sm:px-3 py-0.5 sm:py-1"
                   >
-                    <img src={icon} alt="" className="h-3.5 w-3.5 object-contain" />
+                    <img src={icon} alt="" className="h-3 w-3 sm:h-3.5 sm:w-3.5 object-contain" />
                     {text}
                   </span>
                 ))}
               </div>
-              <div className="flex justify-between items-center text-lg font-extrabold text-brand-darkGray font-display">
+              <div className="flex justify-between items-center gap-3 text-[15px] sm:text-lg font-extrabold text-brand-darkGray font-display">
                 <p>Your Request Summary</p>
                 <p>{totalItems} Items</p>
               </div>
-              <p className="mt-2 text-xs text-brand-darkGray/50 leading-relaxed font-medium">
+              <p className="mt-2 text-[11px] sm:text-xs text-brand-darkGray/50 leading-relaxed font-medium">
                 Prices and delivery costs are confirmed by our team via WhatsApp. Orders above &#8358;50,000 qualify for wholesale discounts.
               </p>
               {hasMixedPricing && (
@@ -240,11 +240,11 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                 </div>
               )}
 
-              <div className="mt-5 space-y-3">
+              <div className="mt-4 sm:mt-5 space-y-3">
                 <button
                   onClick={handleCheckout}
                   disabled={items.length === 0 || !WHATSAPP_NUMBER || isCheckingOut}
-                  className="w-full flex justify-center items-center px-8 py-4 rounded-2xl shadow-lg text-base font-bold text-white bg-green-600 hover:bg-green-700 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed gap-3 uppercase"
+                  className="w-full flex justify-center items-center px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg text-sm sm:text-base font-bold text-white bg-green-600 hover:bg-green-700 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed gap-2 sm:gap-3 uppercase"
                 >
                   {isCheckingOut ? (
                     <>
@@ -253,7 +253,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                     </>
                   ) : (
                     <>
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.389l-1.071 3.914 4.024-1.056c.915.541 1.983.853 3.12.853 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767z" />
                       </svg>
                       Request a Quote on WhatsApp
@@ -273,7 +273,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
                 <div className="flex items-center justify-between">
                   <button type="button" onClick={onClose}
-                    className="text-brand-brown font-extrabold hover:text-brand-orange transition-colors underline decoration-2 underline-offset-4 text-sm">
+                    className="text-brand-brown font-extrabold hover:text-brand-orange transition-colors underline decoration-2 underline-offset-4 text-xs sm:text-sm">
                     Continue Browsing
                   </button>
                   {items.length > 0 && (
