@@ -358,3 +358,53 @@ Sentry:
 - Chat rate limiting uses Deno KV in the edge function, not the `analytics_events` table, to avoid inflating the analytics table with non-storefront rows.
 - Admin analytics summary reads from `analytics_daily_summary` and `analytics_top_products` views when available, reducing raw row scans.
 - Admin product listing supports full server-side sorting, including category name sorting via Supabase `referencedTable` ordering.
+
+## Creating an Admin User
+
+Admin access is controlled by the `admins` table. There is no self-registration. To grant admin access:
+
+1. The user must first create an account by logging in at `/admin/login` (they will fail auth, which is expected)
+2. Go to [Supabase Dashboard](https://supabase.com/dashboard) -> your project -> **Authentication** -> **Users**
+3. Find the user's UUID
+4. Go to **Table Editor** -> **admins** table -> **Insert row**
+5. Enter the UUID in the `user_id` field -> **Save**
+6. The user can now log in at `/admin/login`
+
+### Infrastructure
+- [ ] Custom domain is configured and HTTPS certificate is active
+- [ ] `VITE_WHATSAPP_NUMBER` is set to the correct production number
+- [ ] `VITE_CONTACT_EMAIL`, `VITE_INSTAGRAM_HANDLE` are set
+- [ ] Supabase project is on Pro plan (for PITR backup and Storage transforms)
+- [ ] GitHub secrets are configured for CI/CD: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+
+### SEO & Content
+- [ ] Run `npm run build:full` (not `npm run build`) to generate the sitemap
+- [ ] Submit `https://yourdomain.com/sitemap.xml` to Google Search Console
+- [ ] Verify `public/robots.txt` disallows `/admin/`
+- [ ] At least 5 products are published with images and descriptions
+- [ ] All FAQ categories have at least 2 visible questions
+- [ ] Business hours are set in Admin -> Settings
+- [ ] WhatsApp number in Admin -> Settings matches `VITE_WHATSAPP_NUMBER`
+
+### Testing
+- [ ] Place a complete test order end-to-end: add to cart -> request quote -> confirm WhatsApp opens
+- [ ] Submit a test product request and verify admin email is received
+- [ ] Submit a test review and verify admin can approve it
+- [ ] Test admin login, product creation, category creation, and settings save
+
+### Performance
+- [ ] Run Lighthouse audit on `/`, `/catalog`, and a product page - target LCP < 2.5s on 4G
+- [ ] Verify all product images load (no broken image fallbacks on the live catalog)
+
+## WhatsApp Order Flow (for Store Staff)
+
+1. Customer browses the catalog at `yourdomain.com/catalog`
+2. Customer adds products to their bag and taps "Request a Quote on WhatsApp"
+3. WhatsApp opens with a pre-filled message listing the items and pricing preferences
+4. **Admin receives the WhatsApp message AND an enquiry is logged in Admin -> Enquiries**
+5. Admin replies on WhatsApp with pricing, confirms availability
+6. Customer confirms the order on WhatsApp
+7. Admin shares bank account details
+8. Customer transfers payment
+9. Admin marks the enquiry as "Responded" in the admin panel, then "Fulfilled" when delivered
+10. Delivery is arranged; Lagos orders go same-day if confirmed before 2PM
