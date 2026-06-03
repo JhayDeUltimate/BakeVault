@@ -99,7 +99,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
               {visibleFeaturedLoading ? (
                 [...Array(4)].map((_, i) => (
                   <div key={i}><SkeletonProductCard /></div>

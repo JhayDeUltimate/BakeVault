@@ -5,6 +5,7 @@ import PublicLayout from '@/components/PublicLayout'
 import ProtectedRoute from '@/components/admin/ProtectedRoute'
 import ScrollToTop from '@/components/ScrollToTop'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import RouteErrorBoundary from '@/components/RouteErrorBoundary'
 
 // Lazy-load route pages so the first visit only downloads the shell + active page
 const HomePage           = lazy(() => import('@/views/HomePage'))
@@ -49,8 +50,20 @@ const PublicSpinner = () => (
   </div>
 )
 
-function publicPage(page: React.ReactNode) {
-  return <Suspense fallback={<PublicSpinner />}>{page}</Suspense>
+function publicPage(page: React.ReactNode, name?: string) {
+  return (
+    <RouteErrorBoundary routeName={name}>
+      <Suspense fallback={<PublicSpinner />}>{page}</Suspense>
+    </RouteErrorBoundary>
+  )
+}
+
+function adminPage(page: React.ReactNode, name?: string, fallback: React.ReactNode = <AdminSpinner />) {
+  return (
+    <RouteErrorBoundary routeName={name}>
+      <Suspense fallback={fallback}>{page}</Suspense>
+    </RouteErrorBoundary>
+  )
 }
 
 export default function App() {
@@ -61,53 +74,47 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route element={<PublicLayout />}>
-            <Route path="/" element={publicPage(<HomePage />)} />
-            <Route path="/catalog" element={publicPage(<CatalogPage />)} />
-            <Route path="/about" element={publicPage(<AboutPage />)} />
-            <Route path="/faq" element={publicPage(<FAQPage />)} />
-            <Route path="/how-to-order" element={publicPage(<HowToOrderPage />)} />
-            <Route path="/delivery" element={publicPage(<DeliveryPage />)} />
-            <Route path="/contact" element={publicPage(<ContactPage />)} />
-            <Route path="/terms" element={publicPage(<TermsPage />)} />
-            <Route path="/privacy" element={publicPage(<PrivacyPage />)} />
-            <Route path="/products/:slug" element={publicPage(<ProductPage />)} />
+            <Route path="/" element={publicPage(<HomePage />, 'Home')} />
+            <Route path="/catalog" element={publicPage(<CatalogPage />, 'Catalog')} />
+            <Route path="/about" element={publicPage(<AboutPage />, 'About')} />
+            <Route path="/faq" element={publicPage(<FAQPage />, 'FAQ')} />
+            <Route path="/how-to-order" element={publicPage(<HowToOrderPage />, 'How to Order')} />
+            <Route path="/delivery" element={publicPage(<DeliveryPage />, 'Delivery')} />
+            <Route path="/contact" element={publicPage(<ContactPage />, 'Contact')} />
+            <Route path="/terms" element={publicPage(<TermsPage />, 'Terms')} />
+            <Route path="/privacy" element={publicPage(<PrivacyPage />, 'Privacy')} />
+            <Route path="/products/:slug" element={publicPage(<ProductPage />, 'Product')} />
             {/* SEO landing pages */}
-            <Route path="/yogurt-starter-lagos" element={publicPage(<YogurtStarterPage />)} />
-            <Route path="/kefir-starter-lagos" element={publicPage(<KefirStarterPage />)} />
-            <Route path="/bread-improver-lagos" element={publicPage(<BreadImproverPage />)} />
+            <Route path="/yogurt-starter-lagos" element={publicPage(<YogurtStarterPage />, 'Yogurt Starter')} />
+            <Route path="/kefir-starter-lagos" element={publicPage(<KefirStarterPage />, 'Kefir Starter')} />
+            <Route path="/bread-improver-lagos" element={publicPage(<BreadImproverPage />, 'Bread Improver')} />
             {/* 404 — rendered inside the public layout so header/footer are present */}
-            <Route path="*" element={publicPage(<NotFoundPage />)} />
+            <Route path="*" element={publicPage(<NotFoundPage />, 'Not Found')} />
           </Route>
 
           {/* Admin — lazy-loaded, never included in the storefront bundle */}
-          <Route path="/admin/login" element={
-            <Suspense fallback={null}><AdminLogin /></Suspense>
-          } />
-          <Route path="/admin/reset-password" element={
-            <Suspense fallback={null}><AdminResetPassword /></Suspense>
-          } />
+          <Route path="/admin/login" element={adminPage(<AdminLogin />, 'Admin Login', null)} />
+          <Route path="/admin/reset-password" element={adminPage(<AdminResetPassword />, 'Password Reset', null)} />
           <Route
             path="/admin"
             element={
               <ProtectedRoute>
-                <Suspense fallback={<AdminSpinner />}>
-                  <AdminLayout />
-                </Suspense>
+                {adminPage(<AdminLayout />, 'Admin')}
               </ProtectedRoute>
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="products/new" element={<AdminProductEditor />} />
-            <Route path="products/:id/edit" element={<AdminProductEditor />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="enquiries" element={<AdminEnquiries />} />
-            <Route path="requests" element={<AdminProductRequests />} />
-            <Route path="testimonials" element={<AdminTestimonials />} />
-            <Route path="faq" element={<AdminFAQ />} />
-            <Route path="settings"     element={<AdminSettings />} />
-            <Route path="activity"     element={<AdminActivityLogs />} />
+            <Route path="dashboard" element={adminPage(<AdminDashboard />, 'Admin Dashboard')} />
+            <Route path="products" element={adminPage(<AdminProducts />, 'Admin Products')} />
+            <Route path="products/new" element={adminPage(<AdminProductEditor />, 'Product Editor')} />
+            <Route path="products/:id/edit" element={adminPage(<AdminProductEditor />, 'Product Editor')} />
+            <Route path="categories" element={adminPage(<AdminCategories />, 'Admin Categories')} />
+            <Route path="enquiries" element={adminPage(<AdminEnquiries />, 'Admin Enquiries')} />
+            <Route path="requests" element={adminPage(<AdminProductRequests />, 'Product Requests')} />
+            <Route path="testimonials" element={adminPage(<AdminTestimonials />, 'Admin Testimonials')} />
+            <Route path="faq" element={adminPage(<AdminFAQ />, 'Admin FAQ')} />
+            <Route path="settings"     element={adminPage(<AdminSettings />, 'Admin Settings')} />
+            <Route path="activity"     element={adminPage(<AdminActivityLogs />, 'Admin Activity')} />
           </Route>
         </Routes>
       </CartProvider>

@@ -4,20 +4,6 @@ import { logger } from './logger'
 import { logAdminActivity } from './admin-activity'
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 
-// ── Admin email helpers ───────────────────────────────────────────────────────
-function parseAdminEmails(raw: string | undefined): Set<string> {
-  if (import.meta.env.MODE !== 'development' && raw) {
-    logger.warn(
-      '[BakeVault] VITE_ADMIN_EMAILS is set outside development mode. ' +
-      'Ignoring — use the admins table instead.',
-    )
-    return new Set<string>()
-  }
-  return new Set(
-    (raw ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
-  )
-}
-const ADMIN_EMAILS = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS)
 const adminCheckInFlight = new Map<string, Promise<boolean>>()
 
 /**
@@ -100,9 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (adminCheckCountRef.current === 0) setIsAdminChecking(false)
   }
 
-  /** Resolves admin status: admins table first, env-var fallback second */
+  /** Resolves admin status from the admins table. */
   async function resolveAdmin(u: User): Promise<boolean> {
-    // If we already confirmed this exact user, skip the DB call
     if (confirmedAdminRef.current === u.id) {
       logger.debug('resolveAdmin: using cached result', { user_id: u.id })
       return true
@@ -115,20 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true
     }
 
-    if (ADMIN_EMAILS.size > 0 && u.email) {
-      const emailMatch = ADMIN_EMAILS.has(u.email.toLowerCase())
-      if (!emailMatch) {
-        confirmedAdminRef.current = null
-        logger.debug('resolveAdmin: no admin match', { user_id: u.id, user_email: u.email ?? null })
-        return false
-      }
-      confirmedAdminRef.current = u.id
-      logger.debug('resolveAdmin: env fallback passed', { user_email: u.email })
-      return true
-    }
-
     confirmedAdminRef.current = null
-    logger.debug('resolveAdmin: no admin match', { user_id: u.id, user_email: u.email ?? null })
+    logger.debug('resolveAdmin: no admin match', { user_id: u.id })
     return false
   }
 

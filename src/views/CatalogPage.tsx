@@ -252,7 +252,7 @@ export default function CatalogPage() {
         </div>
 
         {visibleLoading ? (
-          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i}>
                 <SkeletonProductCard />
@@ -260,7 +260,7 @@ export default function CatalogPage() {
             ))}
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 xl:gap-6">
             {products.map(product => (
               <ProductCard key={product.id} product={product}
                 onAddToCart={p => {

@@ -1,8 +1,6 @@
 import { supabase } from './supabase'
 import { hasConsent } from './consent'
-
-// One session ID per page-load (memory only — no localStorage required)
-export const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+export { SESSION_ID } from './session-id'
 
 export type AnalyticsEventType =
   | 'page_view'

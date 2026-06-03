@@ -19,6 +19,15 @@ function encodeStoragePath(path: string): string {
 }
 
 function extractProductImagePath(imageUrl: string, supabaseUrl: string): string {
+  // Block encoded traversal sequences BEFORE any decoding
+  const BLOCKED_PATTERNS = ['..', '%2e%2e', '%2E%2E', '%2f', '%2F', '\\', '%5c', '%5C']
+  const rawPathname = new URL(imageUrl).pathname
+  for (const pattern of BLOCKED_PATTERNS) {
+    if (rawPathname.toLowerCase().includes(pattern.toLowerCase())) {
+      throw new Error('Invalid image URL: path traversal sequences are not allowed.')
+    }
+  }
+
   const parsed = new URL(imageUrl)
   const projectUrl = new URL(supabaseUrl)
   const publicPrefix = '/storage/v1/object/public/bakevault-images/'
@@ -34,6 +43,7 @@ function extractProductImagePath(imageUrl: string, supabaseUrl: string): string 
   }
 
   const storagePath = decodeURIComponent(parsed.pathname.slice(publicPrefix.length))
+
   if (
     !storagePath.startsWith('products/') ||
     storagePath.startsWith('/') ||

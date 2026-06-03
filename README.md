@@ -78,7 +78,7 @@ public/                           # Static assets, manifest, robots.txt, generat
 - `/admin/faq` - FAQ category and question management with ordering and visibility controls.
 - `/admin/settings` - WhatsApp number, Instagram handle, contact email, business hours, and legal-page dates.
 
-Admin routes are protected by `ProtectedRoute`. Users are created in Supabase Authentication, then promoted by inserting their auth user id into the public `admins` table. `VITE_ADMIN_EMAILS` exists as a local fallback, but it is intentionally warned against in production because it exposes admin emails in the client bundle.
+Admin routes are protected by `ProtectedRoute`. Users are created in Supabase Authentication, then promoted by inserting their auth user id into the public `admins` table.
 
 ## Main Features
 
@@ -115,10 +115,7 @@ Additional optional client variables used by the code:
 VITE_WHATSAPP_CTA_LABEL=
 VITE_WHATSAPP_CTA_PREFILL=
 VITE_APP_VERSION=
-VITE_ADMIN_EMAILS=
 ```
-
-`VITE_ADMIN_EMAILS` should only be used for local fallback access. Prefer the `admins` table for production authorization.
 
 ## Supabase Requirements
 

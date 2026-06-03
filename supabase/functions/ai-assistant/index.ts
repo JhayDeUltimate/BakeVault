@@ -577,19 +577,17 @@ serve(async (req: Request) => {
       return respond({ error: 'Authentication required for analyze mode.' }, origin, 401)
     }
 
-    // Validate JWT with Supabase. SUPABASE_URL and SUPABASE_ANON_KEY are
-    // automatically available in Supabase Edge Functions.
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-    // Fail closed: if credentials are not configured, block analyze entirely
-    // rather than silently skipping authentication.
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseKey || !serviceRoleKey) {
       log('ERROR', 'Analyze mode blocked: Supabase credentials not configured')
       return respond({ error: 'Service not configured. Contact the administrator.' }, origin, 503)
     }
 
     try {
+      // Step 1: Verify the JWT
       const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -597,14 +595,30 @@ serve(async (req: Request) => {
         },
       })
       if (!userRes.ok) {
-        log('WARN', 'Analyze mode: invalid or expired token', { status: userRes.status })
         return respond({ error: 'Invalid or expired session. Please log in again.' }, origin, 401)
       }
-      const user = await userRes.json() as { role?: string }
-      // Supabase auth sets role to 'authenticated' for logged-in users.
-      // For extra safety you could check app_metadata.role === 'admin',
-      // but requiring any authenticated session already blocks anonymous abuse.
-      if (!user?.role) {
+      const user = await userRes.json() as { id?: string; role?: string }
+      if (!user?.id) {
+        return respond({ error: 'Invalid session.' }, origin, 401)
+      }
+
+      // Step 2: Check the admins table using service role (bypasses RLS)
+      const adminRes = await fetch(
+        `${supabaseUrl}/rest/v1/admins?user_id=eq.${encodeURIComponent(user.id)}&select=user_id&limit=1`,
+        {
+          headers: {
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'apikey': serviceRoleKey,
+          },
+        },
+      )
+      if (!adminRes.ok) {
+        log('ERROR', 'Admin table lookup failed', { status: adminRes.status })
+        return respond({ error: 'Auth verification failed. Try again.' }, origin, 500)
+      }
+      const admins = await adminRes.json() as { user_id: string }[]
+      if (admins.length === 0) {
+        log('WARN', 'Non-admin attempted analyze mode', { user_id: user.id })
         return respond({ error: 'Admin access required for analyze mode.' }, origin, 403)
       }
     } catch (err) {

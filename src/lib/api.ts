@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { logger } from './logger'
-import { SESSION_ID } from './analytics'
+import { SESSION_ID } from './session-id'
 import { logAdminActivity } from './admin-activity'
 import { mapDBFAQs, type FAQCategoryData } from './faq'
 import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent, DBAdminActivity, DBFAQCategory, DBFAQItem, DBFAQCategoryWithItems } from './database.types'
@@ -478,6 +478,17 @@ export async function createProductRequest(req: {
   product_name: string; product_size?: string; quantity?: number
   notes?: string; contact_info?: string
 }): Promise<DBProductRequest> {
+  // Client-side rate limit check (defense in depth)
+  const throttleKey = `product_request_${SESSION_ID}`
+  const lastRequest = sessionStorage.getItem(throttleKey)
+  if (lastRequest) {
+    const timeSince = Date.now() - parseInt(lastRequest, 10)
+    if (timeSince < 30_000) {
+      throw new Error('Please wait a moment before submitting another request.')
+    }
+  }
+  sessionStorage.setItem(throttleKey, String(Date.now()))
+
   const timeout = new Promise<never>((_, reject) => {
     globalThis.setTimeout(() => reject(new Error('Product request timed out after 15 seconds.')), 15_000)
   })

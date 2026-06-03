@@ -117,13 +117,27 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
               {/* Items */}
               <div className="mt-10">
                 {items.length === 0 ? (
-                  <div className="text-center py-20">
+                  <div className="text-center py-16">
                     <div className="bg-brand-cream w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                       <svg className="h-10 w-10 text-brand-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                       </svg>
                     </div>
-                    <p className="text-brand-darkGray/60 font-medium italic">Nothing added yet. Browse the vault and add what you need.</p>
+                    <p className="text-brand-darkGray/60 font-medium italic mb-6">
+                      Nothing added yet. Browse the vault and add what you need.
+                    </p>
+                    <button
+                      onClick={() => {
+                        onClose()
+                        window.location.href = '/catalog'
+                      }}
+                      className="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-brown text-white font-extrabold px-6 py-3 rounded-2xl transition-all text-sm uppercase tracking-wide"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                      Browse the Vault
+                    </button>
                   </div>
                 ) : (
                   <ul className="divide-y divide-orange-50">
@@ -195,6 +209,21 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
 
             {/* Footer */}
             <div className="bg-brand-cream/30 border-t border-orange-100 py-6 px-6 sm:px-8">
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  { icon: '/transport.png', text: 'Same-day Lagos delivery' },
+                  { icon: '/shield.png', text: 'Verified authentic products' },
+                  { icon: '/whatsapp.png', text: 'WhatsApp response in 1hr' },
+                ].map(({ icon, text }) => (
+                  <span
+                    key={text}
+                    className="flex items-center gap-1.5 text-[10px] font-bold text-brand-darkGray/60 bg-brand-cream/60 border border-orange-100 rounded-full px-3 py-1"
+                  >
+                    <img src={icon} alt="" className="h-3.5 w-3.5 object-contain" />
+                    {text}
+                  </span>
+                ))}
+              </div>
               <div className="flex justify-between items-center text-lg font-extrabold text-brand-darkGray font-display">
                 <p>Your Request Summary</p>
                 <p>{totalItems} Items</p>
