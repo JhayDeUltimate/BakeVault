@@ -10,6 +10,7 @@
     "noEmit": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
     "types": ["vitest/globals"],
 
     "baseUrl": ".",
