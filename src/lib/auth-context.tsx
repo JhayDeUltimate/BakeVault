@@ -5,6 +5,21 @@ import { logAdminActivity } from './admin-activity'
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 
 const adminCheckInFlight = new Map<string, Promise<boolean>>()
+let initialSessionPromise: Promise<Session | null> | null = null
+
+function getInitialSession(): Promise<Session | null> {
+  if (!initialSessionPromise) {
+    initialSessionPromise = supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => session)
+      .catch((error) => {
+        initialSessionPromise = null
+        throw error
+      })
+  }
+
+  return initialSessionPromise
+}
 
 /**
  * Checks the `admins` table for an admin role.
@@ -108,13 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false
     let initialized = false
+    let authRunId = 0
 
     // init() reads the existing session so the UI doesn't flash "logged out"
     // on page refresh before onAuthStateChange fires.
     async function init() {
       logger.debug('Auth init start', { event: 'auth_init' })
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const session = await getInitialSession()
         logger.debug('Auth init session', {
           event: 'auth_init',
           hasSession: !!session,
@@ -146,9 +162,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     init()
 
+    async function processAuthSession(_event: AuthChangeEvent, session: Session | null) {
+      if (cancelled) return
+
+      const currentUser = session?.user ?? null
+
+      if (!currentUser) {
+        // If we haven't finished initialising, ignore transient null sessions
+        if (!initialized) {
+          logger.debug('onAuthStateChange ignored', { event: _event, reason: 'not-initialized' })
+          return
+        }
+
+        confirmedAdminRef.current = null
+        setUser(null)
+        setIsAdmin(false)
+        setIsAdminChecking(false)
+        setLoading(false)
+        logger.info('User signed out', { event: 'auth_sign_out' })
+        // Do NOT log admin activity here; the session is already null
+        // so any authenticated insert will fail with 401.
+        return
+      }
+
+      const runId = ++authRunId
+      setUser(currentUser)
+
+      // Token refreshes and user updates should not produce duplicate sign-in logs,
+      // but they can refresh the user object and reuse the cached admin result.
+      if (_event !== 'SIGNED_IN' && confirmedAdminRef.current === currentUser.id) {
+        setIsAdmin(true)
+        return
+      }
+
+      if (!initialized) setLoading(true)
+      if (confirmedAdminRef.current !== currentUser.id) {
+        confirmedAdminRef.current = null
+      }
+      beginAdminCheck()
+      try {
+        const admin = await resolveAdmin(currentUser)
+        if (!cancelled && runId === authRunId) {
+          setIsAdmin(admin)
+          if (!initialized) {
+            setLoading(false)
+            initialized = true
+          }
+          if (_event === 'SIGNED_IN') {
+            logger.info('User authenticated', {
+              event: 'auth_sign_in',
+              user_id: currentUser.id,
+            })
+            void logAdminActivity({
+              action: 'auth.sign_in',
+              resource_type: 'auth',
+              resource_id: currentUser.id,
+              details: { email: currentUser.email },
+              actor: currentUser,
+            })
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          endAdminCheck()
+        }
+      }
+    }
+
     // onAuthStateChange handles sign-in, sign-out, and token refresh events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         if (cancelled) return
         logger.debug('onAuthStateChange', {
           event: _event,
@@ -158,75 +241,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user_email: session?.user?.email ?? undefined,
         })
 
-        const currentUser = session?.user ?? null
-
-        if (!currentUser) {
-          // If we haven't finished initialising, ignore transient null sessions
-          if (!initialized) {
-            logger.debug('onAuthStateChange ignored', { event: _event, reason: 'not-initialized' })
-            return
-          }
-
-          confirmedAdminRef.current = null
-          setUser(null)
-          setIsAdmin(false)
-          setIsAdminChecking(false)
-          setLoading(false)
-          logger.info('User signed out', { event: 'auth_sign_out' })
-          // Do NOT log admin activity here; the session is already null
-          // so any authenticated insert will fail with 401.
+        // The explicit getInitialSession() call above owns initial load handling.
+        // Ignoring this event prevents duplicate admin checks during React StrictMode remounts.
+        if (_event === 'INITIAL_SESSION') {
           return
         }
 
-        setUser(currentUser)
-
-        // Only re-check admin on actual SIGNED_IN events.
-        // TOKEN_REFRESHED and INITIAL_SESSION don't need a re-check;
-        // init() already handled the initial load, and the cache covers the rest.
-        if (_event !== 'SIGNED_IN') {
-          // For TOKEN_REFRESHED, INITIAL_SESSION, etc. just use cached admin status
-          if (!initialized) {
-            beginAdminCheck()
-            try {
-              const admin = await resolveAdmin(currentUser) // will hit cache if already confirmed
-              if (!cancelled) {
-                setIsAdmin(admin)
-                setLoading(false)
-                initialized = true
-              }
-            } finally {
-              if (!cancelled) {
-                endAdminCheck()
-              }
-            }
-          }
-          return
-        }
-
-        if (!initialized) setLoading(true)
-        if (confirmedAdminRef.current !== currentUser.id) {
-          confirmedAdminRef.current = null
-        }
-        beginAdminCheck()
-        try {
-          const admin = await resolveAdmin(currentUser)
-          if (!cancelled) {
-            setIsAdmin(admin)
-            if (!initialized) {
-              setLoading(false)
-              initialized = true
-            }
-            logger.info('User authenticated', {
-              event: 'auth_sign_in',
-              user_id: currentUser.id,
-            })
-            void (async () => { try { await logAdminActivity({ action: 'auth.sign_in', resource_type: 'auth', resource_id: currentUser.id, details: { email: currentUser.email } }) } catch { } })()
-          }
-        } finally {
-          if (!cancelled) {
-            endAdminCheck()
-          }
-        }
+        window.setTimeout(() => {
+          void processAuthSession(_event, session)
+        }, 0)
       },
     )
 
@@ -247,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     // Log BEFORE clearing session; JWT must still be valid for RLS.
-    try { await logAdminActivity({ action: 'auth.sign_out', resource_type: 'auth' }) } catch { /* best-effort */ }
+    try { await logAdminActivity({ action: 'auth.sign_out', resource_type: 'auth', actor: user }) } catch { /* best-effort */ }
     await supabase.auth.signOut()
     setIsAdmin(false)
     setIsAdminChecking(false)

@@ -2,12 +2,14 @@ import { supabase } from './supabase'
 import { logger } from './logger'
 import { SESSION_ID } from './analytics'
 import type { Json } from './database.types'
+import type { User } from '@supabase/supabase-js'
 
 export interface AdminActivityOptions {
   action: string
   resource_type?: string | null
   resource_id?: string | null
   details?: Json
+  actor?: Pick<User, 'id' | 'email'> | null
 }
 
 /**
@@ -16,9 +18,11 @@ export interface AdminActivityOptions {
  */
 export async function logAdminActivity(opts: AdminActivityOptions): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    const admin_id = user?.id ?? null
-    const admin_email = user?.email ?? null
+    const actor = opts.actor === undefined
+      ? (await supabase.auth.getUser()).data.user
+      : opts.actor
+    const admin_id = actor?.id ?? null
+    const admin_email = actor?.email ?? null
     const page = typeof window !== 'undefined' ? window.location.pathname : null
 
     const payload = {

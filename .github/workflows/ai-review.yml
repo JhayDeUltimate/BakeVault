@@ -1,0 +1,69 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+          echo "diff_size=$(wc -c < pr_diff.txt)" >> $GITHUB_OUTPUT
+
+      - name: AI Review via Claude
+        if: steps.diff.outputs.diff_size != '0'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          DIFF=$(cat pr_diff.txt | head -c 20000)
+          
+          REVIEW=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "{
+              \"model\": \"claude-sonnet-4-6\",
+              \"max_tokens\": 1024,
+              \"messages\": [{
+                \"role\": \"user\",
+                \"content\": \"Review this PR diff for BakeVault (React 19 + TypeScript + Supabase + Vite).\\n\\nFlag as CRITICAL (blocks merge):\\n- Supabase RLS policies that allow unauthenticated reads/writes to admins, enquiries, or testimonials tables\\n- Exposed API keys or secrets in client-side code\\n- Auth bypass in admin routes (ProtectedRoute, AdminLayout)\\n- SQL injection via unsanitized Supabase query params\\n- Business logic errors in cart checkout or WhatsApp order flow\\n- Image deletion without URL validation (must check Supabase hostname)\\n\\nFlag as WARNING (informational):\\n- N+1 queries in useProducts or api.ts\\n- Missing error handling in Supabase calls\\n- Unhandled edge cases in logEnquiry retry logic\\n- Missing loading/error states\\n\\nIGNORE completely: formatting, naming conventions, import order, TypeScript strictness preferences.\\n\\nDiff:\\n\\n$(echo $DIFF | sed 's/\"/\\\"/g')\"
+              }]
+            }")
+          
+          COMMENT=$(echo $REVIEW | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['content'][0]['text'])" 2>/dev/null || echo "AI review failed to parse response")
+          echo "$COMMENT" > review_output.txt
+          
+          gh pr comment $PR_NUMBER --repo $REPO --body "## 🤖 AI Code Review
+
+          $COMMENT
+
+          ---
+          *Powered by Claude. Review focuses on security, business logic, and Supabase RLS issues.*"
+
+      - name: Check for critical issues
+        if: steps.diff.outputs.diff_size != '0'
+        run: |
+          # Only block on main branch, not develop
+          if [ "${{ github.base_ref }}" = "main" ]; then
+            if grep -q "CRITICAL" review_output.txt 2>/dev/null; then
+              echo "❌ Critical issues found - blocking merge to main"
+              exit 1
+            fi
+          fi
+          echo "✅ No critical issues blocking merge"

@@ -23,18 +23,6 @@ create policy "Admins can read own row"
   on public.admins for select
   using (auth.uid() = user_id);
 
--- ─── Profiles ────────────────────────────────────────────────────────────────
-create table if not exists public.profiles (
-  id   uuid primary key references auth.users(id) on delete cascade,
-  role text not null default 'user'
-);
-
-alter table public.profiles enable row level security;
-
-create policy "Users can read own profile"
-  on public.profiles for select
-  using (auth.uid() = id);
-
 -- ─── Categories ──────────────────────────────────────────────────────────────
 create table if not exists public.categories (
   id            uuid primary key default extensions.uuid_generate_v4(),

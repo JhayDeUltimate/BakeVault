@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ProductForm, { type ProductFormData } from '@/components/admin/ProductForm'
-import { createProduct, getProductById, getProductsCount, updateProduct } from '@/lib/api'
+import { createProduct, getNextProductDisplayOrder, getProductById, updateProduct } from '@/lib/api'
 import type { DBProductWithCategory } from '@/lib/database.types'
 
 export default function AdminProductEditor() {
@@ -24,8 +24,8 @@ export default function AdminProductEditor() {
           const data = await getProductById(id)
           if (!cancelled) setProduct(data)
         } else {
-          const count = await getProductsCount({ includeUnavailable: true })
-          if (!cancelled) setNextDisplayOrder(count)
+          const order = await getNextProductDisplayOrder()
+          if (!cancelled) setNextDisplayOrder(order)
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load product')

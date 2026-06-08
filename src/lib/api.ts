@@ -92,13 +92,26 @@ export async function getProductById(id: string): Promise<DBProductWithCategory>
   return data as DBProductWithCategory
 }
 
+export async function getNextProductDisplayOrder(): Promise<number> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('display_order')
+    .order('display_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  return typeof data?.display_order === 'number' ? data.display_order + 1 : 0
+}
+
 export async function createProduct(product: {
   name: string; description?: string | null; category_id?: string | null
   image_url?: string | null; image_urls?: string[] | null
   is_available?: boolean; is_featured?: boolean; price_type?: string; display_order?: number
 }): Promise<DBProductWithCategory> {
   const slug = toSlug(product.name)
-  const payload = { ...product, slug, image_urls: product.image_urls ?? [] }
+  const displayOrder = product.display_order ?? await getNextProductDisplayOrder()
+  const payload = { ...product, slug, image_urls: product.image_urls ?? [], display_order: displayOrder }
   const { data, error } = await supabase.from('products').insert(payload).select('*, categories(*)').single()
   if (error) {
     if (error.code === '23505') throw new Error('A product with this name already exists.')
