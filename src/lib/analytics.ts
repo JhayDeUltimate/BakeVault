@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { hasConsent } from './consent'
+import { SESSION_ID } from './session-id'
 export { SESSION_ID } from './session-id'
 
 export type AnalyticsEventType =

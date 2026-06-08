@@ -9,6 +9,11 @@ vi.mock('@/lib/api', () => ({
 
 const mockedGetProducts = vi.mocked(getProducts)
 
+type UseProductsTestProps = {
+  featuredOnly?: boolean | undefined
+  includeUnavailable?: boolean | undefined
+}
+
 describe('useProducts', () => {
   beforeEach(() => {
     mockedGetProducts.mockReset()
@@ -16,9 +21,11 @@ describe('useProducts', () => {
   })
 
   it('normalizes falsy boolean options before comparing dependencies', async () => {
+    const initialProps: UseProductsTestProps = { featuredOnly: false, includeUnavailable: false }
+
     const { rerender } = renderHook(
-      (props: { featuredOnly?: boolean; includeUnavailable?: boolean }) => useProducts(props),
-      { initialProps: { featuredOnly: false, includeUnavailable: false } }
+      (props: UseProductsTestProps) => useProducts(props),
+      { initialProps }
     )
 
     await waitFor(() => expect(mockedGetProducts).toHaveBeenCalledTimes(1))
