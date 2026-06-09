@@ -12,12 +12,13 @@ export default function AdminActivityLogs() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     let mounted = true
     setLoading(true)
     setError(null)
-    getAdminActivityLogsPage({ page, pageSize: PAGE_SIZE })
+    getAdminActivityLogsPage({ page, pageSize: PAGE_SIZE, sortDir })
       .then(data => {
         if (!mounted) return
         setLogs(data.items)
@@ -26,7 +27,7 @@ export default function AdminActivityLogs() {
       .catch(e => { if (mounted) setError(e instanceof Error ? e.message : String(e)) })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
-  }, [page])
+  }, [page, sortDir])
 
   const filtered = useMemo(() => {
     if (!filter.trim()) return logs
@@ -54,7 +55,7 @@ export default function AdminActivityLogs() {
       <SectionHeading eyebrow="Admin" title="Activity Log" description="Recent admin actions. Records are immutable and include admin id/email, action, resource, and details." />
 
       <div className="w-full min-w-0 overflow-hidden bg-white border border-gray-100 rounded-xl p-4">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action, admin email, resource..."
               className="w-full min-w-0 px-4 py-2 border border-gray-200 rounded-lg text-sm sm:w-96" />
@@ -62,21 +63,33 @@ export default function AdminActivityLogs() {
               Showing {filter.trim() ? `${filtered.length} matching on this page` : `${pageStart}-${pageEnd} of ${total}`}
             </div>
           </div>
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:flex sm:items-center">
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setPage(1)
+                setSortDir(dir => dir === 'desc' ? 'asc' : 'desc')
+              }}
+              disabled={loading}
+              title={sortDir === 'desc' ? 'Sorted by newest activity first' : 'Sorted by oldest activity first'}
+              className="whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {sortDir === 'desc' ? 'Newest' : 'Oldest'}
+            </button>
             <button
               type="button"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={visiblePage === 1 || loading}
-              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Prev
             </button>
-            <div className="text-sm text-gray-500">Page {visiblePage} of {pageCount}</div>
+            <div className="min-w-12 whitespace-nowrap text-center text-xs font-medium text-gray-500">{visiblePage} / {pageCount}</div>
             <button
               type="button"
               onClick={() => setPage(p => Math.min(pageCount, p + 1))}
               disabled={visiblePage >= pageCount || loading}
-              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>
