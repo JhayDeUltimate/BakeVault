@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { getAdminActivityLogs } from '@/lib/api'
+import { getAdminActivityLogsPage } from '@/lib/api'
 import type { DBAdminActivity } from '@/lib/database.types'
 import SectionHeading from '@/components/ui/SectionHeading'
 
+const PAGE_SIZE = 50
+
 export default function AdminActivityLogs() {
   const [logs, setLogs] = useState<DBAdminActivity[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
@@ -13,12 +17,16 @@ export default function AdminActivityLogs() {
     let mounted = true
     setLoading(true)
     setError(null)
-    getAdminActivityLogs({ limit: 200 })
-      .then(data => { if (mounted) setLogs(data) })
+    getAdminActivityLogsPage({ page, pageSize: PAGE_SIZE })
+      .then(data => {
+        if (!mounted) return
+        setLogs(data.items)
+        setTotal(data.total)
+      })
       .catch(e => { if (mounted) setError(e instanceof Error ? e.message : String(e)) })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
-  }, [])
+  }, [page])
 
   const filtered = useMemo(() => {
     if (!filter.trim()) return logs
@@ -32,6 +40,15 @@ export default function AdminActivityLogs() {
     ))
   }, [logs, filter])
 
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const visiblePage = Math.min(page, pageCount)
+  const pageStart = total === 0 ? 0 : (visiblePage - 1) * PAGE_SIZE + 1
+  const pageEnd = Math.min(visiblePage * PAGE_SIZE, total)
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
+
   return (
     <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6 pb-6">
       <SectionHeading eyebrow="Admin" title="Activity Log" description="Recent admin actions. Records are immutable and include admin id/email, action, resource, and details." />
@@ -41,7 +58,28 @@ export default function AdminActivityLogs() {
           <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action, admin email, resource..."
               className="w-full min-w-0 px-4 py-2 border border-gray-200 rounded-lg text-sm sm:w-96" />
-            <div className="shrink-0 text-sm text-gray-500">Showing {filtered.length} of {logs.length}</div>
+            <div className="shrink-0 text-sm text-gray-500">
+              Showing {filter.trim() ? `${filtered.length} matching on this page` : `${pageStart}-${pageEnd} of ${total}`}
+            </div>
+          </div>
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:flex sm:items-center">
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={visiblePage === 1 || loading}
+              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <div className="text-sm text-gray-500">Page {visiblePage} of {pageCount}</div>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+              disabled={visiblePage >= pageCount || loading}
+              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         </div>
 
