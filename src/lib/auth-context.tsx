@@ -260,13 +260,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(error.message)
     }
     if (data.user) {
-      void logAdminActivity({
-        action: 'auth.sign_in',
-        resource_type: 'auth',
-        resource_id: data.user.id,
-        details: { email: data.user.email },
-        actor: data.user,
-      })
+      void (async () => {
+        try {
+          await logAdminActivity({
+            action: 'auth.sign_in',
+            resource_type: 'auth',
+            resource_id: data.user!.id,
+            details: { email: data.user!.email },
+            actor: data.user!,
+          })
+        } catch { /* best-effort */ }
+      })()
     }
   }
 

@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from '@/lib/auth-context'
 import './index.css'
 import { PostHogProvider } from '@posthog/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { validateEnv } from '@/lib/env'
 import useConsent from '@/hooks/useConsent'
 
@@ -84,6 +85,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <ErrorBoundary>
           <AppProviders />
+          <SpeedInsights />
         </ErrorBoundary>
       </BrowserRouter>
     </HelmetProvider>

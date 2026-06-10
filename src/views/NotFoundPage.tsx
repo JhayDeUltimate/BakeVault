@@ -13,8 +13,8 @@ export default function NotFoundPage() {
           Page not found
         </h1>
         <p className="text-sm text-brand-darkGray/60 leading-relaxed mb-8">
-          The page you're looking for has moved, been deleted, or never existed.
-          If you followed a link from somewhere, it may be outdated.
+          We couldn't find that page — it may have moved or been removed. If you followed
+          a link from somewhere, it may be outdated.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link

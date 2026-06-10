@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+
 
 // Models in priority order — if the primary is rate-limited, fall back automatically.
 // Verified against the API key's model list (gemini-1.5-flash is deprecated/unavailable).
@@ -538,7 +538,7 @@ async function fetchImageAsBase64(url: string, supabaseUrl: string): Promise<{ d
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin')
 
   if (req.method === 'OPTIONS') {
