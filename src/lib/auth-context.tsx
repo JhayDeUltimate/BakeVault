@@ -213,13 +213,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               event: 'auth_sign_in',
               user_id: currentUser.id,
             })
-            void logAdminActivity({
-              action: 'auth.sign_in',
-              resource_type: 'auth',
-              resource_id: currentUser.id,
-              details: { email: currentUser.email },
-              actor: currentUser,
-            })
           }
         }
       } finally {
@@ -261,10 +254,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       logger.warn('Sign-in failed', { event: 'auth_sign_in_fail', page: '/admin/login' })
       throw new Error(error.message)
+    }
+    if (data.user) {
+      void (async () => {
+        try {
+          await logAdminActivity({
+            action: 'auth.sign_in',
+            resource_type: 'auth',
+            resource_id: data.user!.id,
+            details: { email: data.user!.email },
+            actor: data.user!,
+          })
+        } catch { /* best-effort */ }
+      })()
     }
   }
 

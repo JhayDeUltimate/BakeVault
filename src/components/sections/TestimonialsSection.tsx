@@ -149,7 +149,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
 
           {done && (
             <div className="mt-4 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
-              Thank you. Your review has been submitted for approval.
+              Thank you. Your review has been submitted. It will appear here once approved by our team.
             </div>
           )}
 

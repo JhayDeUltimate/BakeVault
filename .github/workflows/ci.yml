@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   # ── Job 1: Security pre-flight ───────────────────────────────────────────
   security-scan:
@@ -33,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+        with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - run: npx tsc --noEmit
 
@@ -44,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+        with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - run: npm run test:run
 
@@ -56,12 +60,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+        with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: jhaydeultimate
+          SENTRY_PROJECT: bakevault
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -85,7 +92,7 @@ jobs:
           path: dist/
       # Replace with your actual deployment command (Vercel CLI, Netlify CLI, etc.)
       - name: Deploy to Vercel staging
-        run: npx vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --env=preview
+        run: npx vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --target=preview
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

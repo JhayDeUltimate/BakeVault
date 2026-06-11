@@ -1,20 +1,32 @@
 import path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 export default defineConfig(() => {
+  const enableSentry = Boolean(process.env.SENTRY_AUTH_TOKEN)
+
   return {
     plugins: [
       react(),
       {
         name: 'html-transform',
-        transformIndexHtml(html) {
+        transformIndexHtml(html: string) {
           return html
             .replace('__WHATSAPP_NUMBER__', process.env.VITE_WHATSAPP_NUMBER ?? '+2349064652679')
             .replace('__CONTACT_EMAIL__', process.env.VITE_CONTACT_EMAIL ?? 'sales@bakevault.com.ng')
         }
-      }
-    ],
+      },
+      // Only upload source maps in CI/production builds
+      enableSentry ? sentryVitePlugin({
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        release: { name: process.env.VITE_APP_VERSION ?? 'bakevault@0.1.0' },
+        sourcemaps: { assets: './dist/**', filesToDeleteAfterUpload: './dist/**/*.map' },
+        telemetry: false,
+      }) : undefined,
+    ].filter(Boolean),
     server: {
       port: 3000,
       host: 'localhost',
@@ -25,6 +37,7 @@ export default defineConfig(() => {
       },
     },
     build: {
+      sourcemap: enableSentry ? 'hidden' : false,
       rollupOptions: {
         output: {
           manualChunks(id) {

@@ -377,7 +377,7 @@ export default function ProductPage() {
             onClick={addProductToCart}
             className="mt-5 w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-xl transition-all active:scale-[0.98] shadow-lg text-sm font-display uppercase tracking-wide"
           >
-            Add to Order
+            Add to Bag
           </button>
           <button
             type="button"

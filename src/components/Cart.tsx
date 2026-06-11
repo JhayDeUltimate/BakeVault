@@ -104,7 +104,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
             <div className="flex-1 py-5 overflow-y-auto px-4 sm:py-8 sm:px-8">
               <div className="flex items-start justify-between">
                 <h2 className="text-lg sm:text-xl font-extrabold text-brand-darkGray font-display uppercase tracking-tight">
-                  Your Order
+                  Your Order Bag
                 </h2>
                 <button onClick={onClose} aria-label="Close cart"
                   className="ml-3 p-2 text-brand-darkGray/40 hover:text-brand-orange transition-colors">
@@ -266,7 +266,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                     <p className="text-sm font-bold text-green-700">&#10003; WhatsApp opened! Your order details have been sent.</p>
                     <button type="button" onClick={() => { clearCart(); setPricePrefs({}); setCheckoutSuccess(false) }}
                       className="mt-2 text-xs font-bold text-green-600 hover:text-green-800 underline transition-colors">
-                      Clear cart &amp; close
+                      Clear bag &amp; close
                     </button>
                   </div>
                 )}

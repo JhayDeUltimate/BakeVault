@@ -11,6 +11,7 @@ BakeVault is a full-stack React storefront for a Lagos-based baking supplies bus
 - Recharts for admin analytics
 - PostHog helper integration and first-party Supabase analytics events
 - Sentry browser error monitoring and session replay when configured
+- Vercel CDN caching and scheduled GitHub Actions health checks
 
 ## App Map
 
@@ -49,9 +50,10 @@ src/
     landing/                      # SEO landing pages
     admin/                        # Admin dashboard and CRUD screens
 
-supabase/functions/               # Deno Edge Functions for AI, notifications, and image deletion
+supabase/functions/               # Deno Edge Functions for AI, notifications, health checks, and image deletion
 scripts/generate-sitemap.mjs      # Build-time sitemap generator
 public/                           # Static assets, manifest, robots.txt, generated sitemap
+docs/operations-runbook.md        # CDN, scaling, health-check, and recovery procedures
 ```
 
 ## Public Routes
@@ -168,6 +170,9 @@ Migration files (run in lexicographic order):
 | `202605260003_category_seo_metadata.sql` | Category SEO metadata fields |
 | `202605260004_admin_write_policies.sql` | Admin write policies and image-deletion guardrails |
 | `202605260005_faq_cms.sql` | FAQ categories/items CMS tables, seed data, and RLS policies |
+| `202606010001_rate_limiting_and_constraints.sql` | Public insert throttling and payload constraints |
+| `202606090001_harden_insert_throttling.sql` | Server-derived throttle keys, denial logs, and hardened privileges |
+| `20260610000000_schedule_throttle_cleanup.sql` | Hourly pg_cron cleanup for throttle records |
 
 Storage requirement:
 
@@ -180,16 +185,32 @@ Storage requirement:
 
 Edge Functions live in `supabase/functions/`.
 
+Deploy all required functions:
+
+```bash
+supabase functions deploy ai-assistant --no-verify-jwt
+supabase functions deploy notify-admin
+supabase functions deploy delete-product-image
+supabase functions deploy health-check --no-verify-jwt
+```
+
+| Function | What it does | Deploy command |
+|----------|--------------|----------------|
+| `ai-assistant` | Powers customer product Q&A and admin product-image analysis. | `supabase functions deploy ai-assistant --no-verify-jwt` |
+| `notify-admin` | Sends best-effort email notifications for product requests and new customer reviews. | `supabase functions deploy notify-admin` |
+| `delete-product-image` | Deletes product images from Supabase Storage after server-side admin and URL validation. | `supabase functions deploy delete-product-image` |
+| `health-check` | Provides a backend availability probe for Postgres and the `bakevault-images` Storage bucket. | `supabase functions deploy health-check --no-verify-jwt` |
+
 ### `ai-assistant`
 
-`supabase/functions/ai-assistant/index.ts` supports AI chat and product-image analysis.
+Path: `supabase/functions/ai-assistant/index.ts`
 
-It supports two modes:
+What it does:
 
 - `chat` - customer product Q&A from product pages and product modals.
 - `analyze` - admin product-image analysis that suggests a product name and structured description.
 
-The function uses:
+Runtime behavior:
 
 - Gemini models in fallback order: `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`
 - Tavily search for current product context
@@ -206,7 +227,7 @@ supabase secrets set TAVILY_API_KEY=your-tavily-key
 supabase secrets set ALLOWED_ORIGINS="https://bakevault.com.ng,https://www.bakevault.com.ng"
 ```
 
-Deploy:
+Deploy command:
 
 ```bash
 supabase functions deploy ai-assistant --no-verify-jwt
@@ -216,7 +237,16 @@ supabase functions deploy ai-assistant --no-verify-jwt
 
 ### `notify-admin`
 
-`supabase/functions/notify-admin/index.ts` sends best-effort admin notifications after customer actions such as product requests. Deploy it with the normal Supabase function JWT verification defaults unless the calling flow changes.
+Path: `supabase/functions/notify-admin/index.ts`
+
+What it does:
+
+- Sends best-effort admin email notifications through Resend.
+- Handles product request notifications.
+- Handles customer review notifications.
+- Marks rows as notified with `admin_notified_at` so duplicate calls do not resend the same notification.
+
+Deploy it with normal Supabase JWT verification defaults unless the calling flow changes.
 
 Set function secrets:
 
@@ -226,13 +256,23 @@ supabase secrets set ADMIN_EMAIL="admin@example.com"
 supabase secrets set RESEND_FROM_EMAIL="BakeVault <orders@example.com>"
 ```
 
+Deploy command:
+
 ```bash
 supabase functions deploy notify-admin
 ```
 
 ### `delete-product-image`
 
-`supabase/functions/delete-product-image/index.ts` deletes product images from Supabase Storage through a server-side guardrail. This keeps privileged storage deletion out of the browser.
+Path: `supabase/functions/delete-product-image/index.ts`
+
+What it does:
+
+- Requires a signed-in Supabase user.
+- Verifies the user is an admin through the `admins` table.
+- Validates that the submitted image URL belongs to this Supabase project and the `bakevault-images/products/` path.
+- Deletes the image from Supabase Storage using the service role key.
+- Keeps privileged storage deletion out of the browser.
 
 The function expects the standard Supabase runtime secrets plus service-role access:
 
@@ -240,9 +280,35 @@ The function expects the standard Supabase runtime secrets plus service-role acc
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
+Deploy command:
+
 ```bash
 supabase functions deploy delete-product-image
 ```
+
+### `health-check`
+
+Path: `supabase/functions/health-check/index.ts`
+
+What it does:
+
+- Provides the backend availability probe used by `.github/workflows/health-check.yml`.
+- Confirms the Edge Function runtime has Supabase credentials.
+- Checks that Postgres can answer a lightweight `settings` query.
+- Checks that the `bakevault-images` Storage bucket is available.
+
+The function expects:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Deploy command:
+
+```bash
+supabase functions deploy health-check --no-verify-jwt
+```
+
+`--no-verify-jwt` is required so external uptime monitors can call it. The public web/CDN health endpoint is `public/health.json`, served as `/health.json`.
 
 ## Development
 
@@ -305,6 +371,58 @@ Available npm scripts:
 - `npm run test:run` - run the Vitest suite once.
 - `npm run gen:types` - regenerate Supabase TypeScript types into `src/lib/database.types.ts`.
 
+## Deployment Workflow
+
+The project uses a two-branch strategy with automated CI/CD through GitHub Actions.
+
+### Branches
+
+| Branch | Purpose |
+|--------|---------|
+| `develop` | Day-to-day development. Deploys to a **staging preview** on Vercel. |
+| `main` | Production. Deploys to the **live site** that customers see. |
+
+### Flow
+
+```text
+Code in IDE
+    ↓ push to develop
+ GitHub runs checks (security scan, type check, tests, build)
+    ↓ checks pass
+ Staging preview deployed on Vercel
+    ↓ verify everything looks good
+ Create a Pull Request on GitHub: develop → main
+    ↓ merge
+ GitHub runs checks again → Production deployed on Vercel
+```
+
+### Step by step
+
+1. **Write code** in your IDE and commit.
+2. **Push to `develop`** — GitHub Actions automatically runs security scans, TypeScript checks, unit tests, and a production build. If everything passes, the app is deployed to a Vercel staging preview.
+3. **Review the staging preview** — open the preview URL and verify your changes work correctly.
+4. **Merge to `main`** — create a Pull Request from `develop` to `main` on GitHub. Once merged, GitHub Actions runs the same checks and deploys to the live production site.
+
+### Required GitHub Secrets
+
+These secrets must be configured in your repository settings under **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
+| `SENTRY_AUTH_TOKEN` | Sentry authentication token for source map uploads |
+| `VERCEL_TOKEN` | Vercel personal access token ([generate here](https://vercel.com/account/tokens)) |
+| `VERCEL_ORG_ID` | Vercel organization/team ID |
+| `VERCEL_PROJECT_ID` | Vercel project ID |
+
+### GitHub Environments
+
+Two environments should be created in **Settings → Environments**:
+
+- `staging` — used by the `develop` branch deployment job.
+- `production` — used by the `main` branch deployment job. Optionally add approval rules for extra safety.
+
 ## Sitemap and SEO
 
 `npm run build:full` runs `scripts/generate-sitemap.mjs` before Vite builds. You can also run the sitemap script directly with `npm run sitemap`. The script:
@@ -343,6 +461,28 @@ Sentry:
 - Replays all errored sessions and 5% of production sessions.
 - Strips cookies and authorization headers before events are sent.
 
+Scheduled health checks:
+
+- `.github/workflows/health-check.yml` runs every 30 minutes and can also be triggered manually.
+- Set `PRODUCTION_HEALTH_URL` to the deployed `/health.json` URL.
+- Set `SUPABASE_HEALTH_URL` to the deployed Supabase `health-check` function URL.
+
+## Production Operations
+
+Caching/CDN, scaling, health-check, and recovery procedures are defined in `docs/operations-runbook.md`.
+
+Production caching is configured in `vercel.json`:
+
+- Hashed Vite assets under `/assets/*` are cached as immutable for one year.
+- Public image/font assets use CDN stale-while-revalidate caching.
+- The app shell at `/` is kept fresh to avoid stale HTML after deploys.
+
+The production scaling model is stateless:
+
+- Vercel handles global CDN delivery and platform load balancing for the storefront.
+- Supabase handles managed Postgres, Auth, Storage, PostgREST, and Edge Function routing.
+- App code keeps heavy work in Edge Functions, uses paginated admin reads, and uses database summary views/RPCs for analytics.
+
 ## Operational Notes
 
 - Product images use original URLs or `images.weserv.nl` for lightweight resizing. Supabase Storage transforms are not used because they require a paid Supabase plan.
@@ -376,6 +516,9 @@ Admin access is controlled by the `admins` table. There is no self-registration.
 - [ ] `VITE_CONTACT_EMAIL`, `VITE_INSTAGRAM_HANDLE` are set
 - [ ] Supabase project is on Pro plan (for PITR backup and Storage transforms)
 - [ ] GitHub secrets are configured for CI/CD: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- [ ] `health-check` Edge Function is deployed and `.github/workflows/health-check.yml` passes
+- [ ] GitHub secrets are configured for monitoring: `PRODUCTION_HEALTH_URL`, `SUPABASE_HEALTH_URL`
+- [ ] Recovery drill has been run against a non-production Supabase project
 
 ### SEO & Content
 - [ ] Run `npm run build:full` (not `npm run build`) to generate the sitemap

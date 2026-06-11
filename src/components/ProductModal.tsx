@@ -133,7 +133,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
             onClick={() => { onAddToCart(mapped); onClose() }}
             className="hidden sm:block w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg"
           >
-            Add to Order
+            Add to Bag
           </button>
 
           {product.description ? (
@@ -208,7 +208,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onViewProd
             onClick={() => { onAddToCart(mapped); onClose() }}
             className="w-full bg-brand-orange hover:bg-brand-brown text-white font-extrabold py-4 rounded-2xl transition-all active:scale-[0.98]"
           >
-            Add to Order
+            Add to Bag
           </button>
         </div>
       </div>

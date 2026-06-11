@@ -1,18 +1,4 @@
-import type { Category } from './lib/types'
-
 const rawWhatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER?.trim() ?? ''
-
-export const CATEGORIES: Category[] = [
-  'Yogurt & Dairy Starters',
-  'Milk Flavorings & Essences',
-  'Preservatives & Additives',
-  'Syrups & Toppings',
-  'Milk Flavouring Powders (Bulk)',
-  'Margarine & Spreads',
-  'Baking Ingredients',
-  'Food Coloring',
-  'Other Products',
-]
 
 export const WHATSAPP_NUMBER         = rawWhatsappNumber.replace(/\D/g, '')
 export const WHATSAPP_URL            = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : ''

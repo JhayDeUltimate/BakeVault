@@ -715,16 +715,17 @@ export async function getAnalyticsRawEvents(days = 30): Promise<DBAnalyticsEvent
 }
 
 // ─── Admin activity logs ────────────────────────────────────────────────────
-export async function getAdminActivityLogsPage(opts?: { page?: number; pageSize?: number }): Promise<{ items: DBAdminActivity[]; total: number }> {
+export async function getAdminActivityLogsPage(opts?: { page?: number; pageSize?: number; sortDir?: 'asc' | 'desc' }): Promise<{ items: DBAdminActivity[]; total: number }> {
   const page = Math.max(1, opts?.page ?? 1)
   const pageSize = Math.max(1, opts?.pageSize ?? 50)
+  const sortDir = opts?.sortDir ?? 'desc'
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
   const { data, error, count } = await supabase
     .from('admin_activity_logs')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: sortDir === 'asc' })
     .range(from, to)
 
   if (error) throw new Error(error.message)
