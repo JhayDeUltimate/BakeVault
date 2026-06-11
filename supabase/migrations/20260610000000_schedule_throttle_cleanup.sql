@@ -1,7 +1,7 @@
 -- Schedule periodic cleanup for anonymous insert throttle records.
 -- Keep this as a forward migration so normal `supabase db push` can apply it safely.
 
-create extension if not exists pg_cron with schema extensions;
+create extension if not exists pg_cron;
 
 do $$
 begin

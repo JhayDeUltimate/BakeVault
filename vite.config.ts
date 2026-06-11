@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 export default defineConfig(() => {
+  const enableSentry = Boolean(process.env.SENTRY_AUTH_TOKEN)
+
   return {
     plugins: [
       react(),
@@ -16,12 +18,12 @@ export default defineConfig(() => {
         }
       },
       // Only upload source maps in CI/production builds
-      process.env.SENTRY_AUTH_TOKEN ? sentryVitePlugin({
+      enableSentry ? sentryVitePlugin({
         authToken: process.env.SENTRY_AUTH_TOKEN,
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
         release: { name: process.env.VITE_APP_VERSION ?? 'bakevault@0.1.0' },
-        sourcemaps: { assets: './dist/**' },
+        sourcemaps: { assets: './dist/**', filesToDeleteAfterUpload: './dist/**/*.map' },
         telemetry: false,
       }) : undefined,
     ].filter(Boolean),
@@ -35,7 +37,7 @@ export default defineConfig(() => {
       },
     },
     build: {
-      sourcemap: 'hidden', // Generated for Sentry upload but not served publicly
+      sourcemap: enableSentry ? 'hidden' : false,
       rollupOptions: {
         output: {
           manualChunks(id) {

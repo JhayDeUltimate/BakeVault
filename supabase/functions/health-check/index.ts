@@ -23,16 +23,28 @@ function json(body: unknown, status = 200, head = false): Response {
   })
 }
 
-async function timedCheck(fn: () => Promise<void>): Promise<CheckResult> {
+const CHECK_TIMEOUT_MS = 10_000
+
+async function timedCheck(
+  label: string,
+  fn: () => Promise<void>,
+): Promise<CheckResult> {
   const started = Date.now()
   try {
-    await fn()
+    await Promise.race([
+      fn(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), CHECK_TIMEOUT_MS),
+      ),
+    ])
     return { ok: true, duration_ms: Date.now() - started }
   } catch (err) {
+    const detail = err instanceof Error ? err.message : 'Unknown error'
+    console.error(`[health-check] ${label} failed:`, detail)
     return {
       ok: false,
       duration_ms: Date.now() - started,
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: `${label}_check_failed`,
     }
   }
 }
@@ -40,20 +52,21 @@ async function timedCheck(fn: () => Promise<void>): Promise<CheckResult> {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    return json({ ok: false, error: 'Method not allowed.' }, 405)
+    return json({ ok: false, error: 'method_not_allowed' }, 405)
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
   if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[health-check] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
     return json({
       ok: false,
       service: 'bakevault-api',
       checked_at: new Date().toISOString(),
       dependencies: {
-        database: { ok: false, duration_ms: 0, error: 'Supabase credentials are not configured.' },
-        storage: { ok: false, duration_ms: 0, error: 'Supabase credentials are not configured.' },
+        database: { ok: false, duration_ms: 0, error: 'configuration_error' },
+        storage: { ok: false, duration_ms: 0, error: 'configuration_error' },
       },
     }, 503, req.method === 'HEAD')
   }
@@ -63,11 +76,11 @@ Deno.serve(async (req: Request) => {
   })
 
   const [database, storage] = await Promise.all([
-    timedCheck(async () => {
+    timedCheck('database', async () => {
       const { error } = await supabase.from('settings').select('key').limit(1)
       if (error) throw new Error(error.message)
     }),
-    timedCheck(async () => {
+    timedCheck('storage', async () => {
       const { error } = await supabase.storage.getBucket('bakevault-images')
       if (error) throw new Error(error.message)
     }),
