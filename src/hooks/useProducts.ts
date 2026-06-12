@@ -1,6 +1,7 @@
 // src/hooks/useProducts.ts 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getProducts } from '../lib/api'
+import { CACHE_TTL, getOrSetClientCache, stableSerialize } from '@/lib/client-cache'
 import type { DBProductWithCategory } from '../lib/database.types'
 
 interface Options {
@@ -45,12 +46,21 @@ export function useProducts(options: Options = {}) {
   // Monotonically-increasing fetch ID. Only the most recent fetch may update state.
   const fetchIdRef = useRef(0)
 
-  const fetch = useCallback(async () => {
+  const fetch = useCallback(async (force = false) => {
     const id = ++fetchIdRef.current
     setLoading(true)
     setError(null)
     try {
-      const data = await getProducts(optionsRef.current)
+      const { refetchOnFocus: _refetchOnFocus, ...cacheableOptions } = optionsRef.current
+      const data = await getOrSetClientCache(
+        `products:${stableSerialize(cacheableOptions)}`,
+        () => getProducts(optionsRef.current),
+        {
+          ttlMs: CACHE_TTL.products,
+          storage: 'localStorage',
+          force,
+        },
+      )
       if (id === fetchIdRef.current) {
         setProducts(data)
       }
@@ -79,9 +89,10 @@ export function useProducts(options: Options = {}) {
   const { refetchOnFocus } = normalizedOptions
   useEffect(() => {
     if (!refetchOnFocus) return
-    window.addEventListener('focus', fetch)
-    return () => window.removeEventListener('focus', fetch)
+    const onFocus = () => { void fetch() }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [fetch, refetchOnFocus])
 
-  return { products, loading, error, refetch: fetch }
+  return { products, loading, error, refetch: () => fetch(true) }
 }

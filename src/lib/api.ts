@@ -4,6 +4,7 @@ import { friendlyErrorMessage } from './error-messages'
 import { SESSION_ID } from './session-id'
 import { logAdminActivity } from './admin-activity'
 import { mapDBFAQs, type FAQCategoryData } from './faq'
+import { invalidateClientCache } from './client-cache'
 import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent, DBAdminActivity, DBFAQCategory, DBFAQItem, DBFAQCategoryWithItems } from './database.types'
 
 // Re-export from image.ts so existing imports from @/lib/api still work
@@ -128,6 +129,7 @@ export async function createProduct(product: {
     if (error.code === '23505') throw new Error('A product with this name already exists.')
     throwFriendlyError(error, 'Product could not be created. Check the required fields and try again.')
   }
+  invalidateClientCache('products:')
   void (async () => {
     try {
       const created = data as DBProductWithCategory
@@ -155,6 +157,7 @@ export async function updateProduct(
   // Renaming a product updates its display name only, not its URL.
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
   if (error) throwFriendlyError(error, 'Product could not be updated. Check the required fields and try again.')
+  invalidateClientCache('products:')
   void (async () => {
     try {
       const updated = data as DBProductWithCategory
@@ -167,6 +170,7 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await supabase.from('products').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  invalidateClientCache('products:')
   void (async () => { try { await logAdminActivity({ action: 'product.delete', resource_type: 'product', resource_id: id }) } catch {} })()
 }
 
@@ -194,6 +198,8 @@ export async function createCategory(
     if (error.code === '23505') throw new Error('A category with this name already exists.')
     throw new Error(error.message)
   }
+  invalidateClientCache('categories:')
+  invalidateClientCache('products:')
   void (async () => { try { await logAdminActivity({ action: 'category.create', resource_type: 'category', resource_id: (data as DBCategory).id, details: { name } }) } catch {} })()
   return data
 }
@@ -206,6 +212,8 @@ export async function updateCategory(
   if (updates.name) payload.slug = toSlug(updates.name)
   const { data, error } = await supabase.from('categories').update(payload).eq('id', id).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('categories:')
+  invalidateClientCache('products:')
   void (async () => { try { await logAdminActivity({ action: 'category.update', resource_type: 'category', resource_id: id, details: { updates } }) } catch {} })()
   return data
 }
@@ -216,6 +224,8 @@ export async function deleteCategory(id: string): Promise<void> {
     if (error.code === '23503') throw new Error('Cannot delete: this category has products. Move or delete those products first.')
     throw new Error(error.message)
   }
+  invalidateClientCache('categories:')
+  invalidateClientCache('products:')
   void (async () => { try { await logAdminActivity({ action: 'category.delete', resource_type: 'category', resource_id: id }) } catch {} })()
 }
 
@@ -325,6 +335,7 @@ export async function getTestimonials(visibleOnly = true): Promise<DBTestimonial
 export async function createTestimonial(t: { customer_name: string; business_name?: string; initials?: string; quote: string; rating?: number; is_visible?: boolean; display_order?: number }): Promise<DBTestimonial> {
   const { data, error } = await supabase.from('testimonials').insert(t).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('testimonials:')
   void (async () => { try { await logAdminActivity({ action: 'testimonial.create', resource_type: 'testimonial', resource_id: (data as DBTestimonial).id, details: { customer_name: t.customer_name } }) } catch {} })()
   return data
 }
@@ -341,7 +352,10 @@ export async function submitCustomerReview(review: {
   const id = randomUuid()
   const rating = clampRating(review.rating)
 
-  const { error } = await supabase
+  const timeout = new Promise<never>((_, reject) => {
+    globalThis.setTimeout(() => reject(new Error('Submission timed out.')), 15_000)
+  })
+  const insert = supabase
     .from('testimonials')
     .insert({
       id,
@@ -353,6 +367,7 @@ export async function submitCustomerReview(review: {
       is_visible: false,
       display_order: 0,
     })
+  const { error } = await Promise.race([insert, timeout])
 
   if (error) throw new Error(error.message)
 
@@ -363,6 +378,7 @@ export async function submitCustomerReview(review: {
 export async function updateTestimonial(id: string, updates: Partial<{ customer_name: string; business_name: string | null; initials: string | null; quote: string; rating: number; is_visible: boolean; display_order: number }>): Promise<DBTestimonial> {
   const { data, error } = await supabase.from('testimonials').update(updates).eq('id', id).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('testimonials:')
   void (async () => { try { await logAdminActivity({ action: 'testimonial.update', resource_type: 'testimonial', resource_id: id, details: { updates } }) } catch {} })()
   return data
 }
@@ -370,6 +386,7 @@ export async function updateTestimonial(id: string, updates: Partial<{ customer_
 export async function deleteTestimonial(id: string): Promise<void> {
   const { error } = await supabase.from('testimonials').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  invalidateClientCache('testimonials:')
   void (async () => { try { await logAdminActivity({ action: 'testimonial.delete', resource_type: 'testimonial', resource_id: id }) } catch {} })()
 }
 
@@ -383,6 +400,7 @@ export async function getSettings(): Promise<Record<string, string>> {
 export async function upsertSetting(key: string, value: string): Promise<void> {
   const { error } = await supabase.from('settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
   if (error) throw new Error(error.message)
+  invalidateClientCache('settings:')
   void (async () => { try { await logAdminActivity({ action: 'setting.upsert', resource_type: 'setting', resource_id: key, details: { value } }) } catch {} })()
 }
 
@@ -428,6 +446,7 @@ export async function createFAQCategory(input: {
   }
   const { data, error } = await supabase.from('faq_categories').insert(payload).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('faqs:')
   void (async () => { try { await logAdminActivity({ action: 'faq_category.create', resource_type: 'faq_category', resource_id: (data as DBFAQCategory).id, details: payload }) } catch {} })()
   return data as DBFAQCategory
 }
@@ -445,6 +464,7 @@ export async function updateFAQCategory(
 
   const { data, error } = await supabase.from('faq_categories').update(payload).eq('id', id).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('faqs:')
   void (async () => { try { await logAdminActivity({ action: 'faq_category.update', resource_type: 'faq_category', resource_id: id, details: updates as Json }) } catch {} })()
   return data as DBFAQCategory
 }
@@ -452,6 +472,7 @@ export async function updateFAQCategory(
 export async function deleteFAQCategory(id: string): Promise<void> {
   const { error } = await supabase.from('faq_categories').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  invalidateClientCache('faqs:')
   void (async () => { try { await logAdminActivity({ action: 'faq_category.delete', resource_type: 'faq_category', resource_id: id }) } catch {} })()
 }
 
@@ -471,6 +492,7 @@ export async function createFAQItem(input: {
   }
   const { data, error } = await supabase.from('faq_items').insert(payload).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('faqs:')
   void (async () => { try { await logAdminActivity({ action: 'faq_item.create', resource_type: 'faq_item', resource_id: (data as DBFAQItem).id, details: payload }) } catch {} })()
   return data as DBFAQItem
 }
@@ -488,6 +510,7 @@ export async function updateFAQItem(
 
   const { data, error } = await supabase.from('faq_items').update(payload).eq('id', id).select().single()
   if (error) throw new Error(error.message)
+  invalidateClientCache('faqs:')
   void (async () => { try { await logAdminActivity({ action: 'faq_item.update', resource_type: 'faq_item', resource_id: id, details: updates as Json }) } catch {} })()
   return data as DBFAQItem
 }
@@ -495,6 +518,7 @@ export async function updateFAQItem(
 export async function deleteFAQItem(id: string): Promise<void> {
   const { error } = await supabase.from('faq_items').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  invalidateClientCache('faqs:')
   void (async () => { try { await logAdminActivity({ action: 'faq_item.delete', resource_type: 'faq_item', resource_id: id }) } catch {} })()
 }
 
@@ -524,14 +548,34 @@ export async function createProductRequest(req: {
     // The server-side throttle still applies
   }
 
+  const id = randomUuid()
+  const payload: Database['public']['Tables']['product_requests']['Insert'] = {
+    id,
+    product_name: req.product_name,
+    product_size: req.product_size ?? null,
+    quantity: req.quantity ?? null,
+    notes: req.notes ?? null,
+    contact_info: req.contact_info ?? null,
+    status: 'pending',
+  }
   const timeout = new Promise<never>((_, reject) => {
-    globalThis.setTimeout(() => reject(new Error('Product request timed out after 15 seconds.')), 15_000)
+    globalThis.setTimeout(() => reject(new Error('Submission timed out.')), 15_000)
   })
-  const insert = supabase.from('product_requests').insert(req).select().single()
-  const { data, error } = await Promise.race([insert, timeout])
+  const insert = supabase.from('product_requests').insert(payload)
+  const { error } = await Promise.race([insert, timeout])
   if (error) throw new Error(error.message)
-  void notifyAdminOfSubmission('product_request', (data as DBProductRequest).id)
-  return data
+  void notifyAdminOfSubmission('product_request', id)
+  return {
+    id,
+    product_name: payload.product_name,
+    product_size: payload.product_size ?? null,
+    quantity: payload.quantity ?? null,
+    notes: payload.notes ?? null,
+    contact_info: payload.contact_info ?? null,
+    status: payload.status ?? 'pending',
+    created_at: new Date().toISOString(),
+    admin_notified_at: null,
+  }
 }
 
 export async function getProductRequests(): Promise<DBProductRequest[]> {

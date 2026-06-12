@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { submitCustomerReview } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
-import { friendlyErrorMessage } from '@/lib/error-messages'
+import { storefrontSubmissionErrorMessage } from '@/lib/error-messages'
 import type { DBTestimonial } from '../../lib/database.types'
 
 interface Props { testimonials: DBTestimonial[] }
@@ -93,7 +93,10 @@ export default function TestimonialsSection({ testimonials }: Props) {
       setDone(true)
       trackEvent('review_submitted', { rating: submitted.rating })
     } catch (err) {
-      setError(friendlyErrorMessage(err, 'Review submission failed. Please try again.'))
+      setError(storefrontSubmissionErrorMessage(
+        err,
+        'We could not submit your review right now. Please try again later.',
+      ))
     } finally {
       setSaving(false)
     }

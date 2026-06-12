@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createProductRequest } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
-import { friendlyErrorMessage } from '@/lib/error-messages'
+import { storefrontSubmissionErrorMessage } from '@/lib/error-messages'
 import { logger } from '@/lib/logger'
 import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock'
 
@@ -63,7 +63,10 @@ export default function ProductRequestModal({ onClose }: Props) {
       trackEvent('product_request_submitted', { product_name: form.product_name })
       setDone(true)
     } catch (err) {
-      const msg = friendlyErrorMessage(err, 'Submission failed. Please try again.')
+      const msg = storefrontSubmissionErrorMessage(
+        err,
+        'We could not submit your request right now. Please try again later or contact us on WhatsApp.',
+      )
       logger.error('Product request submit failed', err, {
         event: 'product_request_submit_failed',
         page: 'product_request_modal',
@@ -76,13 +79,7 @@ export default function ProductRequestModal({ onClose }: Props) {
         viewport_width: typeof window === 'undefined' ? undefined : window.innerWidth,
         viewport_height: typeof window === 'undefined' ? undefined : window.innerHeight,
       })
-      if (msg.includes('row-level security') || msg.includes('policy')) {
-        setError('Unable to submit your request right now. Please try again later or contact us via WhatsApp.')
-      } else if (msg.includes('Load failed') || msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')) {
-        setError('Network error - please check your internet connection and try again.')
-      } else {
-        setError(msg)
-      }
+      setError(msg)
     } finally {
       setSaving(false)
     }

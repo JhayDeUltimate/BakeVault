@@ -15,9 +15,13 @@ function messageFrom(error: unknown): string {
   return ''
 }
 
+function lowerMessage(error: unknown): string {
+  return messageFrom(error).toLowerCase()
+}
+
 export function friendlyErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
   const message = messageFrom(error)
-  const lower = message.toLowerCase()
+  const lower = lowerMessage(error)
   const code = error && typeof error === 'object' && 'code' in error ? (error as BackendError).code : undefined
 
   if (!message) return fallback
@@ -69,4 +73,35 @@ export function friendlyErrorMessage(error: unknown, fallback = 'Something went 
   }
 
   return message
+}
+
+export function storefrontSubmissionErrorMessage(
+  error: unknown,
+  fallback = 'We could not submit this right now. Please try again.',
+): string {
+  const message = messageFrom(error)
+  const lower = lowerMessage(error)
+
+  if (!message) return fallback
+
+  if (
+    lower.includes('load failed') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('network') ||
+    lower.includes('timeout') ||
+    lower.includes('timed out')
+  ) {
+    return 'We could not reach the server. Please check your connection and try again.'
+  }
+
+  if (
+    lower.includes('row-level security') ||
+    lower.includes('permission denied') ||
+    lower.includes('policy') ||
+    lower.includes('not authorized')
+  ) {
+    return fallback
+  }
+
+  return friendlyErrorMessage(error, fallback)
 }
