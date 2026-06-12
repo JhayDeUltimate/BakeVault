@@ -9,6 +9,7 @@ import {
   updateFAQItem,
   deleteFAQItem,
 } from '@/lib/api'
+import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { FAQCategoryData, FAQItemData } from '@/lib/faq'
 
 export default function AdminFAQ() {
@@ -25,6 +26,7 @@ export default function AdminFAQ() {
   const [editCategoryTitle, setEditCategoryTitle] = useState('')
   const [draft, setDraft] = useState({ question: '', answer: '', category_id: '' })
   const [newCategoryTitle, setNewCategoryTitle] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'newCategoryTitle' | 'editCategoryTitle' | 'category_id' | 'question' | 'answer', string>>>({})
 
   const questions = useMemo(() =>
     categories.flatMap(c => c.items.map(item => ({ ...item, categoryId: c.id ?? '', categoryTitle: c.title }))),
@@ -53,10 +55,15 @@ export default function AdminFAQ() {
   async function handleCreateCategory(e: React.FormEvent) {
     e.preventDefault()
     const title = newCategoryTitle.trim()
-    if (!title) return
+    if (!title) {
+      setFieldErrors({ newCategoryTitle: 'Enter a category title.' })
+      setError('Enter a category title before saving.')
+      return
+    }
     try {
       setSaving(true)
       setError(null)
+      setFieldErrors({})
       await createFAQCategory({
         title,
         icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16h6',
@@ -68,7 +75,7 @@ export default function AdminFAQ() {
       await loadFAQs()
       flash(`Category "${title}" created.`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create category')
+      setError(friendlyErrorMessage(err, 'Failed to create category. Check the required fields and try again.'))
     } finally {
       setSaving(false)
     }
@@ -76,16 +83,21 @@ export default function AdminFAQ() {
 
   async function handleUpdateCategory(id: string) {
     const title = editCategoryTitle.trim()
-    if (!title) return
+    if (!title) {
+      setFieldErrors({ editCategoryTitle: 'Enter a category title.' })
+      setError('Enter a category title before saving.')
+      return
+    }
     try {
       setSaving(true)
       setError(null)
+      setFieldErrors({})
       await updateFAQCategory(id, { title })
       setEditingCategory(null)
       await loadFAQs()
       flash('Category updated.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update category')
+      setError(friendlyErrorMessage(err, 'Failed to update category. Check the required fields and try again.'))
     } finally {
       setSaving(false)
     }
@@ -111,17 +123,26 @@ export default function AdminFAQ() {
     const question = draft.question.trim()
     const answer = draft.answer.trim()
     const category_id = draft.category_id || categories[0]?.id || ''
-    if (!question || !answer || !category_id) return
+    const nextErrors: typeof fieldErrors = {}
+    if (!category_id) nextErrors.category_id = 'Select an FAQ category.'
+    if (!question) nextErrors.question = 'Enter the question.'
+    if (!answer) nextErrors.answer = 'Enter the answer.'
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors)
+      setError('Fix the highlighted fields before saving the question.')
+      return
+    }
     try {
       setSaving(true)
       setError(null)
+      setFieldErrors({})
       await createFAQItem({ category_id, question, answer, display_order: questions.length, is_visible: true })
       setDraft({ question: '', answer: '', category_id: '' })
       setShowAddQuestion(false)
       await loadFAQs()
       flash('Question added.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add question')
+      setError(friendlyErrorMessage(err, 'Failed to add question. Check the required fields and try again.'))
     } finally {
       setSaving(false)
     }
@@ -139,6 +160,7 @@ export default function AdminFAQ() {
   }
 
   const input = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400'
+  const invalidInput = 'border-red-300 bg-red-50/50 focus:ring-red-300'
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -174,11 +196,14 @@ export default function AdminFAQ() {
 
       {/* Add Category form */}
       {showAddCategory && (
-        <form onSubmit={handleCreateCategory} className="grid gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <form onSubmit={handleCreateCategory} className="grid gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm" noValidate>
           <label className="text-xs font-bold uppercase tracking-wider text-gray-500">New Category Title</label>
           <div className="flex gap-2">
-            <input value={newCategoryTitle} onChange={e => setNewCategoryTitle(e.target.value)} placeholder="e.g. Wholesale Orders" className={input} autoFocus />
-            <button type="submit" disabled={saving || !newCategoryTitle.trim()} className="bg-orange-500 text-white font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-40">{saving ? 'Saving...' : 'Add'}</button>
+            <div className="flex-1">
+              <input value={newCategoryTitle} onChange={e => { setNewCategoryTitle(e.target.value); setFieldErrors(p => ({ ...p, newCategoryTitle: undefined })) }} placeholder="e.g. Wholesale Orders" className={`${input} ${fieldErrors.newCategoryTitle ? invalidInput : ''}`} autoFocus />
+              {fieldErrors.newCategoryTitle && <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.newCategoryTitle}</p>}
+            </div>
+            <button type="submit" disabled={saving} className="bg-orange-500 text-white font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-40">{saving ? 'Saving...' : 'Add'}</button>
             <button type="button" onClick={() => setShowAddCategory(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
           </div>
         </form>
@@ -186,24 +211,27 @@ export default function AdminFAQ() {
 
       {/* Add Question form */}
       {showAddQuestion && (
-        <form onSubmit={handleCreateQuestion} className="grid gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <form onSubmit={handleCreateQuestion} className="grid gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm" noValidate>
           <div>
             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500">Category</label>
-            <select value={draft.category_id || categories[0]?.id || ''} onChange={e => setDraft(p => ({ ...p, category_id: e.target.value }))} className={input}>
+            <select value={draft.category_id || categories[0]?.id || ''} onChange={e => { setDraft(p => ({ ...p, category_id: e.target.value })); setFieldErrors(p => ({ ...p, category_id: undefined })) }} className={`${input} ${fieldErrors.category_id ? invalidInput : ''}`}>
               {categories.map(c => <option key={c.id} value={c.id ?? ''}>{c.title}</option>)}
             </select>
+            {fieldErrors.category_id && <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.category_id}</p>}
           </div>
           <div>
             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500">Question</label>
-            <input value={draft.question} onChange={e => setDraft(p => ({ ...p, question: e.target.value }))} placeholder="Enter the customer question" className={input} />
+            <input value={draft.question} onChange={e => { setDraft(p => ({ ...p, question: e.target.value })); setFieldErrors(p => ({ ...p, question: undefined })) }} placeholder="Enter the customer question" className={`${input} ${fieldErrors.question ? invalidInput : ''}`} />
+            {fieldErrors.question && <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.question}</p>}
           </div>
           <div>
             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500">Answer</label>
-            <textarea value={draft.answer} onChange={e => setDraft(p => ({ ...p, answer: e.target.value }))} rows={5} className={input + ' resize-y'} />
+            <textarea value={draft.answer} onChange={e => { setDraft(p => ({ ...p, answer: e.target.value })); setFieldErrors(p => ({ ...p, answer: undefined })) }} rows={5} className={`${input} resize-y ${fieldErrors.answer ? invalidInput : ''}`} />
+            {fieldErrors.answer && <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.answer}</p>}
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setShowAddQuestion(false)} className="px-4 py-2.5 text-sm text-gray-500">Cancel</button>
-            <button type="submit" disabled={saving || !draft.question.trim() || !draft.answer.trim()} className="bg-orange-500 text-white font-semibold px-5 py-2.5 rounded-lg text-sm disabled:opacity-40">{saving ? 'Saving...' : 'Save Question'}</button>
+            <button type="submit" disabled={saving} className="bg-orange-500 text-white font-semibold px-5 py-2.5 rounded-lg text-sm disabled:opacity-40">{saving ? 'Saving...' : 'Save Question'}</button>
           </div>
         </form>
       )}
@@ -257,12 +285,15 @@ export default function AdminFAQ() {
           ) : categories.map(cat => (
             <div key={cat.id} className="flex items-center gap-3 px-5 py-4 group">
               {editingCategory === cat.id ? (
-                <div className="flex flex-1 gap-2">
-                  <input value={editCategoryTitle} onChange={e => setEditCategoryTitle(e.target.value)}
+                <div className="grid flex-1 gap-1">
+                  <div className="flex gap-2">
+                  <input value={editCategoryTitle} onChange={e => { setEditCategoryTitle(e.target.value); setFieldErrors(p => ({ ...p, editCategoryTitle: undefined })) }}
                     onKeyDown={e => { if (e.key === 'Enter') cat.id && handleUpdateCategory(cat.id); if (e.key === 'Escape') setEditingCategory(null) }}
-                    className="flex-1 border border-orange-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" autoFocus />
+                    className={`flex-1 border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 ${fieldErrors.editCategoryTitle ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-orange-300 focus:ring-orange-400'}`} autoFocus />
                   <button onClick={() => cat.id && handleUpdateCategory(cat.id)} disabled={saving} className="text-sm text-orange-600 font-semibold">{saving ? 'Saving...' : 'Save'}</button>
                   <button onClick={() => setEditingCategory(null)} className="text-sm text-gray-400">Cancel</button>
+                  </div>
+                  {fieldErrors.editCategoryTitle && <p className="text-xs font-medium text-red-600">{fieldErrors.editCategoryTitle}</p>}
                 </div>
               ) : (
                 <>
@@ -271,7 +302,7 @@ export default function AdminFAQ() {
                     <p className="text-xs text-gray-400">{cat.items.length} question{cat.items.length === 1 ? '' : 's'}</p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditingCategory(cat.id ?? null); setEditCategoryTitle(cat.title) }}
+                    <button onClick={() => { setFieldErrors({}); setEditingCategory(cat.id ?? null); setEditCategoryTitle(cat.title) }}
                       className="p-1.5 text-gray-400 hover:text-orange-500 rounded-lg hover:bg-orange-50 transition-colors" title="Rename">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>

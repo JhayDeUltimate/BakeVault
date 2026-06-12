@@ -3,6 +3,7 @@ import { useCategories } from '@/hooks'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import { supabase } from '@/lib/supabase'
+import { friendlyErrorMessage } from '@/lib/error-messages'
 import { normalizeProductDescription, parseProductDescription } from '@/lib/product-description'
 import * as Sentry from '@sentry/react'
 import type { DBProductWithCategory } from '@/lib/database.types'
@@ -27,6 +28,7 @@ export interface ProductFormData {
 }
 
 type SpecMap = Record<string, string>
+type FieldErrors = Partial<Record<'name' | 'category_id' | 'image_url' | 'summary' | 'keyFeatures', string>>
 
 interface StructuredDescription {
   summary: string
@@ -183,13 +185,20 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
   const [saving, setSaving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
   function set<K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
+    if (key in fieldErrors) {
+      setFieldErrors(prev => ({ ...prev, [key]: undefined }))
+    }
   }
 
   function setStructuredField<K extends keyof StructuredDescription>(key: K, value: StructuredDescription[K]) {
     setStructured(prev => ({ ...prev, [key]: value }))
+    if (key === 'summary' || key === 'keyFeatures') {
+      setFieldErrors(prev => ({ ...prev, [key]: undefined }))
+    }
   }
 
   function setSpec(label: string, value: string) {
@@ -276,13 +285,39 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.image_url?.trim()) { setError('Please upload a product photo before saving.'); return }
+    const nextFieldErrors: FieldErrors = {}
+    if (!form.name.trim()) nextFieldErrors.name = 'Enter a product name.'
+    if (!form.category_id.trim()) {
+      nextFieldErrors.category_id = categories.length === 0
+        ? 'Create a product category first, then select it.'
+        : 'Select a product category.'
+    }
+    if (!form.image_url?.trim()) nextFieldErrors.image_url = 'Upload or paste a main product photo.'
+    if (!structured.summary.trim()) nextFieldErrors.summary = 'Add a short summary sentence.'
+
+    const featureCount = linesFromText(structured.keyFeatures).length
+    if (featureCount < 2 || featureCount > 8) {
+      nextFieldErrors.keyFeatures = 'Add 2 to 8 key features, one per line.'
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors)
+      setError('Fix the highlighted fields before saving.')
+      return
+    }
+
     const composedDescription = composeDescription(structured)
     const description = normalizeProductDescription(composedDescription)
-    if (!description.ok) { setError(description.error); return }
+    if (!description.ok) {
+      const key = description.error.includes('feature') ? 'keyFeatures' : 'summary'
+      setFieldErrors({ [key]: description.error })
+      setError(description.error)
+      return
+    }
     try {
       setSaving(true)
       setError(null)
+      setFieldErrors({})
       await onSave({
         ...form,
         name: form.name.trim(),
@@ -291,7 +326,7 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
         image_urls: form.image_urls,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed')
+      setError(friendlyErrorMessage(err, 'Product could not be saved. Check the required fields and try again.'))
     } finally {
       setSaving(false)
     }
@@ -300,10 +335,14 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
   const label = 'block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1'
   const input = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400'
   const textarea = `${input} resize-y min-h-28`
+  const invalidInput = 'border-red-300 bg-red-50/40 focus:ring-red-300'
   const hint = 'mt-1 text-xs text-gray-400'
+  const fieldError = 'mt-1 text-xs font-medium text-red-600'
+  const inputClass = (field: keyof FieldErrors) => `${input} ${fieldErrors[field] ? invalidInput : ''}`
+  const textareaClass = (field: keyof FieldErrors) => `${textarea} ${fieldErrors[field] ? invalidInput : ''}`
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {error && (
         <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200 leading-snug">
           {error}
@@ -315,14 +354,16 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
           <div>
             <label className={label}>Product Name *</label>
             <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
-              placeholder="e.g. Yogourmet Probiotic Yogurt Starter" className={input} required />
+              placeholder="e.g. Yogourmet Probiotic Yogurt Starter" className={inputClass('name')} />
+            {fieldErrors.name && <p className={fieldError}>{fieldErrors.name}</p>}
           </div>
           <div>
-            <label className={label}>Category</label>
-            <select value={form.category_id} onChange={e => set('category_id', e.target.value)} className={input}>
-              <option value="">No category</option>
+            <label className={label}>Category *</label>
+            <select value={form.category_id} onChange={e => set('category_id', e.target.value)} className={inputClass('category_id')}>
+              <option value="">{categories.length === 0 ? 'No categories available' : 'Select a category'}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+            {fieldErrors.category_id && <p className={fieldError}>{fieldErrors.category_id}</p>}
           </div>
           <div>
             <label className={label}>Price Type</label>
@@ -335,7 +376,7 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <section className={`rounded-xl border bg-white p-5 shadow-sm ${fieldErrors.image_url ? 'border-red-200' : 'border-gray-100'}`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-black uppercase tracking-wide text-gray-700">Images</h2>
@@ -361,7 +402,8 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
           <input type="url" value={form.image_url}
             onChange={e => { set('image_url', e.target.value); set('image_urls', [e.target.value, ...form.image_urls.slice(1)].filter(Boolean)) }}
             placeholder="Or paste a Supabase Storage or external image URL"
-            className={`${input} mt-3 text-xs`} />
+            className={`${inputClass('image_url')} mt-3 text-xs`} />
+          {fieldErrors.image_url && <p className={fieldError}>{fieldErrors.image_url}</p>}
         </div>
         <div className="mt-4">
           <label className={label}>Additional Photos (up to 4 more)</label>
@@ -385,7 +427,8 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
               onChange={e => setStructuredField('summary', e.target.value)}
               rows={2}
               placeholder="One sentence explaining what the product is and its main use."
-              className={textarea} />
+              className={textareaClass('summary')} />
+            {fieldErrors.summary && <p className={fieldError}>{fieldErrors.summary}</p>}
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -394,7 +437,8 @@ export default function ProductForm({ initial, nextDisplayOrder, onSave, onCance
               <textarea value={structured.keyFeatures}
                 onChange={e => setStructuredField('keyFeatures', e.target.value)}
                 placeholder={'Freeze-dried starter culture\nSuitable for homemade yogurt\nPowder format for easy use'}
-                className={textarea} />
+                className={textareaClass('keyFeatures')} />
+              {fieldErrors.keyFeatures && <p className={fieldError}>{fieldErrors.keyFeatures}</p>}
               <p className={hint}>One feature per line. You do not need to type bullet symbols.</p>
             </div>
             <div>

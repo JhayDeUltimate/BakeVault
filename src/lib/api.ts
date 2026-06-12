@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { logger } from './logger'
+import { friendlyErrorMessage } from './error-messages'
 import { SESSION_ID } from './session-id'
 import { logAdminActivity } from './admin-activity'
 import { mapDBFAQs, type FAQCategoryData } from './faq'
@@ -92,6 +93,10 @@ export async function getProductById(id: string): Promise<DBProductWithCategory>
   return data as DBProductWithCategory
 }
 
+function throwFriendlyError(error: unknown, fallback?: string): never {
+  throw new Error(friendlyErrorMessage(error, fallback))
+}
+
 export async function getNextProductDisplayOrder(): Promise<number> {
   const { data, error } = await supabase
     .from('products')
@@ -111,11 +116,17 @@ export async function createProduct(product: {
 }): Promise<DBProductWithCategory> {
   const slug = toSlug(product.name)
   const displayOrder = product.display_order ?? await getNextProductDisplayOrder()
-  const payload = { ...product, slug, image_urls: product.image_urls ?? [], display_order: displayOrder }
+  const payload = {
+    ...product,
+    category_id: product.category_id?.trim() || null,
+    slug,
+    image_urls: product.image_urls ?? [],
+    display_order: displayOrder,
+  }
   const { data, error } = await supabase.from('products').insert(payload).select('*, categories(*)').single()
   if (error) {
     if (error.code === '23505') throw new Error('A product with this name already exists.')
-    throw new Error(error.message)
+    throwFriendlyError(error, 'Product could not be created. Check the required fields and try again.')
   }
   void (async () => {
     try {
@@ -136,13 +147,14 @@ export async function updateProduct(
 ): Promise<DBProductWithCategory> {
   const payload: Database['public']['Tables']['products']['Update'] = {
     ...updates,
+    category_id: typeof updates.category_id === 'string' ? updates.category_id.trim() || null : updates.category_id,
     updated_at: new Date().toISOString(),
   }
   // Slug is intentionally NOT regenerated here.
   // Slugs are frozen at creation to preserve URL stability.
   // Renaming a product updates its display name only, not its URL.
   const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*, categories(*)').single()
-  if (error) throw new Error(error.message)
+  if (error) throwFriendlyError(error, 'Product could not be updated. Check the required fields and try again.')
   void (async () => {
     try {
       const updated = data as DBProductWithCategory
@@ -492,15 +504,25 @@ export async function createProductRequest(req: {
   notes?: string; contact_info?: string
 }): Promise<DBProductRequest> {
   // Client-side rate limit check (defense in depth)
-  const throttleKey = `product_request_${SESSION_ID}`
-  const lastRequest = sessionStorage.getItem(throttleKey)
-  if (lastRequest) {
-    const timeSince = Date.now() - parseInt(lastRequest, 10)
-    if (timeSince < 30_000) {
-      throw new Error('Please wait a moment before submitting another request.')
+  // Wrapped in try/catch: sessionStorage throws in iOS Safari private mode
+  try {
+    const throttleKey = `product_request_${SESSION_ID}`
+    const lastRequest = sessionStorage.getItem(throttleKey)
+    if (lastRequest) {
+      const timeSince = Date.now() - parseInt(lastRequest, 10)
+      if (timeSince < 30_000) {
+        throw new Error('Please wait a moment before submitting another request.')
+      }
     }
+    sessionStorage.setItem(throttleKey, String(Date.now()))
+  } catch (err) {
+    // If it's our own rate-limit error, re-throw it
+    if (err instanceof Error && err.message.includes('Please wait')) {
+      throw err
+    }
+    // Otherwise sessionStorage is unavailable (private mode) — proceed without client throttle
+    // The server-side throttle still applies
   }
-  sessionStorage.setItem(throttleKey, String(Date.now()))
 
   const timeout = new Promise<never>((_, reject) => {
     globalThis.setTimeout(() => reject(new Error('Product request timed out after 15 seconds.')), 15_000)

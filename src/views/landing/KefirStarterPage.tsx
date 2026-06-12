@@ -10,6 +10,13 @@ export default function KefirStarterPage() {
       <Helmet>
         <title>Kefir Starter Culture in Lagos Nigeria | BakeVault</title>
         <meta name="description" content="Buy kefir starter culture in Lagos Nigeria. Make probiotic milk kefir at home or for your health food business. Same-day delivery. Wholesale and retail. Order via WhatsApp." />
+        <meta property="og:title" content="Kefir Starter Culture in Lagos Nigeria | BakeVault" />
+        <meta property="og:description" content="Buy kefir starter culture in Lagos Nigeria. Make probiotic milk kefir at home or for your health food business. Same-day delivery. Wholesale and retail. Order via WhatsApp." />
+        <meta property="og:image" content="https://bakevault.com.ng/og-image.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://bakevault.com.ng/og-image.jpg" />
         <link rel="canonical" href="https://bakevault.com.ng/kefir-starter-lagos" />
       </Helmet>
 

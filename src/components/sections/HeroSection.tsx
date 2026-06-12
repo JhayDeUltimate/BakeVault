@@ -7,7 +7,7 @@ interface HeroSectionProps {
   onAddToCart: (product: DBProductWithCategory) => void
 }
 
-const SLIDE_INTERVAL_MS = 5000
+const SLIDE_INTERVAL_MS = 10_000
 
 const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
   const [currentSlide, setCurrentSlide] = useState(0)

@@ -513,6 +513,7 @@ export default function ProductPage() {
 
         <div id="product-assistant" ref={assistantRef} className="scroll-mt-24">
           <ProductAssistant
+            key={product.id}
             productName={product.name}
             productDescription={product.description ?? ''}
           />
