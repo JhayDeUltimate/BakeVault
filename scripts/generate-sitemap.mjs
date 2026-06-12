@@ -48,7 +48,7 @@ async function fetchProductSlugs(supabaseUrl, supabaseKey) {
 
   while (true) {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/products?select=slug,updated_at&is_available=eq.true&order=slug.asc&limit=${PAGE}&offset=${from}`,
+      `${supabaseUrl}/rest/v1/products?select=slug,updated_at,created_at&is_available=eq.true&order=slug.asc&limit=${PAGE}&offset=${from}`,
       {
         headers: {
           apikey: supabaseKey,
@@ -84,8 +84,12 @@ function toXml(staticUrls, productRows) {
     <priority>${priority}</priority>
   </url>`).join('')
 
-  const productEntries = productRows.map(({ slug, updated_at }) => {
-    const lastmod = updated_at ? updated_at.split('T')[0] : today
+  const productEntries = productRows.map(({ slug, updated_at, created_at }) => {
+    // Products created before the updated_at trigger was added will have updated_at == created_at.
+    // In that case, fall back to today to avoid signalling stale content to Google.
+    const lastmod = (updated_at && updated_at !== created_at)
+      ? updated_at.split('T')[0]
+      : today
     return `
   <url>
     <loc>${SITE_URL}/products/${slug}</loc>

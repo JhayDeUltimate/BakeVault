@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { submitCustomerReview } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
+import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { DBTestimonial } from '../../lib/database.types'
 
 interface Props { testimonials: DBTestimonial[] }
@@ -42,6 +43,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'customer_name' | 'quote', string>>>({})
 
   useEffect(() => {
     setItems(testimonials)
@@ -50,12 +52,15 @@ export default function TestimonialsSection({ testimonials }: Props) {
 
   useEffect(() => {
     if (items.length <= 1) return
-    const t = window.setInterval(() => setCurrent(p => (p + 1) % items.length), 3500)
+    const t = window.setInterval(() => setCurrent(p => (p + 1) % items.length), 10_000)
     return () => clearInterval(t)
   }, [items.length])
 
   function set(key: keyof typeof form, value: string | number) {
     setForm(prev => ({ ...prev, [key]: value }))
+    if (key === 'customer_name' || key === 'quote') {
+      setFieldErrors(prev => ({ ...prev, [key]: undefined }))
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -65,14 +70,19 @@ export default function TestimonialsSection({ testimonials }: Props) {
       setForm(EMPTY_FORM)
       return
     }
-    if (!form.customer_name.trim() || !form.quote.trim()) {
-      setError('Your name and review are required.')
+    const nextErrors: Partial<Record<'customer_name' | 'quote', string>> = {}
+    if (!form.customer_name.trim()) nextErrors.customer_name = 'Enter your name.'
+    if (!form.quote.trim()) nextErrors.quote = 'Enter your review.'
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors)
+      setError('Fix the highlighted fields before submitting your review.')
       return
     }
 
     try {
       setSaving(true)
       setError(null)
+      setFieldErrors({})
       const submitted = await submitCustomerReview({
         customer_name: form.customer_name,
         business_name: form.business_name,
@@ -83,7 +93,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
       setDone(true)
       trackEvent('review_submitted', { rating: submitted.rating })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Review submission failed. Please try again.')
+      setError(friendlyErrorMessage(err, 'Review submission failed. Please try again.'))
     } finally {
       setSaving(false)
     }
@@ -159,7 +169,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
             <input
               value={form.company_website}
               onChange={e => set('company_website', e.target.value)}
@@ -176,10 +186,11 @@ export default function TestimonialsSection({ testimonials }: Props) {
               <input
                 value={form.customer_name}
                 onChange={e => set('customer_name', e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-brand-cream/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                maxLength={200}
+                className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${fieldErrors.customer_name ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-gray-200 bg-brand-cream/30 focus:ring-brand-orange/30'}`}
                 placeholder="e.g. Amaka O."
-                required
               />
+              {fieldErrors.customer_name && <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.customer_name}</p>}
             </div>
 
             <div>
@@ -189,6 +200,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
               <input
                 value={form.business_name}
                 onChange={e => set('business_name', e.target.value)}
+                maxLength={200}
                 className="w-full rounded-xl border border-gray-200 bg-brand-cream/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                 placeholder="Optional"
               />
@@ -221,12 +233,18 @@ export default function TestimonialsSection({ testimonials }: Props) {
               </label>
               <textarea
                 value={form.quote}
-                onChange={e => set('quote', e.target.value)}
+                onChange={e => set('quote', e.target.value.slice(0, 5000))}
                 rows={4}
-                className="w-full resize-none rounded-xl border border-gray-200 bg-brand-cream/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                maxLength={5000}
+                className={`w-full resize-none rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${fieldErrors.quote ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-gray-200 bg-brand-cream/30 focus:ring-brand-orange/30'}`}
                 placeholder="Tell other bakers what you liked..."
-                required
               />
+              {fieldErrors.quote && <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.quote}</p>}
+              {form.quote.length > 4000 && (
+                <p className="mt-1 text-right text-xs text-brand-darkGray/40">
+                  {5000 - form.quote.length} characters remaining
+                </p>
+              )}
             </div>
 
             <button

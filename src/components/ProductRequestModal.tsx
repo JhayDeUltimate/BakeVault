@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createProductRequest } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
+import { friendlyErrorMessage } from '@/lib/error-messages'
 import { logger } from '@/lib/logger'
 import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock'
 
@@ -19,6 +20,7 @@ export default function ProductRequestModal({ onClose }: Props) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'product_name', string>>>({})
 
   useEffect(() => {
     lockBodyScroll()
@@ -27,6 +29,7 @@ export default function ProductRequestModal({ onClose }: Props) {
 
   function set(key: keyof typeof form, val: string) {
     setForm(p => ({ ...p, [key]: val }))
+    if (key === 'product_name') setFieldErrors({})
   }
 
   async function submitRequest() {
@@ -40,11 +43,16 @@ export default function ProductRequestModal({ onClose }: Props) {
       viewport_width: typeof window === 'undefined' ? undefined : window.innerWidth,
       viewport_height: typeof window === 'undefined' ? undefined : window.innerHeight,
     })
-    if (!form.product_name.trim()) { setError('Product name is required.'); return }
+    if (!form.product_name.trim()) {
+      setFieldErrors({ product_name: 'Enter the product name you want us to source.' })
+      setError('Enter the product name before submitting.')
+      return
+    }
 
     try {
       setSaving(true)
       setError(null)
+      setFieldErrors({})
       await createProductRequest({
         product_name: form.product_name.trim(),
         product_size: form.product_size || undefined,
@@ -55,7 +63,7 @@ export default function ProductRequestModal({ onClose }: Props) {
       trackEvent('product_request_submitted', { product_name: form.product_name })
       setDone(true)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Submission failed.'
+      const msg = friendlyErrorMessage(err, 'Submission failed. Please try again.')
       logger.error('Product request submit failed', err, {
         event: 'product_request_submit_failed',
         page: 'product_request_modal',
@@ -86,6 +94,7 @@ export default function ProductRequestModal({ onClose }: Props) {
   }
 
   const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-orange/30 bg-brand-cream/30'
+  const invalidCls = 'border-red-300 bg-red-50/50 focus:ring-red-300'
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
@@ -123,7 +132,7 @@ export default function ProductRequestModal({ onClose }: Props) {
             </div>
           </div>
         ) : (
-          <form id="product-request-form" onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <form id="product-request-form" onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
             <div className="overflow-y-auto px-6 pt-6 sm:px-8 sm:pt-8">
               <h2 className="mb-1 pr-10 font-display text-xl font-extrabold text-brand-darkGray">Can't find it? Request it.</h2>
               <p className="mb-6 text-xs text-brand-darkGray/50">
@@ -145,9 +154,12 @@ export default function ProductRequestModal({ onClose }: Props) {
                     value={form.product_name}
                     onChange={e => set('product_name', e.target.value)}
                     placeholder="e.g. Yogourmet Freeze-Dried Yogurt Starter"
-                    className={inputCls}
-                    required
+                    className={`${inputCls} ${fieldErrors.product_name ? invalidCls : ''}`}
+                    maxLength={500}
                   />
+                  {fieldErrors.product_name && (
+                    <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.product_name}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -162,6 +174,7 @@ export default function ProductRequestModal({ onClose }: Props) {
                       onChange={e => set('product_size', e.target.value)}
                       placeholder="e.g. 1kg"
                       className={inputCls}
+                      maxLength={100}
                     />
                     <datalist id="size-suggestions">
                       {SIZE_SUGGESTIONS.map(s => <option key={s} value={s} />)}
@@ -192,6 +205,7 @@ export default function ProductRequestModal({ onClose }: Props) {
                     rows={2}
                     placeholder="Brand preference, urgency, or other details..."
                     className={`${inputCls} resize-none`}
+                    maxLength={2000}
                   />
                 </div>
 
@@ -204,6 +218,7 @@ export default function ProductRequestModal({ onClose }: Props) {
                     onChange={e => set('contact_info', e.target.value)}
                     placeholder="e.g. +2348012345678 or you@email.com"
                     className={inputCls}
+                    maxLength={500}
                   />
                   <p className="mt-1 text-[10px] text-brand-darkGray/40">
                     Optional, so we can update you when the product is available.

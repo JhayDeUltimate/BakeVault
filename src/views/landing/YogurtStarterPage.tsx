@@ -12,6 +12,11 @@ export default function YogurtStarterPage() {
         <meta name="description" content="Buy yogurt starter culture in Lagos Nigeria. Yogourmet, Probio, and kefir starters available wholesale and retail. Same-day delivery within Lagos. Order via WhatsApp." />
         <meta property="og:title" content="Yogurt Starter Culture in Lagos Nigeria | BakeVault" />
         <meta property="og:description" content="Buy yogurt starter culture in Lagos Nigeria. Yogourmet, Probio, and kefir starters available wholesale and retail. Same-day delivery within Lagos. Order via WhatsApp." />
+        <meta property="og:image" content="https://bakevault.com.ng/og-image.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://bakevault.com.ng/og-image.jpg" />
         <link rel="canonical" href="https://bakevault.com.ng/yogurt-starter-lagos" />
       </Helmet>
 

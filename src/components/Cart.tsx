@@ -169,6 +169,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
                                     key={type}
                                     type="button"
                                     onClick={() => setPref(item.id, type)}
+                                    aria-pressed={getPref(item.id) === type}
                                     className={`flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider transition-colors ${
                                       getPref(item.id) === type
                                         ? 'bg-brand-orange text-white'

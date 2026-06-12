@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getTestimonials, createTestimonial, updateTestimonial, deleteTestimonial } from '@/lib/api'
+import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { DBTestimonial } from '@/lib/database.types'
 
 export function AdminTestimonials() {
@@ -9,6 +10,7 @@ export function AdminTestimonials() {
   const [form,         setForm]         = useState({ customer_name: '', business_name: '', initials: '', quote: '', rating: 5, is_visible: true })
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState<string | null>(null)
+  const [formErrors,   setFormErrors]   = useState<Partial<Record<'customer_name' | 'quote', string>>>({})
   const [activeTab,    setActiveTab]    = useState<'pending' | 'approved'>('pending')
 
   useEffect(() => {
@@ -16,8 +18,8 @@ export function AdminTestimonials() {
     getTestimonials(false).then(setTestimonials).catch(e => setError(e.message)).finally(() => setLoading(false))
   }, [])
 
-  function openAdd()                   { setForm({ customer_name: '', business_name: '', initials: '', quote: '', rating: 5, is_visible: true }); setModal('add') }
-  function openEdit(t: DBTestimonial)  { setForm({ customer_name: t.customer_name, business_name: t.business_name ?? '', initials: t.initials ?? '', quote: t.quote, rating: t.rating ?? 5, is_visible: t.is_visible }); setModal(t) }
+  function openAdd()                   { setFormErrors({}); setError(null); setForm({ customer_name: '', business_name: '', initials: '', quote: '', rating: 5, is_visible: true }); setModal('add') }
+  function openEdit(t: DBTestimonial)  { setFormErrors({}); setError(null); setForm({ customer_name: t.customer_name, business_name: t.business_name ?? '', initials: t.initials ?? '', quote: t.quote, rating: t.rating ?? 5, is_visible: t.is_visible }); setModal(t) }
 
   async function handleApprove(t: DBTestimonial) {
     try {
@@ -31,9 +33,16 @@ export function AdminTestimonials() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.customer_name.trim() || !form.quote.trim()) { setError('Name and quote are required.'); return }
+    const nextErrors: Partial<Record<'customer_name' | 'quote', string>> = {}
+    if (!form.customer_name.trim()) nextErrors.customer_name = 'Enter the customer name.'
+    if (!form.quote.trim()) nextErrors.quote = 'Enter the review text.'
+    if (Object.keys(nextErrors).length > 0) {
+      setFormErrors(nextErrors)
+      setError('Fix the highlighted fields before saving.')
+      return
+    }
     try {
-      setSaving(true); setError(null)
+      setSaving(true); setError(null); setFormErrors({})
       if (modal === 'add') {
         const created = await createTestimonial(form)
         setTestimonials(prev => [created, ...prev])
@@ -42,7 +51,7 @@ export function AdminTestimonials() {
         setTestimonials(prev => prev.map(t => t.id === modal.id ? updated : t))
       }
       setModal(null)
-    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    } catch (err) { setError(friendlyErrorMessage(err, 'Testimonial could not be saved. Check the required fields and try again.')) }
     finally { setSaving(false) }
   }
 
@@ -163,16 +172,31 @@ export function AdminTestimonials() {
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <h2 className="text-lg font-bold text-gray-800 mb-5">{modal === 'add' ? 'Add Testimonial' : 'Edit Testimonial'}</h2>
             {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4" noValidate>
               {([['customer_name','Customer Name *', 'e.g. Amaka O.'], ['business_name','Business Name','e.g. Lagos Pastries'], ['initials','Initials (auto if blank)','e.g. AO']] as const).map(([key, lbl, ph]) => (
                 <div key={key}>
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lbl}</label>
-                  <input value={form[key as keyof typeof form] as string} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                  <input
+                    value={form[key as keyof typeof form] as string}
+                    onChange={e => { setForm(p => ({ ...p, [key]: e.target.value })); if (key === 'customer_name') setFormErrors(p => ({ ...p, customer_name: undefined })) }}
+                    placeholder={ph}
+                    maxLength={key === 'initials' ? 10 : 200}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${formErrors.customer_name && key === 'customer_name' ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-gray-200 focus:ring-orange-400'}`}
+                  />
+                  {key === 'customer_name' && formErrors.customer_name && <p className="mt-1 text-xs font-medium text-red-600">{formErrors.customer_name}</p>}
                 </div>
               ))}
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Quote *</label>
-                <textarea value={form.quote} onChange={e => setForm(p => ({ ...p, quote: e.target.value }))} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+                <textarea
+                  value={form.quote}
+                  onChange={e => { setForm(p => ({ ...p, quote: e.target.value.slice(0, 5000) })); setFormErrors(p => ({ ...p, quote: undefined })) }}
+                  rows={3}
+                  maxLength={5000}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${formErrors.quote ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-gray-200 focus:ring-orange-400'}`}
+                />
+                {formErrors.quote && <p className="mt-1 text-xs font-medium text-red-600">{formErrors.quote}</p>}
+                {form.quote.length > 4000 && <p className="mt-1 text-right text-xs text-gray-400">{5000 - form.quote.length} characters remaining</p>}
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Rating *</label>

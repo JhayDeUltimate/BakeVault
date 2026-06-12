@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useCategories } from '@/hooks'
 import { createCategory, updateCategory, deleteCategory } from '@/lib/api'
+import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { DBCategory } from '@/lib/database.types'
 
 export function AdminCategories() {
@@ -16,6 +17,7 @@ export function AdminCategories() {
   const [savingNew, setSavingNew] = useState(false)
   const [savingEdit,setSavingEdit]= useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'newName' | 'editName', string>>>({})
   const [success,   setSuccess]   = useState<string | null>(null)
 
   function flash(msg: string) {
@@ -26,9 +28,13 @@ export function AdminCategories() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     const name = newName.trim()
-    if (!name) return
+    if (!name) {
+      setFieldErrors({ newName: 'Enter a category name.' })
+      setFormError('Enter a category name before adding it.')
+      return
+    }
     try {
-      setSavingNew(true); setFormError(null)
+      setSavingNew(true); setFormError(null); setFieldErrors({})
       const nextOrder = categories.length > 0
         ? Math.max(...categories.map(c => c.display_order)) + 1
         : 0
@@ -42,7 +48,7 @@ export function AdminCategories() {
       await refetch()
       flash(`"${name}" added successfully.`)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to add category'
+      const msg = friendlyErrorMessage(err, 'Failed to add category. Check the required fields and try again.')
       setFormError(
         msg.includes('row-level security') || msg.includes('violates')
           ? 'Permission denied — run the SQL migration in Supabase to enable category management.'
@@ -55,9 +61,13 @@ export function AdminCategories() {
 
   async function handleUpdate(cat: DBCategory) {
     const name = editName.trim()
-    if (!name) return
+    if (!name) {
+      setFieldErrors({ editName: 'Enter a category name.' })
+      setFormError('Enter a category name before saving.')
+      return
+    }
     try {
-      setSavingEdit(true); setFormError(null)
+      setSavingEdit(true); setFormError(null); setFieldErrors({})
       await updateCategory(cat.id, {
         name,
         seo_title: editSeoTitle.trim() || null,
@@ -67,7 +77,7 @@ export function AdminCategories() {
       await refetch()
       flash(`"${name}" updated successfully.`)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update category'
+      const msg = friendlyErrorMessage(err, 'Failed to update category. Check the required fields and try again.')
       setFormError(
         msg.includes('row-level security') || msg.includes('violates')
           ? 'Permission denied — run the SQL migration in Supabase to enable category management.'
@@ -97,6 +107,7 @@ export function AdminCategories() {
     setEditSeoTitle(cat.seo_title ?? '')
     setEditSeoDescription(cat.seo_description ?? '')
     setFormError(null)
+    setFieldErrors({})
   }
 
   function cancelEdit() {
@@ -105,6 +116,7 @@ export function AdminCategories() {
     setEditSeoTitle('')
     setEditSeoDescription('')
     setFormError(null)
+    setFieldErrors({})
   }
 
   if (loading) return (
@@ -135,10 +147,10 @@ export function AdminCategories() {
       )}
 
       {/* Add form */}
-      <form onSubmit={handleCreate} className="grid gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+      <form onSubmit={handleCreate} className="grid gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm" noValidate>
         <input
           value={newName}
-          onChange={e => { setNewName(e.target.value); setFormError(null) }}
+          onChange={e => { setNewName(e.target.value); setFormError(null); setFieldErrors(p => ({ ...p, newName: undefined })) }}
           placeholder="New category name…"
           className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
@@ -146,8 +158,9 @@ export function AdminCategories() {
           value={newSeoTitle}
           onChange={e => { setNewSeoTitle(e.target.value); setFormError(null) }}
           placeholder="SEO title (optional)"
-          className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className={`min-w-0 flex-1 border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${fieldErrors.newName ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-gray-200 focus:ring-orange-400'}`}
         />
+        {fieldErrors.newName && <p className="-mt-2 text-xs font-medium text-red-600">{fieldErrors.newName}</p>}
         <textarea
           value={newSeoDescription}
           onChange={e => { setNewSeoDescription(e.target.value); setFormError(null) }}
@@ -157,7 +170,7 @@ export function AdminCategories() {
         />
         <button
           type="submit"
-          disabled={savingNew || !newName.trim()}
+          disabled={savingNew}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed sm:w-auto sm:justify-self-start"
         >
           {savingNew ? 'Adding…' : 'Add'}
@@ -180,11 +193,12 @@ export function AdminCategories() {
                 <div className="grid flex-1 gap-3">
                   <input
                     value={editName}
-                    onChange={e => setEditName(e.target.value)}
+                    onChange={e => { setEditName(e.target.value); setFieldErrors(p => ({ ...p, editName: undefined })) }}
                     onKeyDown={e => { if (e.key === 'Enter') handleUpdate(cat); if (e.key === 'Escape') cancelEdit() }}
-                    className="min-w-0 flex-1 border border-orange-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className={`min-w-0 flex-1 border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 ${fieldErrors.editName ? 'border-red-300 bg-red-50/50 focus:ring-red-300' : 'border-orange-300 focus:ring-orange-400'}`}
                     autoFocus
                   />
+                  {fieldErrors.editName && <p className="-mt-2 text-xs font-medium text-red-600">{fieldErrors.editName}</p>}
                   <input
                     value={editSeoTitle}
                     onChange={e => setEditSeoTitle(e.target.value)}
@@ -201,7 +215,7 @@ export function AdminCategories() {
                   <div className="flex gap-3">
                   <button
                     onClick={() => handleUpdate(cat)}
-                    disabled={savingEdit || !editName.trim()}
+                    disabled={savingEdit}
                     className="text-sm text-orange-600 font-semibold hover:text-orange-700 disabled:opacity-50 shrink-0"
                   >
                     {savingEdit ? 'Saving…' : 'Save'}

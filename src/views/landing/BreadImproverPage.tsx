@@ -10,6 +10,13 @@ export default function BreadImproverPage() {
       <Helmet>
         <title>Bread Improver &amp; Dough Conditioner in Lagos Nigeria | BakeVault</title>
         <meta name="description" content="Buy bread improver and dough conditioner in Lagos Nigeria. Dynamil Blue, enzymes, and emulsifiers for commercial bakeries. ADA and bromate-free. Wholesale pricing. Same-day delivery." />
+        <meta property="og:title" content="Bread Improver & Dough Conditioner in Lagos Nigeria | BakeVault" />
+        <meta property="og:description" content="Buy bread improver and dough conditioner in Lagos Nigeria. Dynamil Blue, enzymes, and emulsifiers for commercial bakeries. ADA and bromate-free. Wholesale pricing. Same-day delivery." />
+        <meta property="og:image" content="https://bakevault.com.ng/og-image.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://bakevault.com.ng/og-image.jpg" />
         <link rel="canonical" href="https://bakevault.com.ng/bread-improver-lagos" />
       </Helmet>
 

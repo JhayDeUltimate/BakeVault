@@ -31,25 +31,44 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: |
-          DIFF=$(cat pr_diff.txt | head -c 20000)
-          
+          # Write the diff to a temp file to avoid shell injection via string interpolation
+          head -c 20000 pr_diff.txt > safe_diff.txt
+
+          # Build JSON payload using jq (safe — handles all special characters)
+          PROMPT="Review this PR diff for BakeVault (React 19 + TypeScript + Supabase + Vite).\n\nFlag as CRITICAL (blocks merge):\n- Supabase RLS policies that allow unauthenticated reads/writes to admins, enquiries, or testimonials tables\n- Exposed API keys or secrets in client-side code\n- Auth bypass in admin routes (ProtectedRoute, AdminLayout)\n- SQL injection via unsanitized Supabase query params\n- Business logic errors in cart checkout or WhatsApp order flow\n- Image deletion without URL validation (must check Supabase hostname)\n\nFlag as WARNING (informational):\n- N+1 queries in useProducts or api.ts\n- Missing error handling in Supabase calls\n- Unhandled edge cases in logEnquiry retry logic\n- Missing loading/error states\n\nIGNORE completely: formatting, naming conventions, import order, TypeScript strictness preferences.\n\nDiff:"
+
+          DIFF_CONTENT=$(cat safe_diff.txt)
+
+          REQUEST_BODY=$(jq -n \
+            --arg prompt "$PROMPT" \
+            --arg diff "$DIFF_CONTENT" \
+            '{
+              model: "claude-sonnet-4-6",
+              max_tokens: 1024,
+              messages: [{
+                role: "user",
+                content: ($prompt + "\n\n" + $diff)
+              }]
+            }')
+
           REVIEW=$(curl -s https://api.anthropic.com/v1/messages \
             -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
-            -d "{
-              \"model\": \"claude-sonnet-4-6\",
-              \"max_tokens\": 1024,
-              \"messages\": [{
-                \"role\": \"user\",
-                \"content\": \"Review this PR diff for BakeVault (React 19 + TypeScript + Supabase + Vite).\\n\\nFlag as CRITICAL (blocks merge):\\n- Supabase RLS policies that allow unauthenticated reads/writes to admins, enquiries, or testimonials tables\\n- Exposed API keys or secrets in client-side code\\n- Auth bypass in admin routes (ProtectedRoute, AdminLayout)\\n- SQL injection via unsanitized Supabase query params\\n- Business logic errors in cart checkout or WhatsApp order flow\\n- Image deletion without URL validation (must check Supabase hostname)\\n\\nFlag as WARNING (informational):\\n- N+1 queries in useProducts or api.ts\\n- Missing error handling in Supabase calls\\n- Unhandled edge cases in logEnquiry retry logic\\n- Missing loading/error states\\n\\nIGNORE completely: formatting, naming conventions, import order, TypeScript strictness preferences.\\n\\nDiff:\\n\\n$(echo $DIFF | sed 's/\"/\\\"/g')\"
-              }]
-            }")
-          
-          COMMENT=$(echo $REVIEW | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['content'][0]['text'])" 2>/dev/null || echo "AI review failed to parse response")
+            -d "$REQUEST_BODY")
+
+          COMMENT=$(echo "$REVIEW" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              print(d['content'][0]['text'])
+          except Exception as e:
+              print(f'AI review failed to parse response: {e}')
+          " 2>/dev/null || echo "AI review failed to parse response")
+
           echo "$COMMENT" > review_output.txt
-          
-          gh pr comment $PR_NUMBER --repo $REPO --body "## 🤖 AI Code Review
+
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "## 🤖 AI Code Review
 
           $COMMENT
 
