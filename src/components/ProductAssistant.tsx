@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { CACHE_TTL, getClientCache, hashString, setClientCache, stableSerialize } from '@/lib/client-cache'
 
 interface Message { role: 'user' | 'assistant'; text: string }
+interface CachedAssistantReply { question: string; reply: string; productName: string }
 
 interface Props {
   productName:        string
@@ -18,18 +20,31 @@ export default function ProductAssistant({ productName, productDescription }: Pr
   async function send() {
     const text = input.trim()
     if (!text || loading) return
-    setInput('')
 
     const userMsg: Message = { role: 'user', text }
     const next = [...messages, userMsg]
+    const apiMessages = next.map(m => ({ role: m.role, content: m.text }))
+    const cacheKey = `ai-chat:${hashString(stableSerialize({
+      productName,
+      productDescription,
+      messages: apiMessages,
+    }))}`
+    const cached = getClientCache<CachedAssistantReply>(cacheKey)
+
+    setInput('')
+
+    if (cached) {
+      setMessages([...next, { role: 'assistant', text: cached.reply }])
+      setLoading(false)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      return
+    }
+
     setMessages(next)
     setLoading(true)
-
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
 
     try {
-      const apiMessages = next.map(m => ({ role: m.role, content: m.text }))
-
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           mode:           'chat',
@@ -58,6 +73,14 @@ export default function ProductAssistant({ productName, productDescription }: Pr
       }
 
       const reply = data?.text ?? 'Sorry, I could not get a response. Please try again.'
+      setClientCache<CachedAssistantReply>(cacheKey, {
+        question: text,
+        reply,
+        productName,
+      }, {
+        ttlMs: CACHE_TTL.aiChat,
+        storage: 'localStorage',
+      })
       setMessages(prev => [...prev, { role: 'assistant', text: reply }])
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unexpected error'

@@ -9,6 +9,7 @@ import Toast           from './ui/Toast'
 import ConsentBanner   from './ui/ConsentBanner'
 import SettingsContext from '@/lib/settings-context'
 import { getSettings } from '@/lib/api'
+import { CACHE_TTL, getOrSetClientCache } from '@/lib/client-cache'
 import { useEffect, useState } from 'react'
 import { useCart }     from '@/lib/cart-context'
 import { usePageTracking } from '@/hooks'
@@ -26,7 +27,10 @@ export default function PublicLayout() {
 
   useEffect(() => {
     let cancelled = false
-    getSettings()
+    getOrSetClientCache('settings:public', getSettings, {
+      ttlMs: CACHE_TTL.settings,
+      storage: 'localStorage',
+    })
       .then(raw => { if (!cancelled) setSettingsMap(raw) })
       .catch(() => {})
       .finally(() => { if (!cancelled) setSettingsLoading(false) })

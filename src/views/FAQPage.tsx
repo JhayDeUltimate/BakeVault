@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import SectionHeading from '@/components/ui/SectionHeading'
 import { WHATSAPP_URL } from '@/constants'
 import { getFAQs } from '@/lib/api'
+import { CACHE_TTL, getOrSetClientCache } from '@/lib/client-cache'
 import { FAQ_FALLBACK, type FAQCategoryData, type FAQItemData } from '@/lib/faq'
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -50,7 +51,10 @@ export default function FAQPage() {
     useEffect(() => {
         let cancelled = false
 
-        getFAQs()
+        getOrSetClientCache('faqs:visible', getFAQs, {
+            ttlMs: CACHE_TTL.faqs,
+            storage: 'localStorage',
+        })
             .then(categories => {
                 if (!cancelled && categories.length > 0) setFaqCategories(categories)
             })

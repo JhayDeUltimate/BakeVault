@@ -9,6 +9,7 @@ const TAVILY_API_URL = 'https://api.tavily.com/search'
 const MAX_MESSAGES = 40
 const FETCH_TIMEOUT_MS = 25_000   // 25s — Deno edge functions time out at 30s
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+const CHAT_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 // Structured logger helper for Supabase Edge Function logs
 function log(level: 'INFO' | 'WARN' | 'ERROR', message: string, context: Record<string, unknown> = {}) {
@@ -181,6 +182,10 @@ function sanitizeForPrompt(input: string): string {
   return input
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u2028\u2029]/g, '')
     .slice(0, 500)
+}
+
+function normalizeForCacheKey(input: string): string {
+  return input.trim()
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -745,6 +750,34 @@ Deno.serve(async (req: Request) => {
 
     // Step 1: Search for the product + user's latest question.
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+    let chatCache: { kv: Deno.Kv; key: Deno.KvKey } | null = null
+
+    try {
+      const kv = await Deno.openKv()
+      const keyHash = await sha256Hex(JSON.stringify({
+        v: 2,
+        product: {
+          name: normalizeForCacheKey(name),
+          description: normalizeForCacheKey(description),
+        },
+        messages: messages.map(m => ({
+          role: m.role,
+          content: normalizeForCacheKey(m.content),
+        })),
+      }))
+      const key: Deno.KvKey = ['chat_cache', keyHash]
+      const cached = await kv.get<{ text: string; cachedAt: string }>(key)
+
+      if (cached.value?.text) {
+        log('INFO', 'Chat cache hit', { keyHash: keyHash.slice(0, 12) })
+        return respond({ text: cached.value.text, cached: true }, origin)
+      }
+
+      chatCache = { kv, key }
+    } catch (err) {
+      log('WARN', 'Chat cache read failed', { error: err instanceof Error ? err.message : String(err) })
+    }
+
     const searchQuery = `${name} ${lastUserMsg} baking`.slice(0, 200)
     const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
 
@@ -768,6 +801,16 @@ Deno.serve(async (req: Request) => {
       }
 
       const text = extractText(geminiData)
+      if (text && chatCache) {
+        try {
+          await chatCache.kv.set(chatCache.key, {
+            text,
+            cachedAt: new Date().toISOString(),
+          }, { expireIn: CHAT_CACHE_TTL_MS })
+        } catch (err) {
+          log('WARN', 'Chat cache write failed', { error: err instanceof Error ? err.message : String(err) })
+        }
+      }
       return respond({
         text: text || 'Sorry, I could not generate a response. Please try again.',
       }, origin)

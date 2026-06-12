@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from 'react'
 import { getSettings } from '@/lib/api'
 import SettingsContext, { SettingsMap } from '@/lib/settings-context'
+import { CACHE_TTL, getOrSetClientCache } from '@/lib/client-cache'
 
 interface SiteSettings {
   whatsapp_number:      string
@@ -44,7 +45,10 @@ export function useSettings() {
     if (ctx) return
 
     let cancelled = false
-    getSettings()
+    getOrSetClientCache('settings:public', getSettings, {
+      ttlMs: CACHE_TTL.settings,
+      storage: 'localStorage',
+    })
       .then(raw => { if (!cancelled) setStandaloneSettings(mapRaw(raw)) })
       .catch(() => { /* fall back to defaults silently */ })
       .finally(() => { if (!cancelled) setStandaloneLoading(false) })
