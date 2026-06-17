@@ -22,6 +22,7 @@ const ProductPage        = lazy(() => import('@/views/ProductPage'))
 const YogurtStarterPage  = lazy(() => import('@/views/landing/YogurtStarterPage'))
 const KefirStarterPage   = lazy(() => import('@/views/landing/KefirStarterPage'))
 const BreadImproverPage  = lazy(() => import('@/views/landing/BreadImproverPage'))
+const LeaveReviewPage    = lazy(() => import('@/views/LeaveReviewPage'))
 const NotFoundPage       = lazy(() => import('@/views/NotFoundPage'))
 
 // Lazy-load all admin views so storefront visitors never download admin code
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="/terms" element={publicPage(<TermsPage />, 'Terms')} />
             <Route path="/privacy" element={publicPage(<PrivacyPage />, 'Privacy')} />
             <Route path="/products/:slug" element={publicPage(<ProductPage />, 'Product')} />
+            <Route path="/leave-review" element={publicPage(<LeaveReviewPage />, 'Leave Review')} />
             {/* SEO landing pages */}
             <Route path="/yogurt-starter-lagos" element={publicPage(<YogurtStarterPage />, 'Yogurt Starter')} />
             <Route path="/kefir-starter-lagos" element={publicPage(<KefirStarterPage />, 'Kefir Starter')} />
