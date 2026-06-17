@@ -55,7 +55,7 @@ export default function ReviewForm() {
       })
       setForm(EMPTY_FORM)
       setDone(true)
-      trackEvent('review_submitted', { rating: submitted.rating })
+      trackEvent('review_submitted', { rating: form.rating })
     } catch (err) {
       setError(storefrontSubmissionErrorMessage(
         err,

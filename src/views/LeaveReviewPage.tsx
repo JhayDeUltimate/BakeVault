@@ -1,8 +1,11 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
+import { useNavigate } from 'react-router-dom'
 import ReviewForm from '@/components/ReviewForm'
 
 export default function LeaveReviewPage() {
+  const navigate = useNavigate()
+
   return (
     <main className="flex-grow bg-brand-cream">
       <Helmet>
@@ -14,7 +17,7 @@ export default function LeaveReviewPage() {
       <section className="border-b border-orange-100 bg-white px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-2xl">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => navigate(-1)}
             className="mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-brown"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
