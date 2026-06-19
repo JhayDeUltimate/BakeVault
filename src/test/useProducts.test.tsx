@@ -38,6 +38,7 @@ describe('useProducts', () => {
       categoryId: null,
       search: '',
       featuredOnly: false,
+      includeDescription: false,
       includeUnavailable: false,
       limit: undefined,
       refetchOnFocus: false,

@@ -74,13 +74,16 @@ function randomUuid(): string {
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
+const PRODUCT_SUMMARY_COLUMNS = 'id,name,slug,image_url,image_urls,is_available,is_featured,price_type,display_order,category_id,created_at,updated_at,categories(id,name)'
+const PRODUCT_WITH_DESCRIPTION_COLUMNS = '*,categories(*)'
+
 export async function getProducts(filters?: {
   categoryId?: string | null; search?: string; featuredOnly?: boolean; includeUnavailable?: boolean; limit?: number
   includeDescription?: boolean
 }): Promise<DBProductWithCategory[]> {
   const columns = filters?.includeDescription
-    ? '*, categories(*)'
-    : 'id, name, slug, image_url, image_urls, is_available, is_featured, price_type, display_order, category_id, created_at, updated_at, categories(id, name)'
+    ? PRODUCT_WITH_DESCRIPTION_COLUMNS
+    : PRODUCT_SUMMARY_COLUMNS
   let query = supabase.from('products').select(columns).order('display_order', { ascending: true })
   if (!filters?.includeUnavailable) query = query.eq('is_available', true)
   if (filters?.featuredOnly)        query = query.eq('is_featured', true)
@@ -89,7 +92,7 @@ export async function getProducts(filters?: {
   if (filters?.limit)               query = query.limit(filters.limit)
   const { data, error } = await query
   if (error) throw new Error(error.message)
-  return (data ?? []) as DBProductWithCategory[]
+  return (data ?? []) as unknown as DBProductWithCategory[]
 }
 
 export async function getProductById(id: string): Promise<DBProductWithCategory> {
