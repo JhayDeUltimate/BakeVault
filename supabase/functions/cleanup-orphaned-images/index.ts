@@ -13,49 +13,6 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
-function encodeStoragePath(path: string): string {
-  return path.split('/').map(part => encodeURIComponent(part)).join('/')
-}
-
-function extractProductImagePath(imageUrl: string, supabaseUrl: string): string {
-  // Block encoded traversal sequences BEFORE any decoding
-  const BLOCKED_PATTERNS = ['..', '%2e%2e', '%2E%2E', '%2f', '%2F', '\\', '%5c', '%5C']
-  const rawPathname = new URL(imageUrl).pathname
-  for (const pattern of BLOCKED_PATTERNS) {
-    if (rawPathname.toLowerCase().includes(pattern.toLowerCase())) {
-      throw new Error('Invalid image URL: path traversal sequences are not allowed.')
-    }
-  }
-
-  const parsed = new URL(imageUrl)
-  const projectUrl = new URL(supabaseUrl)
-  const publicPrefix = '/storage/v1/object/public/bakevault-images/'
-
-  if (parsed.protocol !== 'https:') {
-    throw new Error('Only BakeVault Supabase Storage HTTPS URLs can be deleted.')
-  }
-  if (parsed.hostname !== projectUrl.hostname) {
-    throw new Error('Image URL is not from this Supabase project.')
-  }
-  if (!parsed.pathname.startsWith(publicPrefix)) {
-    throw new Error('Image URL is not from the bakevault-images bucket.')
-  }
-
-  const storagePath = decodeURIComponent(parsed.pathname.slice(publicPrefix.length))
-
-  if (
-    !storagePath.startsWith('products/') ||
-    storagePath.startsWith('/') ||
-    storagePath.endsWith('/') ||
-    storagePath.includes('..') ||
-    storagePath.includes('\\')
-  ) {
-    throw new Error('Only product image paths can be deleted.')
-  }
-
-  return storagePath
-}
-
 async function requireAdmin(req: Request, supabaseUrl: string, anonKey: string, serviceRoleKey: string): Promise<string> {
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
@@ -92,6 +49,12 @@ async function requireAdmin(req: Request, supabaseUrl: string, anonKey: string, 
   return user.id
 }
 
+function extractPath(url: string): string {
+  const marker = '/storage/v1/object/public/bakevault-images/'
+  const idx = url.indexOf(marker)
+  return idx === -1 ? url : url.slice(idx + marker.length)
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405)
@@ -104,37 +67,58 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Supabase credentials are not configured.' }, 503)
   }
 
-  let body: { imageUrl?: string } = {}
+  let body: { dryRun?: boolean } = {}
   try {
     body = await req.json()
   } catch {
     return json({ error: 'Invalid JSON body.' }, 400)
   }
-
-  if (!body.imageUrl || typeof body.imageUrl !== 'string') {
-    return json({ error: 'imageUrl is required.' }, 400)
-  }
+  const dryRun = body.dryRun !== false  // default true — caller must explicitly opt into deletion
 
   try {
     await requireAdmin(req, supabaseUrl, anonKey, serviceRoleKey)
-    const storagePath = extractProductImagePath(body.imageUrl, supabaseUrl)
+
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
 
-    const { error } = await supabase.storage.from('bakevault-images').remove([storagePath])
-    if (error) throw new Error(error.message)
+    // 1. List all blobs under products/
+    const { data: files, error: listError } = await supabase.storage
+      .from('bakevault-images')
+      .list('products', { limit: 10000 })
+    if (listError) throw new Error(listError.message)
 
-    return json({ ok: true, path: encodeStoragePath(storagePath) })
+    // 2. Collect every referenced URL from products table
+    const { data: products, error: prodError } = await supabase
+      .from('products')
+      .select('image_url, image_urls')
+    if (prodError) throw new Error(prodError.message)
+
+    const referenced = new Set<string>()
+    for (const p of products ?? []) {
+      if (p.image_url) referenced.add(extractPath(p.image_url))
+      for (const url of p.image_urls ?? []) referenced.add(extractPath(url))
+    }
+
+    const orphaned = (files ?? [])
+      .map(f => `products/${f.name}`)
+      .filter(path => !referenced.has(path))
+
+    if (dryRun) {
+      return json({ dryRun: true, orphanedCount: orphaned.length, orphaned })
+    }
+
+    const { error: deleteError } = await supabase.storage
+      .from('bakevault-images')
+      .remove(orphaned)
+    if (deleteError) throw new Error(deleteError.message)
+
+    return json({ dryRun: false, deletedCount: orphaned.length, deleted: orphaned })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Delete failed.'
-    const status =
-      message.includes('Admin access') ? 403 :
-      message.includes('required') || message.includes('session') ? 401 :
-      message.includes('URL') || message.includes('paths') ? 400 :
-      500
-
-    console.error('[delete-product-image]', message)
+    const message = err instanceof Error ? err.message : 'Cleanup failed.'
+    const status = message.includes('Admin access') ? 403
+      : message.includes('required') || message.includes('session') ? 401
+      : 500
     return json({ error: message }, status)
   }
 })

@@ -1,11 +1,25 @@
-import React, { useState } from 'react'
-import { useCategories } from '@/hooks'
-import { createCategory, updateCategory, deleteCategory } from '@/lib/api'
+import React, { useState, useCallback, useEffect } from 'react'
+import { getAdminCategories, createCategory, updateCategory, deleteCategory } from '@/lib/api'
 import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { DBCategory } from '@/lib/database.types'
 
 export function AdminCategories() {
-  const { categories, loading, error, refetch } = useCategories()
+  const [categories, setCategories] = useState<DBCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const refetch = useCallback(async () => {
+    try {
+      setLoading(true); setError(null)
+      setCategories(await getAdminCategories())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load categories')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { refetch() }, [refetch])
 
   const [editId,    setEditId]    = useState<string | null>(null)
   const [editName,  setEditName]  = useState('')

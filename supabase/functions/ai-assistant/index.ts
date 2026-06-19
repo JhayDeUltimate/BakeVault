@@ -710,116 +710,131 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Missing authorization.' }, origin, 401)
     }
 
-    const rateLimitId = (await sha256Hex(sessionToken)).slice(0, 32)
-
+    let kv: Deno.Kv | null = null
     try {
-      const kv = await Deno.openKv()
-      const key = ['chat_rl', rateLimitId]
-      const now = Date.now()
-      const windowMs = 60_000
-      const { value: hits } = await kv.get<number[]>(key) ?? { value: [] }
-      const recent = (hits ?? []).filter(t => now - t < windowMs)
-
-      if (recent.length >= 30) {
-        log('WARN', 'Chat rate limit hit', { rateLimitId, count: recent.length })
-        return respond({ error: 'Too many requests. Please wait a moment before asking another question.' }, origin, 429)
-      }
-
-      await kv.set(key, [...recent, now], { expireIn: windowMs })
+      kv = await Deno.openKv()
     } catch (err) {
-      // Rate limit check failure is non-fatal — allow the request through
-      log('WARN', 'Rate limit check failed (allowing request)', { error: err instanceof Error ? err.message : String(err) })
+      log('WARN', 'Failed to open Deno KV (rate limit and cache disabled for this request)', {
+        error: err instanceof Error ? err.message : String(err),
+      })
     }
-
-    // ── Chat message validation ───────────────────────────────────────────────
-    if (!messages || !Array.isArray(messages)) {
-      return respond({ error: 'messages array is required for chat mode.' }, origin, 400)
-    }
-    if (messages.length > MAX_MESSAGES) {
-      return respond({ error: 'Conversation too long. Please start a new chat.' }, origin, 400)
-    }
-
-    const invalidMsg = messages.find(
-      m => typeof m.role !== 'string' || typeof m.content !== 'string',
-    )
-    if (invalidMsg) {
-      return respond({ error: 'Each message must have string role and content fields.' }, origin, 400)
-    }
-
-    const name = productCtx?.name ?? ''
-    const description = productCtx?.description ?? ''
-
-    // Step 1: Search for the product + user's latest question.
-    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
-    let chatCache: { kv: Deno.Kv; key: Deno.KvKey } | null = null
 
     try {
-      const kv = await Deno.openKv()
-      const keyHash = await sha256Hex(JSON.stringify({
-        v: 2,
-        product: {
-          name: normalizeForCacheKey(name),
-          description: normalizeForCacheKey(description),
-        },
-        messages: messages.map(m => ({
-          role: m.role,
-          content: normalizeForCacheKey(m.content),
-        })),
-      }))
-      const key: Deno.KvKey = ['chat_cache', keyHash]
-      const cached = await kv.get<{ text: string; cachedAt: string }>(key)
-
-      if (cached.value?.text) {
-        log('INFO', 'Chat cache hit', { keyHash: keyHash.slice(0, 12) })
-        return respond({ text: cached.value.text, cached: true }, origin)
-      }
-
-      chatCache = { kv, key }
-    } catch (err) {
-      log('WARN', 'Chat cache read failed', { error: err instanceof Error ? err.message : String(err) })
-    }
-
-    const searchQuery = `${name} ${lastUserMsg} baking`.slice(0, 200)
-    const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
-
-    // Step 2: Call Gemini with enriched system prompt — no tools needed.
-    const conversationContents: GeminiContent[] = messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }))
-    const contents: GeminiContent[] = [
-      buildUntrustedContext(name, description, searchContext),
-      ...conversationContents,
-    ]
-
-    try {
-      const res = await callGemini(GEMINI_API_KEY, CHAT_SYSTEM, contents)
-      const geminiData = await res.json() as Record<string, unknown>
-
-      if (!res.ok) {
-        const errMsg = (geminiData as GeminiErrorBody)?.error?.message ?? `Gemini ${res.status}`
-        return respond({ error: errMsg }, origin)
-      }
-
-      const text = extractText(geminiData)
-      if (text && chatCache) {
+      // rate limit check — only runs if kv is available
+      if (kv) {
         try {
-          await chatCache.kv.set(chatCache.key, {
-            text,
-            cachedAt: new Date().toISOString(),
-          }, { expireIn: CHAT_CACHE_TTL_MS })
+          const rateLimitId = (await sha256Hex(sessionToken)).slice(0, 32)
+          const key = ['chat_rl', rateLimitId]
+          const now = Date.now()
+          const windowMs = 60_000
+          const { value: hits } = await kv.get<number[]>(key) ?? { value: [] }
+          const recent = (hits ?? []).filter(t => now - t < windowMs)
+
+          if (recent.length >= 30) {
+            log('WARN', 'Chat rate limit hit', { rateLimitId, count: recent.length })
+            return respond({ error: 'Too many requests. Please wait a moment before asking another question.' }, origin, 429)
+          }
+
+          await kv.set(key, [...recent, now], { expireIn: windowMs })
         } catch (err) {
-          log('WARN', 'Chat cache write failed', { error: err instanceof Error ? err.message : String(err) })
+          // Rate limit check failure is non-fatal — allow the request through
+          log('WARN', 'Rate limit check failed (allowing request)', { error: err instanceof Error ? err.message : String(err) })
         }
       }
-      return respond({
-        text: text || 'Sorry, I could not generate a response. Please try again.',
-      }, origin)
 
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Chat failed'
-      log('ERROR', 'Chat mode failed', { error: msg })
-      return respond({ error: msg }, origin)
+      // ── Chat message validation ───────────────────────────────────────────────
+      if (!messages || !Array.isArray(messages)) {
+        return respond({ error: 'messages array is required for chat mode.' }, origin, 400)
+      }
+      if (messages.length > MAX_MESSAGES) {
+        return respond({ error: 'Conversation too long. Please start a new chat.' }, origin, 400)
+      }
+
+      const invalidMsg = messages.find(
+        m => typeof m.role !== 'string' || typeof m.content !== 'string',
+      )
+      if (invalidMsg) {
+        return respond({ error: 'Each message must have string role and content fields.' }, origin, 400)
+      }
+
+      const name = productCtx?.name ?? ''
+      const description = productCtx?.description ?? ''
+
+      // Step 1: Search for the product + user's latest question.
+      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+      let cacheKey: Deno.KvKey | null = null
+
+      // Cache read — only runs if kv is available
+      if (kv) {
+        try {
+          const keyHash = await sha256Hex(JSON.stringify({
+            v: 2,
+            product: {
+              name: normalizeForCacheKey(name),
+              description: normalizeForCacheKey(description),
+            },
+            messages: messages.map(m => ({
+              role: m.role,
+              content: normalizeForCacheKey(m.content),
+            })),
+          }))
+          cacheKey = ['chat_cache', keyHash]
+          const cached = await kv.get<{ text: string; cachedAt: string }>(cacheKey)
+
+          if (cached.value?.text) {
+            log('INFO', 'Chat cache hit', { keyHash: keyHash.slice(0, 12) })
+            return respond({ text: cached.value.text, cached: true }, origin)
+          }
+        } catch (err) {
+          log('WARN', 'Chat cache read failed', { error: err instanceof Error ? err.message : String(err) })
+        }
+      }
+
+      const searchQuery = `${name} ${lastUserMsg} baking`.slice(0, 200)
+      const searchContext = await searchTavily(TAVILY_API_KEY, searchQuery)
+
+      // Step 2: Call Gemini with enriched system prompt — no tools needed.
+      const conversationContents: GeminiContent[] = messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }))
+      const contents: GeminiContent[] = [
+        buildUntrustedContext(name, description, searchContext),
+        ...conversationContents,
+      ]
+
+      try {
+        const res = await callGemini(GEMINI_API_KEY, CHAT_SYSTEM, contents)
+        const geminiData = await res.json() as Record<string, unknown>
+
+        if (!res.ok) {
+          const errMsg = (geminiData as GeminiErrorBody)?.error?.message ?? `Gemini ${res.status}`
+          return respond({ error: errMsg }, origin)
+        }
+
+        const text = extractText(geminiData)
+        if (text && kv && cacheKey) {
+          try {
+            await kv.set(cacheKey, {
+              text,
+              cachedAt: new Date().toISOString(),
+            }, { expireIn: CHAT_CACHE_TTL_MS })
+          } catch (err) {
+            log('WARN', 'Chat cache write failed', { error: err instanceof Error ? err.message : String(err) })
+          }
+        }
+        return respond({
+          text: text || 'Sorry, I could not generate a response. Please try again.',
+        }, origin)
+
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Chat failed'
+        log('ERROR', 'Chat mode failed', { error: msg })
+        return respond({ error: msg }, origin)
+      }
+    } finally {
+      kv?.close()
     }
   }
+
 })

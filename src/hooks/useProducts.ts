@@ -11,6 +11,7 @@ interface Options {
   includeUnavailable?: boolean
   limit?: number
   refetchOnFocus?: boolean
+  includeDescription?: boolean
 }
 
 type NormalizedOptions = Required<Pick<Options, 'featuredOnly' | 'includeUnavailable'>> & {
@@ -18,6 +19,7 @@ type NormalizedOptions = Required<Pick<Options, 'featuredOnly' | 'includeUnavail
   search: string
   limit: number | undefined
   refetchOnFocus: boolean
+  includeDescription: boolean
 }
 
 function normalizeOptions(options: Options): NormalizedOptions {
@@ -31,6 +33,7 @@ function normalizeOptions(options: Options): NormalizedOptions {
     includeUnavailable: options.includeUnavailable === true,
     limit,
     refetchOnFocus: options.refetchOnFocus === true,
+    includeDescription: options.includeDescription ?? options.featuredOnly === true,
   }
 }
 
@@ -84,6 +87,7 @@ export function useProducts(options: Options = {}) {
     normalizedOptions.featuredOnly,
     normalizedOptions.includeUnavailable,
     normalizedOptions.limit,
+    normalizedOptions.includeDescription,
   ])
 
   const { refetchOnFocus } = normalizedOptions
