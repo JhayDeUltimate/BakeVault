@@ -39,6 +39,9 @@ body,
 
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
+.assistant-dot-delay-0 { animation-delay: 0s; }
+.assistant-dot-delay-1 { animation-delay: 0.15s; }
+.assistant-dot-delay-2 { animation-delay: 0.3s; }
 
 /* Hide scrollbars while keeping scroll functional */
 .scrollbar-hide {

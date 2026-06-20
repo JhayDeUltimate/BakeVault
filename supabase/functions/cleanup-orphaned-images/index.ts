@@ -1,15 +1,41 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.108.1"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+const BASE_CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bakevault-session-id',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Vary': 'Origin',
 }
 
-function json(body: unknown, status = 200): Response {
+function buildAllowedOrigins(): Set<string> {
+  const fromEnv = Deno.env.get('ALLOWED_ORIGINS') ?? ''
+  const envOrigins = fromEnv.split(',').map((s: string) => s.trim()).filter(Boolean)
+
+  return new Set([
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:5173',
+    'https://bakevault.com.ng',
+    'https://www.bakevault.com.ng',
+    ...envOrigins,
+  ])
+}
+
+const ALLOWED_ORIGINS = buildAllowedOrigins()
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    ...BASE_CORS_HEADERS,
+    ...(origin && ALLOWED_ORIGINS.has(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
+  }
+}
+
+function json(body: unknown, origin: string | null, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
   })
 }
 
@@ -56,22 +82,24 @@ function extractPath(url: string): string {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405)
+  const origin = req.headers.get('origin')
+
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, origin, 405)
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-    return json({ error: 'Supabase credentials are not configured.' }, 503)
+    return json({ error: 'Supabase credentials are not configured.' }, origin, 503)
   }
 
   let body: { dryRun?: boolean } = {}
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Invalid JSON body.' }, 400)
+    return json({ error: 'Invalid JSON body.' }, origin, 400)
   }
   const dryRun = body.dryRun !== false  // default true — caller must explicitly opt into deletion
 
@@ -105,7 +133,7 @@ Deno.serve(async (req: Request) => {
       .filter(path => !referenced.has(path))
 
     if (dryRun) {
-      return json({ dryRun: true, orphanedCount: orphaned.length, orphaned })
+      return json({ dryRun: true, orphanedCount: orphaned.length, orphaned }, origin)
     }
 
     const { error: deleteError } = await supabase.storage
@@ -113,12 +141,12 @@ Deno.serve(async (req: Request) => {
       .remove(orphaned)
     if (deleteError) throw new Error(deleteError.message)
 
-    return json({ dryRun: false, deletedCount: orphaned.length, deleted: orphaned })
+    return json({ dryRun: false, deletedCount: orphaned.length, deleted: orphaned }, origin)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Cleanup failed.'
     const status = message.includes('Admin access') ? 403
       : message.includes('required') || message.includes('session') ? 401
       : 500
-    return json({ error: message }, status)
+    return json({ error: message }, origin, status)
   }
 })

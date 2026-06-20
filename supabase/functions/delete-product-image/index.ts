@@ -1,15 +1,41 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.108.1"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+const BASE_CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bakevault-session-id',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Vary': 'Origin',
 }
 
-function json(body: unknown, status = 200): Response {
+function buildAllowedOrigins(): Set<string> {
+  const fromEnv = Deno.env.get('ALLOWED_ORIGINS') ?? ''
+  const envOrigins = fromEnv.split(',').map((s: string) => s.trim()).filter(Boolean)
+
+  return new Set([
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:5173',
+    'https://bakevault.com.ng',
+    'https://www.bakevault.com.ng',
+    ...envOrigins,
+  ])
+}
+
+const ALLOWED_ORIGINS = buildAllowedOrigins()
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    ...BASE_CORS_HEADERS,
+    ...(origin && ALLOWED_ORIGINS.has(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
+  }
+}
+
+function json(body: unknown, origin: string | null, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
   })
 }
 
@@ -93,26 +119,28 @@ async function requireAdmin(req: Request, supabaseUrl: string, anonKey: string, 
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405)
+  const origin = req.headers.get('origin')
+
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, origin, 405)
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-    return json({ error: 'Supabase credentials are not configured.' }, 503)
+    return json({ error: 'Supabase credentials are not configured.' }, origin, 503)
   }
 
   let body: { imageUrl?: string } = {}
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Invalid JSON body.' }, 400)
+    return json({ error: 'Invalid JSON body.' }, origin, 400)
   }
 
   if (!body.imageUrl || typeof body.imageUrl !== 'string') {
-    return json({ error: 'imageUrl is required.' }, 400)
+    return json({ error: 'imageUrl is required.' }, origin, 400)
   }
 
   try {
@@ -125,7 +153,7 @@ Deno.serve(async (req: Request) => {
     const { error } = await supabase.storage.from('bakevault-images').remove([storagePath])
     if (error) throw new Error(error.message)
 
-    return json({ ok: true, path: encodeStoragePath(storagePath) })
+    return json({ ok: true, path: encodeStoragePath(storagePath) }, origin)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Delete failed.'
     const status =
@@ -135,6 +163,6 @@ Deno.serve(async (req: Request) => {
       500
 
     console.error('[delete-product-image]', message)
-    return json({ error: message }, status)
+    return json({ error: message }, origin, status)
   }
 })

@@ -201,6 +201,8 @@ supabase functions deploy health-check --no-verify-jwt
 | `delete-product-image` | Deletes product images from Supabase Storage after server-side admin and URL validation. | `supabase functions deploy delete-product-image` |
 | `health-check` | Provides a backend availability probe for Postgres and the `bakevault-images` Storage bucket. | `supabase functions deploy health-check --no-verify-jwt` |
 
+Browser-callable functions use CORS allowlisting from `ALLOWED_ORIGINS`, with localhost and the production BakeVault domains allowed by default. `health-check` intentionally allows any origin because it returns only coarse service status for uptime monitors.
+
 ### `ai-assistant`
 
 Path: `supabase/functions/ai-assistant/index.ts`

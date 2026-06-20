@@ -3,33 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>404 Not Found — BakeVault</title>
+  <title>404 Not Found - BakeVault</title>
   <meta name="robots" content="noindex" />
   <meta name="description" content="The requested page was not found." />
-  <style>
-    :root{--bg:#ffffff;--fg:#111827;--muted:#6b7280;--brand:#7c2d12}
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
-    .card{max-width:900px;text-align:center}
-    .title{font-weight:700;font-size:36px;margin-bottom:8px}
-    .muted{color:var(--muted)}
-    .btn{display:inline-block;padding:10px 16px;border-radius:8px;text-decoration:none}
-    .primary{background:var(--brand);color:white}
-    .secondary{border:1px solid #e5e7eb;color:var(--fg)}
-    code{background:#f3f4f6;padding:4px 8px;border-radius:6px}
-  </style>
+  <link rel="stylesheet" href="/404.css" />
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <div class="title">404 — Page Not Found</div>
-      <p class="muted">The page <code id="path">/</code> could not be found.</p>
-      <div style="margin-top:20px">
+      <div class="title">404 - Page Not Found</div>
+      <p class="muted">The requested page could not be found.</p>
+      <div class="actions">
         <a class="btn primary" href="/">Home</a>
-        <a class="btn secondary" href="/catalog" style="margin-left:12px">Catalog</a>
+        <a class="btn secondary" href="/catalog">Catalog</a>
       </div>
     </div>
   </div>
-  <script>document.getElementById('path').textContent = window.location.pathname || '/';</script>
 </body>
 </html>
