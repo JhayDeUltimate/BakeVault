@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { uploadProductImage } from '@/lib/api'
 import { optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
+import { logger } from '@/lib/logger'
 
 interface Props {
   currentUrl: string | null
@@ -32,7 +33,10 @@ export default function ImageUpload({ currentUrl, onUpload, onError }: Props) {
       onUpload(remoteUrl)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed'
-      console.error('[ImageUpload]', msg)
+      logger.error('Image upload failed', err instanceof Error ? err : undefined, {
+        event: 'image.upload_ui_error',
+        message: msg,
+      })
       setPreview(currentUrl)
       onError?.(msg)
     } finally {

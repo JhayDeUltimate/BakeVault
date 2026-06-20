@@ -8,6 +8,12 @@ interface Props {
   max?:     number   // default 4
 }
 
+const ALLOWED_IMAGE_HOSTS = new Set([
+  'hmcggmpetetyjeznhaos.supabase.co',
+  'images.unsplash.com',
+  'images.weserv.nl',
+])
+
 export default function MultiImageUpload({ urls, onChange, onError, max = 4 }: Props) {
   const inputRef            = useRef<HTMLInputElement>(null)
   const [loading, setLoading]  = useState(false)
@@ -36,9 +42,31 @@ export default function MultiImageUpload({ urls, onChange, onError, max = 4 }: P
   function handleAddUrl() {
     const trimmed = urlInput.trim()
     if (!trimmed) return
-    if (!trimmed.startsWith('http')) { onError?.('Please enter a valid URL starting with http.'); return }
+
+    if (trimmed.length > 2048) {
+      onError?.('URL is too long (max 2048 characters).')
+      return
+    }
+
+    let parsed: URL
+    try {
+      parsed = new URL(trimmed)
+    } catch {
+      onError?.('Enter a valid image URL starting with https://')
+      return
+    }
+
+    if (parsed.protocol !== 'https:') {
+      onError?.('Only HTTPS image URLs are allowed.')
+      return
+    }
+
+    if (!ALLOWED_IMAGE_HOSTS.has(parsed.hostname)) {
+      onError?.('Only Supabase Storage, Unsplash, or weserv.nl image URLs are allowed.')
+      return
+    }
+
     if (urls.length >= max) { onError?.(`Maximum ${max} additional photos allowed.`); return }
-    // Avoid duplicates
     if (urls.includes(trimmed)) { onError?.('This image URL is already in the gallery.'); setUrlInput(''); return }
     onChange([...urls, trimmed])
     setUrlInput('')

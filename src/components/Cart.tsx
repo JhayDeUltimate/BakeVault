@@ -3,6 +3,7 @@ import type { CartItem } from '../types'
 import { logEnquiry } from '../lib/api'
 import { trackEvent } from '../lib/analytics'
 import { useCart } from '../lib/cart-context'
+import { logger } from '../lib/logger'
 import { WHATSAPP_NUMBER } from '../constants'
 
 interface CartProps {
@@ -24,7 +25,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
   if (!isOpen) return null
 
   if (!WHATSAPP_NUMBER) {
-    console.warn('[BakeVault] VITE_WHATSAPP_NUMBER is not set. WhatsApp checkout will not work.')
+    logger.warn('VITE_WHATSAPP_NUMBER is not set', { event: 'config_missing' })
   }
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
@@ -74,7 +75,9 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
           new Promise<void>(resolve => setTimeout(resolve, 3000)),
         ])
       } catch {
-        console.warn('[BakeVault] Enquiry insert failed - order may not appear in admin panel')
+        logger.warn('Enquiry insert failed - order may not appear in admin panel', {
+          event: 'enquiry.insert_failed_checkout',
+        })
       }
 
       trackEvent('cart_checkout', { item_count: totalItems })

@@ -523,7 +523,7 @@ Admin access is controlled by the `admins` table. There is no self-registration.
 - [ ] Recovery drill has been run against a non-production Supabase project
 
 ### SEO & Content
-- [ ] Run `npm run build:full` (not `npm run build`) to generate the sitemap
+- [ ] CI runs `npm run build:full` for production builds so the sitemap is generated automatically
 - [ ] Submit `https://yourdomain.com/sitemap.xml` to Google Search Console
 - [ ] Verify `public/robots.txt` disallows `/admin/`
 - [ ] At least 5 products are published with images and descriptions

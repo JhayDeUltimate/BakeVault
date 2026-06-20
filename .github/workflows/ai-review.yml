@@ -78,10 +78,10 @@ jobs:
       - name: Check for critical issues
         if: steps.diff.outputs.diff_size != '0'
         run: |
-          # Only block on main branch, not develop
           if [ "${{ github.base_ref }}" = "main" ]; then
             if grep -q "CRITICAL" review_output.txt 2>/dev/null; then
-              echo "❌ Critical issues found - blocking merge to main"
+              echo "❌ MERGE BLOCKED — Critical issues found. Fix them before merging to main."
+              echo "See the AI Code Review job above for details."
               exit 1
             fi
           fi

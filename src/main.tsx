@@ -32,8 +32,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
-        maskAllText: false,
-        blockAllMedia: false,
+        maskAllText: true,
+        blockAllMedia: true,
         block: ['[type="password"]', '[autocomplete="cc-number"]'],
       }),
     ],

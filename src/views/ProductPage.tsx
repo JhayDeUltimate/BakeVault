@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { mapDBProduct } from '@/lib/utils'
@@ -57,37 +57,53 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<DBProductWithCategory[]>([])
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [slide, setSlide] = useState(0)
   const assistantRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  const fetchProduct = useCallback(async () => {
     if (!slug) return
 
-    async function fetchProduct() {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(*)')
-        .eq('slug', slug!)
-        .eq('is_available', true)
-        .single()
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories(*)')
+      .eq('slug', slug)
+      .eq('is_available', true)
+      .single()
 
-      if (error || !data) {
+    if (error) {
+      if (error.code === 'PGRST116') {
         navigate('/catalog', { replace: true })
       } else {
-        const p = data as DBProductWithCategory
-        setProduct(p)
-        addRecentlyViewed(p)
-        trackEvent('product_view', {
-          product_id: data.id,
-          product_name: data.name,
-          category: (data as DBProductWithCategory).categories?.name ?? '',
-        })
+        setFetchError('Failed to load this product. Check your connection and try again.')
+        setLoading(false)
       }
-      setLoading(false)
+      return
     }
 
-    fetchProduct()
+    if (!data) {
+      navigate('/catalog', { replace: true })
+      return
+    }
+
+    const p = data as DBProductWithCategory
+    setProduct(p)
+    setFetchError(null)
+    addRecentlyViewed(p)
+    trackEvent('product_view', {
+      product_id: data.id,
+      product_name: data.name,
+      category: (data as DBProductWithCategory).categories?.name ?? '',
+    })
+    setLoading(false)
   }, [slug, navigate, addRecentlyViewed])
+
+  useEffect(() => {
+    if (!slug) return
+    setLoading(true)
+    setFetchError(null)
+    void fetchProduct()
+  }, [slug, fetchProduct])
 
   useEffect(() => {
     if (!product?.category_id) {
@@ -126,6 +142,20 @@ export default function ProductPage() {
   if (loading) return (
     <div className="flex-grow flex items-center justify-center py-32">
       <div className="w-10 h-10 border-4 border-orange-200 border-t-brand-orange rounded-full animate-spin" />
+    </div>
+  )
+
+  if (fetchError) return (
+    <div className="flex-grow flex flex-col items-center justify-center px-4 py-24 text-center">
+      <p className="text-brand-darkGray/60 text-sm mb-4">{fetchError}</p>
+      <button
+        type="button"
+        onClick={() => { setFetchError(null); setLoading(true); void fetchProduct() }}
+        className="bg-brand-orange text-white font-bold px-6 py-3 rounded-xl text-sm"
+      >
+        Try Again
+      </button>
+      <a href="/catalog" className="mt-3 text-xs text-brand-brown underline">Browse catalog</a>
     </div>
   )
 

@@ -7,6 +7,7 @@ import ScrollToTop from '@/components/ScrollToTop'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import RouteErrorBoundary from '@/components/RouteErrorBoundary'
 import { Analytics } from '@vercel/analytics/react'
+import { hasConsent } from '@/lib/consent'
 
 // Lazy-load route pages so the first visit only downloads the shell + active page
 const HomePage           = lazy(() => import('@/views/HomePage'))
@@ -71,7 +72,7 @@ function adminPage(page: React.ReactNode, name?: string, fallback: React.ReactNo
 export default function App() {
   return (
     <ErrorBoundary>
-      <Analytics />
+      {hasConsent() && <Analytics />}
       <CartProvider>
         <ScrollToTop />
         <Routes>

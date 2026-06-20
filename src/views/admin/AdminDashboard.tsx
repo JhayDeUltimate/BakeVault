@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [analyticsError, setAnalyticsError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
+  const [csvError, setCsvError] = useState<string | null>(null)
 
   // Load core stats (use server-side counts + paginated recent enquiries)
   useEffect(() => {
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
   async function downloadCSV() {
     try {
       setDownloading(true)
+      setCsvError(null)
       const events = await getAnalyticsRawEvents(dateRange)
       const rows = [
         ['id', 'event_type', 'session_id', 'page', 'product_name', 'category', 'created_at'],
@@ -105,7 +107,7 @@ export default function AdminDashboard() {
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {
-      alert('Download failed: ' + (e instanceof Error ? e.message : 'Unknown error'))
+      setCsvError('CSV download failed: ' + (e instanceof Error ? e.message : 'Unknown error'))
     } finally {
       setDownloading(false)
     }
@@ -186,6 +188,12 @@ export default function AdminDashboard() {
               </svg>
               {downloading ? 'Downloading…' : 'Export CSV'}
             </button>
+            {csvError && (
+              <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg border border-red-100 flex items-center justify-between">
+                <span>{csvError}</span>
+                <button onClick={() => setCsvError(null)} className="ml-3 text-red-400 hover:text-red-600" aria-label="Dismiss error">×</button>
+              </div>
+            )}
           </div>
         </div>
 
