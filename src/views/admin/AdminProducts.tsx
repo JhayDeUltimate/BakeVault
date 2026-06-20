@@ -85,20 +85,26 @@ export default function AdminProducts() {
     try {
       setSaving(product.id)
       setDeleteError(null)
+      await deleteProduct(product.id)
+      fetchPage()
+
+      // Best-effort image cleanup — never blocks or surfaces an error for
+      // the already-completed product delete.
       const rawUrls = product.image_urls ?? []
       const urls = [
         ...rawUrls,
         ...(product.image_url && !rawUrls.includes(product.image_url) ? [product.image_url] : []),
       ]
-      await Promise.all(urls.map(u => deleteProductImage(u)))
-      await deleteProduct(product.id)
-      fetchPage()
+      void Promise.all(urls.map(u => deleteProductImage(u))).catch(err => {
+        console.warn('[BakeVault] Some product images failed to clean up:', err)
+      })
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : 'Delete failed. Please try again.')
     } finally {
       setSaving(null)
     }
   }
+
 
   async function toggleAvailable(product: DBProductWithCategory) {
     if (toggling === product.id) return

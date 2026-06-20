@@ -9,16 +9,42 @@ interface NotifyBody {
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+const BASE_CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bakevault-session-id',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Vary': 'Origin',
 }
 
-function json(body: unknown, status = 200): Response {
+function buildAllowedOrigins(): Set<string> {
+  const fromEnv = Deno.env.get('ALLOWED_ORIGINS') ?? ''
+  const envOrigins = fromEnv.split(',').map((s: string) => s.trim()).filter(Boolean)
+
+  return new Set([
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:5173',
+    'https://bakevault.com.ng',
+    'https://www.bakevault.com.ng',
+    ...envOrigins,
+  ])
+}
+
+const ALLOWED_ORIGINS = buildAllowedOrigins()
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    ...BASE_CORS_HEADERS,
+    ...(origin && ALLOWED_ORIGINS.has(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
+  }
+}
+
+function json(body: unknown, origin: string | null, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
   })
 }
 
@@ -73,27 +99,29 @@ async function sendEmail(options: { subject: string; html: string; text: string 
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405)
+  const origin = req.headers.get('origin')
+
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, origin, 405)
 
   let body: NotifyBody = {}
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Invalid JSON body.' }, 400)
+    return json({ error: 'Invalid JSON body.' }, origin, 400)
   }
 
   if (body.type !== 'product_request' && body.type !== 'review') {
-    return json({ error: 'type must be product_request or review.' }, 400)
+    return json({ error: 'type must be product_request or review.' }, origin, 400)
   }
   if (!body.id || typeof body.id !== 'string') {
-    return json({ error: 'id is required.' }, 400)
+    return json({ error: 'id is required.' }, origin, 400)
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !serviceRoleKey) {
-    return json({ error: 'Supabase service credentials are not configured.' }, 500)
+    return json({ error: 'Supabase service credentials are not configured.' }, origin, 500)
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -108,8 +136,8 @@ Deno.serve(async (req: Request) => {
         .eq('id', body.id)
         .single()
 
-      if (error || !data) return json({ error: 'Product request not found.' }, 404)
-      if (data.admin_notified_at) return json({ skipped: true, reason: 'Already notified.' })
+      if (error || !data) return json({ error: 'Product request not found.' }, origin, 404)
+      if (data.admin_notified_at) return json({ skipped: true, reason: 'Already notified.' }, origin)
 
       const subject = `New product request: ${asPlain(data.product_name)}`
       const html = `
@@ -134,7 +162,7 @@ Deno.serve(async (req: Request) => {
       await sendEmail({ subject, html, text })
       await supabase.from('product_requests').update({ admin_notified_at: new Date().toISOString() }).eq('id', body.id)
 
-      return json({ ok: true })
+      return json({ ok: true }, origin)
     }
 
     const { data, error } = await supabase
@@ -143,8 +171,8 @@ Deno.serve(async (req: Request) => {
       .eq('id', body.id)
       .single()
 
-    if (error || !data) return json({ error: 'Review not found.' }, 404)
-    if (data.admin_notified_at) return json({ skipped: true, reason: 'Already notified.' })
+    if (error || !data) return json({ error: 'Review not found.' }, origin, 404)
+    if (data.admin_notified_at) return json({ skipped: true, reason: 'Already notified.' }, origin)
 
     const subject = `New customer review: ${stars(data.rating)} from ${asPlain(data.customer_name)}`
     const html = `
@@ -167,10 +195,10 @@ Deno.serve(async (req: Request) => {
     await sendEmail({ subject, html, text })
     await supabase.from('testimonials').update({ admin_notified_at: new Date().toISOString() }).eq('id', body.id)
 
-    return json({ ok: true })
+    return json({ ok: true }, origin)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Notification failed.'
     console.error('[notify-admin]', message)
-    return json({ error: message }, 500)
+    return json({ error: message }, origin, 500)
   }
 })

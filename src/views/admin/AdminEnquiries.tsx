@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { getEnquiries, updateEnquiryStatus, getEnquiriesPage, getEnquiriesCount } from '@/lib/api'
+import { updateEnquiryStatus, getEnquiriesPage, getEnquiriesCount } from '@/lib/api'
 import type { DBEnquiry } from '@/lib/database.types'
 
 export function AdminEnquiries() {

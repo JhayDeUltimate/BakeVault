@@ -74,10 +74,17 @@ function randomUuid(): string {
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
+const PRODUCT_SUMMARY_COLUMNS = 'id,name,slug,image_url,image_urls,is_available,is_featured,price_type,display_order,category_id,created_at,updated_at,categories(id,name)'
+const PRODUCT_WITH_DESCRIPTION_COLUMNS = '*,categories(*)'
+
 export async function getProducts(filters?: {
   categoryId?: string | null; search?: string; featuredOnly?: boolean; includeUnavailable?: boolean; limit?: number
+  includeDescription?: boolean
 }): Promise<DBProductWithCategory[]> {
-  let query = supabase.from('products').select('*, categories(*)').order('display_order', { ascending: true })
+  const columns = filters?.includeDescription
+    ? PRODUCT_WITH_DESCRIPTION_COLUMNS
+    : PRODUCT_SUMMARY_COLUMNS
+  let query = supabase.from('products').select(columns).order('display_order', { ascending: true })
   if (!filters?.includeUnavailable) query = query.eq('is_available', true)
   if (filters?.featuredOnly)        query = query.eq('is_featured', true)
   if (filters?.categoryId)          query = query.eq('category_id', filters.categoryId)
@@ -85,7 +92,7 @@ export async function getProducts(filters?: {
   if (filters?.limit)               query = query.limit(filters.limit)
   const { data, error } = await query
   if (error) throw new Error(error.message)
-  return (data ?? []) as DBProductWithCategory[]
+  return (data ?? []) as unknown as DBProductWithCategory[]
 }
 
 export async function getProductById(id: string): Promise<DBProductWithCategory> {
@@ -176,9 +183,26 @@ export async function deleteProduct(id: string): Promise<void> {
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 export async function getCategories(): Promise<DBCategory[]> {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, slug, display_order')
+    .order('display_order', { ascending: true })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as DBCategory[]
+}
+
+export async function getAdminCategories(): Promise<DBCategory[]> {
   const { data, error } = await supabase.from('categories').select('*').order('display_order', { ascending: true })
   if (error) throw new Error(error.message)
   return data ?? []
+}
+
+export async function getCategoriesCount(): Promise<number> {
+  const { error, count } = await supabase
+    .from('categories')
+    .select('id', { count: 'exact', head: true })
+  if (error) throw new Error(error.message)
+  return count ?? 0
 }
 
 export async function createCategory(
@@ -287,11 +311,7 @@ export async function logEnquiry(items: EnquiryItem[], whatsappMessage: string):
   })()
 }
 
-export async function getEnquiries(): Promise<DBEnquiry[]> {
-  const { data, error } = await supabase.from('enquiries').select('*').order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
-  return data ?? []
-}
+
 
 // Paginated enquiries — returns items + total count
 export async function getEnquiriesPage(options?: { page?: number; pageSize?: number; status?: 'sent' | 'responded' | 'fulfilled' }): Promise<{ items: DBEnquiry[]; total: number }> {
@@ -325,11 +345,14 @@ export async function updateEnquiryStatus(id: string, status: 'sent' | 'responde
 
 // ─── Testimonials ─────────────────────────────────────────────────────────────
 export async function getTestimonials(visibleOnly = true): Promise<DBTestimonial[]> {
-  let query = supabase.from('testimonials').select('*').order('display_order').order('created_at', { ascending: false })
+  let query = supabase
+    .from('testimonials')
+    .select('id, customer_name, business_name, initials, quote, rating, display_order, created_at')
+    .order('display_order').order('created_at', { ascending: false })
   if (visibleOnly) query = query.eq('is_visible', true)
   const { data, error } = await query
   if (error) throw new Error(error.message)
-  return data ?? []
+  return (data ?? []) as DBTestimonial[]
 }
 
 export async function createTestimonial(t: { customer_name: string; business_name?: string; initials?: string; quote: string; rating?: number; is_visible?: boolean; display_order?: number }): Promise<DBTestimonial> {
@@ -392,7 +415,7 @@ export async function deleteTestimonial(id: string): Promise<void> {
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 export async function getSettings(): Promise<Record<string, string>> {
-  const { data, error } = await supabase.from('settings').select('*')
+  const { data, error } = await supabase.from('settings').select('key, value')
   if (error) throw new Error(error.message)
   return Object.fromEntries((data ?? []).map(s => [s.key, s.value]))
 }
@@ -772,10 +795,11 @@ export async function getAnalyticsRawEvents(days = 30): Promise<DBAnalyticsEvent
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
     .from('analytics_events')
-    .select('*')
+    .select('id, event_type, session_id, page, event_data, created_at')
     .gte('created_at', since)
     .in('event_type', STOREFRONT_ANALYTICS_EVENT_TYPES)
     .order('created_at', { ascending: false })
+    .limit(10000)
   if (error) throw new Error(error.message)
   return ((data ?? []) as DBAnalyticsEvent[]).filter(isStorefrontAnalyticsEvent)
 }
@@ -798,12 +822,7 @@ export async function getAdminActivityLogsPage(opts?: { page?: number; pageSize?
   return { items: (data ?? []) as DBAdminActivity[], total: count ?? 0 }
 }
 
-export async function getAdminActivityLogs(opts?: { limit?: number }): Promise<DBAdminActivity[]> {
-  const limit = opts?.limit ?? 50
-  const { data, error } = await supabase.from('admin_activity_logs').select('*').order('created_at', { ascending: false }).limit(limit)
-  if (error) throw new Error(error.message)
-  return (data ?? []) as DBAdminActivity[]
-}
+
 
 // Paginated products — returns items + total count
 export async function getProductsPage(options?: {

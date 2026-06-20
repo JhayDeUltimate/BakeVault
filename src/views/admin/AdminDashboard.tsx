@@ -5,7 +5,7 @@ import {
   Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  getCategories, getProductsCount, getEnquiriesPage, getEnquiriesCount,
+  getCategoriesCount, getProductsCount, getEnquiriesPage, getEnquiriesCount,
   getAnalyticsSummary, getAnalyticsRawEvents,
   type AnalyticsChartPoint, type TopProduct,
 } from '@/lib/api'
@@ -40,29 +40,22 @@ export default function AdminDashboard() {
     async function load() {
       try {
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-        const [totalProducts, availableProducts, categories, enquiriesPage, totalEnquiries, enquiriesThisWeek, enquiriesOpen] = await Promise.all([
-          // total products (including unavailable)
+        const [totalProducts, availableProducts, totalCategories, enquiriesPage, enquiriesThisWeek, enquiriesOpen] = await Promise.all([
           getProductsCount({ includeUnavailable: true }),
-          // available products only
           getProductsCount({ includeUnavailable: false }),
-          getCategories(),
-          // recent enquiries (first page)
+          getCategoriesCount(),
           getEnquiriesPage({ page: 1, pageSize: 5 }),
-          // total enquiries
-          getEnquiriesCount(),
-          // enquiries since weekAgo
           getEnquiriesCount({ since: weekAgo }),
-          // open enquiries
           getEnquiriesCount({ status: 'sent' }),
         ])
 
         setStats({
-          totalProducts: totalProducts,
-          availableProducts: availableProducts,
-          totalCategories: categories.length,
-          totalEnquiries: totalEnquiries,
-          enquiriesThisWeek: enquiriesThisWeek,
-          enquiriesOpen: enquiriesOpen,
+          totalProducts,
+          availableProducts,
+          totalCategories,
+          totalEnquiries: enquiriesPage.total,
+          enquiriesThisWeek,
+          enquiriesOpen,
         })
         setRecent(enquiriesPage.items)
       } catch (e) {

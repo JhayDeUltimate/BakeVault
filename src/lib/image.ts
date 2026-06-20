@@ -3,8 +3,9 @@
  *
  * NOTE: Supabase image transformation (/render/image/) is a Pro-plan feature.
  * On the free tier it returns 404, which broke all product images.
- * This file now returns original URLs unchanged and relies on browser-native
- * lazy loading for performance instead.
+ * Supabase URLs are rendered directly when no resizing is requested. Other
+ * remote URLs are routed through images.weserv.nl so the browser image CSP can
+ * stay narrow.
  *
  * If you upgrade to Supabase Pro, you can re-enable the transform by uncommenting
  * the optimizeSupabaseUrl function below and calling it from optimizeImageUrl.
@@ -13,44 +14,53 @@
 export const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=800'
 
+const DIRECT_IMAGE_HOSTS = new Set([
+  'hmcggmpetetyjeznhaos.supabase.co',
+  'images.unsplash.com',
+  'images.weserv.nl',
+])
+
+function proxiedImageUrl(parsed: URL, opts: { width?: number; height?: number; quality: number }): string {
+  const remote = `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`
+  const params = new URLSearchParams({ url: remote })
+
+  if (opts.width) params.set('w', String(opts.width))
+  if (opts.height) params.set('h', String(opts.height))
+  if (opts.width || opts.height) params.set('fit', 'cover')
+  params.set('q', String(opts.quality))
+
+  return `https://images.weserv.nl/?${params.toString()}`
+}
+
 /**
  * Returns the image URL suitable for display.
- * - Supabase Storage URLs are returned as-is (transform requires Pro plan)
- * - Unsplash URLs keep their existing optimization params unchanged
+ * - Supabase Storage and trusted external image hosts are returned as-is when no resizing is requested
+ * - resized or untrusted remote images are loaded through images.weserv.nl
+ * - proxied URLs preserve the source protocol and querystring
  * - null/undefined falls back to FALLBACK_IMAGE
  */
 export function optimizeImageUrl(
   url: string | null | undefined,
   _opts?: { width?: number; height?: number; quality?: number },
 ): string {
-  if (!url) return FALLBACK_IMAGE
+  const source = url?.trim()
+  if (!source) return FALLBACK_IMAGE
 
   const opts = _opts ?? {}
   const { width, height, quality = 75 } = opts
 
-  // Keep Unsplash URLs intact (they include their own params)
-  if (url.includes('images.unsplash.com')) return url
+  if (/^(blob|data):/i.test(source) || source.startsWith('/')) return source
 
   try {
-    const parsed = new URL(url)
+    const parsed = new URL(source)
 
-    // Prepare remote identifier for the proxy (strip protocol)
-    const remote = `${parsed.host}${parsed.pathname}${parsed.search}`.replace(/^\/+/, '')
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return source
 
-    // If no resizing requested, return original URL
-    if (!width && !height) return url
-
-    // Use a lightweight public image proxy to resize and cache images
-    // (images.weserv.nl accepts a remote host/path without protocol)
-    const params = new URLSearchParams()
-    if (width) params.set('w', String(width))
-    if (height) params.set('h', String(height))
-    params.set('fit', 'cover')
-    params.set('q', String(quality))
-
-    return `https://images.weserv.nl/?url=${encodeURIComponent(remote)}&${params.toString()}`
+    if (!width && !height && DIRECT_IMAGE_HOSTS.has(parsed.hostname)) return source
+    if (parsed.hostname === 'images.weserv.nl') return source
+    return proxiedImageUrl(parsed, { width, height, quality })
   } catch (e) {
-    return url
+    return source
   }
 }
 
