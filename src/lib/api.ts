@@ -678,7 +678,10 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
   })
 
   if (error) {
-    console.error('[BakeVault] Failed to delete image from storage:', error.message)
+    logger.error('Failed to delete image from storage', undefined, {
+      event: 'image.delete_failed',
+      reason: error.message,
+    })
     return
   }
 

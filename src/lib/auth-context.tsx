@@ -79,7 +79,7 @@ interface AuthState {
   signUp: (email: string, password: string) => Promise<void>
 }
 
-const AuthContext = createContext<AuthState | null>(null)
+export const AuthContext = createContext<AuthState | null>(null)
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -257,7 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       logger.warn('Sign-in failed', { event: 'auth_sign_in_fail', page: '/admin/login' })
-      throw new Error(error.message)
+      throw new Error('Email or password is incorrect.')
     }
     if (data.user) {
       void (async () => {

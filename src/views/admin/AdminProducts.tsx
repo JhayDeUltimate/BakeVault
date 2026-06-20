@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import type { DBProductWithCategory } from '../../lib/database.types'
+import { logger } from '@/lib/logger'
 
 type SortKey = 'name' | 'category' | 'updated_at' | 'created_at' | 'is_available' | 'is_featured'
 type SortDir = 'asc' | 'desc'
@@ -96,7 +97,10 @@ export default function AdminProducts() {
         ...(product.image_url && !rawUrls.includes(product.image_url) ? [product.image_url] : []),
       ]
       void Promise.all(urls.map(u => deleteProductImage(u))).catch(err => {
-        console.warn('[BakeVault] Some product images failed to clean up:', err)
+        logger.warn('Some product images failed to clean up', {
+          event: 'image.cleanup_partial_failure',
+          reason: err instanceof Error ? err.message : 'Unknown error',
+        })
       })
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : 'Delete failed. Please try again.')

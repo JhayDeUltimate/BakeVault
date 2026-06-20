@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { logger } from '@/lib/logger'
 
 interface Props {
   children: React.ReactNode
@@ -18,7 +19,10 @@ export default class RouteErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[RouteErrorBoundary]', error, info)
+    logger.error('Route boundary caught error', error, {
+      componentStack: info.componentStack,
+      routeName: this.props.routeName,
+    })
   }
 
   render() {
