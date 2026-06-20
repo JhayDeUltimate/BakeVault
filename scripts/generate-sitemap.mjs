@@ -4,8 +4,8 @@
  * Fetches all available product slugs from Supabase and writes
  * public/sitemap.xml at build time.
  *
- * Usage (called automatically by `npm run build`):
- *   node --env-file=.env.local scripts/generate-sitemap.mjs
+ * Usage (called automatically by `npm run build:full`):
+ *   node scripts/generate-sitemap.mjs
  *
  * Env vars required:
  *   VITE_SUPABASE_URL
@@ -15,13 +15,39 @@
  * writes the static-only sitemap so the build isn't blocked.
  */
 
-import { writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUT_PATH  = resolve(__dirname, '../public/sitemap.xml')
+const LOCAL_ENV_PATH = resolve(__dirname, '../.env.local')
 const SITE_URL  = 'https://bakevault.com.ng'
+
+function loadLocalEnvIfPresent() {
+  if (!existsSync(LOCAL_ENV_PATH)) return
+
+  const lines = readFileSync(LOCAL_ENV_PATH, 'utf8').split(/\r?\n/)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+
+    const match = trimmed.match(/^([\w.-]+)\s*=\s*(.*)$/)
+    if (!match) continue
+
+    const [, key, rawValue] = match
+    if (process.env[key] !== undefined) continue
+
+    let value = rawValue.trim()
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1)
+    }
+    process.env[key] = value
+  }
+}
 
 // ── Static routes ─────────────────────────────────────────────────────────────
 const STATIC_URLS = [
@@ -107,6 +133,8 @@ function toXml(staticUrls, productRows) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
+  loadLocalEnvIfPresent()
+
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
 

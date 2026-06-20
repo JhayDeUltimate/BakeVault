@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "gen:types": "supabase gen types typescript --project-id hmcggmpetetyjeznhaos --schema public > src/lib/database.types.ts",
-    "sitemap": "node --env-file=.env.local scripts/generate-sitemap.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs",
     "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
     "build": "vite build",
     "build:full": "npm run sitemap && vite build",
