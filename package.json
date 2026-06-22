@@ -28,7 +28,7 @@
     "recharts": "^3.8.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@sentry/vite-plugin": "^5.3.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
