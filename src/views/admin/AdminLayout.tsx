@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, Link } from 'react-router'
 import { useAuth } from '@/hooks'
 import BrandLogo from '@/components/ui/BrandLogo'
 

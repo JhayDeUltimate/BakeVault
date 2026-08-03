@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { updateProduct, deleteProduct, deleteProductImage, getProductsPage, getProductsCount } from '../../lib/api'
 import type { DBProductWithCategory } from '../../lib/database.types'
 import { logger } from '@/lib/logger'

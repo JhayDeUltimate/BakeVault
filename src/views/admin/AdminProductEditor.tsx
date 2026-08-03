@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 import ProductForm, { type ProductFormData } from '@/components/admin/ProductForm'
 import { createProduct, getNextProductDisplayOrder, getProductById, updateProduct } from '@/lib/api'
 import type { DBProductWithCategory } from '@/lib/database.types'
