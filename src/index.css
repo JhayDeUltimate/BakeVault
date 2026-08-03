@@ -60,4 +60,10 @@ body,
     transition-duration:      0.01ms !important;
     scroll-behavior:          auto   !important;
   }
+
+  /* Loaders still need visible progress feedback even when decorative motion is reduced. */
+  .animate-spin {
+    animation-duration:       1s       !important;
+    animation-iteration-count: infinite !important;
+  }
 }
