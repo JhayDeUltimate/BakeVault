@@ -1,7 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { RecentlyViewedItem } from '@/hooks/useRecentlyViewed'
-import { FALLBACK_IMAGE } from '@/lib/image'
+import { FALLBACK_IMAGE, optimizeImageUrl } from '@/lib/image'
 
 interface Props {
   items:    RecentlyViewedItem[]
@@ -41,22 +41,30 @@ export default function RecentlyViewedStrip({
       </div>
 
       {/* Scrollable strip */}
-      <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-hide">
-        {items.map(item => (
+      <div
+        className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-scroll overscroll-x-contain px-4 pb-3 scrollbar-hide sm:-mx-1 sm:px-1"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {items.map(item => {
+          const imageSrc = optimizeImageUrl(item.image_url, { width: 320, height: 320, quality: 72 })
+
+          return (
           <button
             key={item.id}
             type="button"
             onClick={() => navigate(`/products/${item.slug}`)}
-            className="group flex-shrink-0 w-36 sm:w-44 bg-white border border-orange-100 rounded-2xl overflow-hidden hover:border-brand-orange hover:shadow-md transition-all text-left"
+            className="group w-36 flex-shrink-0 snap-start overflow-hidden rounded-2xl border border-orange-100 bg-white text-left transition-all hover:border-brand-orange hover:shadow-md sm:w-44"
             aria-label={`View ${item.name}`}
           >
             {/* Thumbnail */}
             <div className="aspect-square overflow-hidden bg-brand-cream">
               <img
-                src={item.image_url ?? FALLBACK_IMAGE}
+                src={imageSrc}
                 alt={item.name}
                 loading="lazy"
                 decoding="async"
+                width={320}
+                height={320}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
               />
@@ -77,7 +85,8 @@ export default function RecentlyViewedStrip({
               </p>
             </div>
           </button>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

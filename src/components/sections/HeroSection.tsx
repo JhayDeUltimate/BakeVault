@@ -48,8 +48,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
     <section className="relative w-full overflow-hidden bg-brand-darkGray shadow-sm lg:bg-brand-cream">
       <div className="relative h-[300px] overflow-hidden sm:h-[400px] lg:h-auto lg:min-h-[580px]">
         {products.map((product, index) => {
-          const mobileSrc = optimizeImageUrl(product.image_url, IMG.hero)
-          const desktopSrc = optimizeImageUrl(product.image_url)
+          const mobileSrc = optimizeImageUrl(product.image_url, { width: 720, height: 420, quality: 72 })
+          const mobileBackdropSrc = optimizeImageUrl(product.image_url, { width: 360, height: 240, quality: 45 })
+          const desktopSrc = optimizeImageUrl(product.image_url, IMG.hero)
           const isActive = index === activeSlide
 
           return (
@@ -59,7 +60,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
             >
               <div className="absolute inset-0 bg-brand-darkGray lg:hidden">
                 <img
-                  src={mobileSrc}
+                  src={mobileBackdropSrc}
                   alt=""
                   className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-3xl"
                   loading={index === 0 ? 'eager' : 'lazy'}
@@ -105,7 +106,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ products, onAddToCart }) => {
 
               <div className="absolute inset-0 hidden bg-brand-cream lg:block">
                 <img
-                  src={desktopSrc}
+                  src={mobileBackdropSrc}
                   alt=""
                   className="absolute inset-0 h-full w-full scale-110 object-cover opacity-10 blur-2xl"
                   loading={index === 0 ? 'eager' : 'lazy'}
