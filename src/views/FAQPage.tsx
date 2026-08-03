@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import SectionHeading from '@/components/ui/SectionHeading'
 import { WHATSAPP_URL } from '@/constants'
 import { getFAQs } from '@/lib/api'

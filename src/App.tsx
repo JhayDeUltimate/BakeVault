@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router'
 import { CartProvider } from '@/lib/cart-context'
 import PublicLayout from '@/components/PublicLayout'
 import ProtectedRoute from '@/components/admin/ProtectedRoute'

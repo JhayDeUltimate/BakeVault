@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { WHATSAPP_URL } from '@/constants'
 
 export default function NotFoundPage() {

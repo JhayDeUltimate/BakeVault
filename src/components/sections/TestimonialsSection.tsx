@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import type { DBTestimonial } from '../../lib/database.types'
 
 interface Props { testimonials: DBTestimonial[] }

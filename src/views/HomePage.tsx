@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import ProductCard from '@/components/ProductCard'
 import AboutSection from '@/components/sections/AboutSection'
 import HeroSection from '@/components/sections/HeroSection'

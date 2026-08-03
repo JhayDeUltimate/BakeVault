@@ -1,6 +1,6 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import ReviewForm from '@/components/ReviewForm'
 
 export default function LeaveReviewPage() {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import AboutSection from '@/components/sections/AboutSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading from '@/components/ui/SectionHeading'
