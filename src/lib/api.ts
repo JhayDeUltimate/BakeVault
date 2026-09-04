@@ -7,10 +7,7 @@ import { mapDBFAQs, type FAQCategoryData } from './faq'
 import { invalidateClientCache } from './client-cache'
 import type { Database, Json, DBProductWithCategory, DBCategory, DBEnquiry, DBTestimonial, DBProductRequest, DBAnalyticsEvent, DBAdminActivity, DBFAQCategory, DBFAQItem, DBFAQCategoryWithItems } from './database.types'
 
-// Re-export from image.ts so existing imports from @/lib/api still work
-export { getProductImages } from './image'
-
-export function toSlug(name: string): string {
+function toSlug(name: string): string {
   const ascii = name
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')

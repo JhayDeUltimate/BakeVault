@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { CartItem } from '../types'
+import type { CartItem } from '@/lib/types'
 import { logEnquiry } from '../lib/api'
 import { trackEvent } from '../lib/analytics'
 import { useCart } from '../lib/cart-context'

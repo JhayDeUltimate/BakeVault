@@ -1,4 +1,4 @@
-export const CONSENT_KEY = 'bakevault:cookie_consent'
+const CONSENT_KEY = 'bakevault:cookie_consent'
 
 export function getConsent(): boolean | null {
   try {
@@ -22,9 +22,3 @@ export function setConsent(value: boolean): void {
   } catch {}
 }
 
-export function clearConsent(): void {
-  try {
-    localStorage.removeItem(CONSENT_KEY)
-    try { window.dispatchEvent(new Event('bakevault:consent_change')) } catch {}
-  } catch {}
-}

@@ -80,7 +80,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCart(items)
   }, [items])
 
-  // Lock body scroll when any drawer is open (ref-counted to avoid conflicts with ProductModal)
+  // Lock body scroll when any drawer is open.
   const prevLockedRef = React.useRef(false)
   useEffect(() => {
     const shouldLock = isCartOpen || isCategoriesOpen

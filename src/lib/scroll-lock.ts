@@ -1,7 +1,7 @@
 /**
  * Ref-counted body scroll lock.
  *
- * Multiple components (ProductModal, Cart drawer, CategoryMenu) may all
+ * Multiple components (Cart drawer, CategoryMenu) may both
  * want to prevent background scrolling at the same time. A simple
  * `document.body.style.overflow = 'hidden' / ''` toggle creates a race:
  * whichever component unmounts last "wins", potentially unlocking scroll

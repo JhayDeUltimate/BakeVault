@@ -107,9 +107,6 @@ export default function CatalogPage() {
     }
   }, [categories, searchParams, setSearchParams])
 
-  // Track page view once
-  useEffect(() => { trackEvent('page_view', { page: '/catalog' }) }, [])
-
   // Track non-empty searches so the admin dashboard surfaces customer demand signals
   useEffect(() => {
     if (debouncedSearch.trim()) trackEvent('search', { query: debouncedSearch.trim() })

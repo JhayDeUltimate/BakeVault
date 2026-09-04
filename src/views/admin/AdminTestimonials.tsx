@@ -3,7 +3,7 @@ import { getTestimonials, createTestimonial, updateTestimonial, deleteTestimonia
 import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { DBTestimonial } from '@/lib/database.types'
 
-export function AdminTestimonials() {
+export default function AdminTestimonials() {
   const [testimonials, setTestimonials] = useState<DBTestimonial[]>([])
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState<null | 'add' | DBTestimonial>(null)
@@ -221,5 +221,3 @@ export function AdminTestimonials() {
     </div>
   )
 }
-
-export default AdminTestimonials
