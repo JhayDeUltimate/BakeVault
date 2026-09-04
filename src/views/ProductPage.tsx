@@ -277,7 +277,7 @@ export default function ProductPage() {
         })}</script>
       </Helmet>
 
-      <nav className="flex items-center gap-2 text-xs text-brand-darkGray/40 font-bold uppercase tracking-wider mb-8">
+      <nav className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-brand-darkGray/40 font-bold uppercase tracking-wider mb-8">
         <button onClick={() => navigate(-1)} className="hover:text-brand-orange transition-colors mr-1" aria-label="Go back">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
@@ -287,22 +287,25 @@ export default function ProductPage() {
         {product.categories?.name && (
           <>
             <span>/</span>
-            <button onClick={() => navigate(`/catalog?cat=${encodeURIComponent(product.categories!.name)}`)} className="hover:text-brand-orange transition-colors">
+            <button
+              onClick={() => navigate(`/catalog?cat=${encodeURIComponent(product.categories!.name)}`)}
+              className="max-w-[10rem] truncate hover:text-brand-orange transition-colors sm:max-w-none"
+            >
               {product.categories.name}
             </button>
           </>
         )}
         <span>/</span>
-        <span className="text-brand-darkGray/70">{product.name}</span>
+        <span className="min-w-0 truncate text-brand-darkGray/70">{product.name}</span>
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)_20rem] lg:items-start">
-        <div className="space-y-3">
-          <div className="relative aspect-square bg-white rounded-2xl overflow-hidden border border-orange-100 shadow-sm">
+      <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)_20rem] lg:items-start">
+        <div className="min-w-0 space-y-3">
+          <div className="relative aspect-square max-w-full bg-white rounded-2xl overflow-hidden border border-orange-100 shadow-sm">
             <img
-              src={optimizeImageUrl(images[slide] ?? null, IMG.modal)}
+              src={optimizeImageUrl(images[slide] ?? null)}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-contain"
               onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
             />
             {images.length > 1 && (
@@ -349,12 +352,12 @@ export default function ProductPage() {
           )}
         </div>
 
-        <section className="flex flex-col gap-5">
+        <section className="min-w-0 flex flex-col gap-5">
           <div>
             <span className="text-[10px] font-bold text-brand-brown uppercase tracking-widest">
               {categoryName}
             </span>
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-brand-darkGray font-display mt-1 leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-brand-darkGray font-display mt-1 leading-tight break-words">
               {product.name}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -521,9 +524,9 @@ export default function ProductPage() {
           <div className="grid md:grid-cols-[18rem_minmax(0,1fr)]">
             <div className="bg-brand-cream">
               <img
-                src={optimizeImageUrl(images[0] ?? null, IMG.modal)}
+                src={optimizeImageUrl(images[0] ?? null)}
                 alt={product.name}
-                className="h-full min-h-64 w-full object-cover"
+                className="h-full min-h-64 w-full object-contain"
                 onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
               />
             </div>
