@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { updateEnquiryStatus, getEnquiriesPage, getEnquiriesCount } from '@/lib/api'
 import type { DBEnquiry } from '@/lib/database.types'
 
-export function AdminEnquiries() {
+export default function AdminEnquiries() {
   const [enquiries, setEnquiries] = useState<DBEnquiry[]>([])
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState<string | null>(null)
@@ -100,5 +100,3 @@ export function AdminEnquiries() {
       </div>
   )
 }
-
-export default AdminEnquiries

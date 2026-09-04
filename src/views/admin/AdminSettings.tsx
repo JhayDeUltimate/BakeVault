@@ -6,7 +6,7 @@ import { getSettings, upsertSetting } from '@/lib/api'
 
 const SITEMAP_URL = 'https://bakevault.com.ng/sitemap.xml'
 
-export function AdminSettings() {
+export default function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [original, setOriginal] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
@@ -107,5 +107,3 @@ export function AdminSettings() {
     </div>
   )
 }
-
-export default AdminSettings

@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Product } from '../types'
+import type { Product } from '@/lib/types'
 import { optimizeImageUrl, FALLBACK_IMAGE, IMG } from '@/lib/image'
 
 interface Props {

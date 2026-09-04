@@ -3,7 +3,7 @@ import { getAdminCategories, createCategory, updateCategory, deleteCategory } fr
 import { friendlyErrorMessage } from '@/lib/error-messages'
 import type { DBCategory } from '@/lib/database.types'
 
-export function AdminCategories() {
+export default function AdminCategories() {
   const [categories, setCategories] = useState<DBCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -285,5 +285,3 @@ export function AdminCategories() {
     </div>
   )
 }
-
-export default AdminCategories

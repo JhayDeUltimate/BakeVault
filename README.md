@@ -27,7 +27,6 @@ src/
     Cart.tsx                      # Order drawer and WhatsApp quote checkout
     CategoryMenu.tsx              # Mobile navigation/category drawer
     ProductCard.tsx
-    ProductModal.tsx
     ProductAssistant.tsx
     ProductRequestModal.tsx
     RecentlyViewedStrip.tsx
@@ -114,7 +113,6 @@ VITE_PUBLIC_POSTHOG_HOST=
 Additional optional client variables used by the code:
 
 ```env
-VITE_WHATSAPP_CTA_LABEL=
 VITE_WHATSAPP_CTA_PREFILL=
 VITE_APP_VERSION=
 ```
@@ -453,7 +451,6 @@ First-party analytics:
 PostHog:
 
 - `PostHogProvider` is mounted in `src/main.tsx`.
-- `useTrack()` wraps `usePostHog()` and no-ops when PostHog is unavailable.
 
 Sentry:
 

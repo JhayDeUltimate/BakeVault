@@ -1,8 +1,8 @@
-export type ProductDescriptionValidation =
+type ProductDescriptionValidation =
   | { ok: true; value: string }
   | { ok: false; error: string }
 
-export interface ProductDescriptionSection {
+interface ProductDescriptionSection {
   heading: string
   lines: string[]
 }
