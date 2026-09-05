@@ -232,7 +232,7 @@ export default function ProductPage() {
   }
 
   return (
-    <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden">
+    <main className="flex-grow w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden">
       <Helmet>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
