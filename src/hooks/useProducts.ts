@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getProducts } from '../lib/api'
 import { CACHE_TTL, getOrSetClientCache, stableSerialize } from '@/lib/client-cache'
+import { fuzzyMatch } from '@/lib/fuzzy-search'
 import type { DBProductWithCategory } from '../lib/database.types'
 
 interface Options {
@@ -54,10 +55,10 @@ export function useProducts(options: Options = {}) {
     setLoading(true)
     setError(null)
     try {
-      const { refetchOnFocus: _refetchOnFocus, ...cacheableOptions } = optionsRef.current
+      const { refetchOnFocus: _refetchOnFocus, search: _search, ...cacheableOptions } = optionsRef.current
       const data = await getOrSetClientCache(
         `products:${stableSerialize(cacheableOptions)}`,
-        () => getProducts(optionsRef.current),
+        () => getProducts({ ...optionsRef.current, search: undefined }),
         {
           ttlMs: CACHE_TTL.products,
           storage: 'localStorage',
@@ -65,7 +66,23 @@ export function useProducts(options: Options = {}) {
         },
       )
       if (id === fetchIdRef.current) {
-        setProducts(data)
+        const search = optionsRef.current.search
+        if (search) {
+          // Client-side fuzzy matching against name + category name
+          const targets = data.map(p => ({
+            id: p.id,
+            text: [p.name, p.categories?.name].filter(Boolean).join(' '),
+          }))
+          const matched = fuzzyMatch(search, targets)
+          const matchedIds = new Set(matched.map(m => m.id))
+          const idToScore = new Map(matched.map(m => [m.id, m.score]))
+          const filtered = data
+            .filter(p => matchedIds.has(p.id))
+            .sort((a, b) => (idToScore.get(b.id) ?? 0) - (idToScore.get(a.id) ?? 0))
+          setProducts(filtered)
+        } else {
+          setProducts(data)
+        }
       }
     } catch (e) {
       if (id === fetchIdRef.current) {
