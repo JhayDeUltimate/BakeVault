@@ -303,9 +303,13 @@ export default function ProductPage() {
         <div className="min-w-0 w-full space-y-3">
           <div className="relative aspect-square w-full max-w-full bg-white rounded-2xl overflow-hidden border border-orange-100 shadow-sm">
             <img
-              src={optimizeImageUrl(images[slide] ?? null)}
+              src={optimizeImageUrl(images[slide] ?? null, IMG.hero)}
               alt={product.name}
               className="h-full w-full object-contain"
+              fetchPriority="high"
+              decoding="async"
+              width={600}
+              height={600}
               onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
             />
             {images.length > 1 && (
@@ -524,9 +528,13 @@ export default function ProductPage() {
           <div className="grid md:grid-cols-[18rem_minmax(0,1fr)]">
             <div className="bg-brand-cream">
               <img
-                src={optimizeImageUrl(images[0] ?? null)}
+                src={optimizeImageUrl(images[0] ?? null, IMG.modal)}
                 alt={product.name}
                 className="h-full min-h-64 w-full object-contain"
+                loading="lazy"
+                decoding="async"
+                width={800}
+                height={600}
                 onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
               />
             </div>
