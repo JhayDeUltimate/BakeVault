@@ -85,7 +85,7 @@ export async function getProducts(filters?: {
   if (!filters?.includeUnavailable) query = query.eq('is_available', true)
   if (filters?.featuredOnly)        query = query.eq('is_featured', true)
   if (filters?.categoryId)          query = query.eq('category_id', filters.categoryId)
-  if (filters?.search?.trim())      query = query.ilike('name', `%${filters.search.trim()}%`)
+  // Search filtering moved client-side for fuzzy matching (see useProducts)
   if (filters?.limit)               query = query.limit(filters.limit)
   const { data, error } = await query
   if (error) throw new Error(error.message)

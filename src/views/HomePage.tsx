@@ -45,7 +45,7 @@ export default function HomePage() {
   return (
     <>
       <Helmet>
-        <title>BakeVault Lagos | Premium Baking Supplies & Ingredients</title>
+        <title>BakeVault Lagos | Premium Baking Supplies &amp; Ingredients</title>
         <meta name="description" content="Shop premium baking supplies, ingredients, and tools at wholesale prices in Lagos, Nigeria. Reliable delivery for your baking success." />
       </Helmet>
       <HeroSection products={heroSlides} onAddToCart={p => addToCart(mapDBProduct(p))} />
@@ -117,6 +117,18 @@ export default function HomePage() {
                   />
                 ))
               )}
+            </div>
+
+            <div className="mt-8 sm:mt-10 text-center">
+              <Link
+                to="/catalog"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-brand-darkGray hover:bg-brand-orange text-white font-bold px-10 py-4 rounded-2xl transition-all active:scale-95 text-sm font-display uppercase tracking-wide shadow-lg"
+              >
+                Browse Full Catalog
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
           </section>
 

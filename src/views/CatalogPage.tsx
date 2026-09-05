@@ -65,6 +65,7 @@ export default function CatalogPage() {
   }, [])
 
   const productsRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const { products: rawProducts, loading: productsLoading } = useProducts({ categoryId, search: debouncedSearch })
   const { categories, loading: categoriesLoading } = useCategories()
@@ -106,6 +107,20 @@ export default function CatalogPage() {
       setTimeout(() => productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
     }
   }, [categories, searchParams, setSearchParams])
+
+  // ── Handle ?focus=search (e.g. from the header search icon) ────────────────
+  // Note: if a URL contains both ?cat= and ?focus=search, there is a small
+  // chance the cat effect's setSearchParams({}) runs first and strips focus
+  // before this effect reads it. This is a pre-existing param-clearing quirk,
+  // not something introduced here — leave for a future task if it matters.
+  useEffect(() => {
+    if (searchParams.get('focus') !== 'search') return
+    searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    searchInputRef.current?.focus()
+    const next = new URLSearchParams(searchParams)
+    next.delete('focus')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   // Track non-empty searches so the admin dashboard surfaces customer demand signals
   useEffect(() => {
@@ -151,6 +166,7 @@ export default function CatalogPage() {
       {/* Search */}
       <div className="max-w-2xl mx-auto mt-10 sm:mt-16 relative">
         <input type="text" placeholder="Search by product name or brand..."
+          ref={searchInputRef}
           value={searchInput}
           onChange={e => { setSearchInput(e.target.value); if (e.target.value) setCatExpanded(false) }}
           className="w-full bg-white border-2 border-orange-100 rounded-2xl px-6 py-4 pl-14 focus:outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all shadow-sm font-medium h-12 sm:h-14" />

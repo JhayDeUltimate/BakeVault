@@ -36,7 +36,7 @@ describe('useProducts', () => {
     expect(mockedGetProducts).toHaveBeenCalledTimes(1)
     expect(mockedGetProducts).toHaveBeenLastCalledWith({
       categoryId: null,
-      search: '',
+      search: undefined,
       featuredOnly: false,
       includeDescription: false,
       includeUnavailable: false,
