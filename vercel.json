@@ -1,12 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/:path(.*)",
-      "has": [{ "type": "host", "value": "www.bakevault.com.ng" }],
-      "destination": "https://bakevault.com.ng/:path",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
