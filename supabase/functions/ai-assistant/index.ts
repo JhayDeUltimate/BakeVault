@@ -1,8 +1,7 @@
 
 
-// Models in priority order — if the primary is rate-limited, fall back automatically.
-// Verified against the API key's model list (gemini-1.5-flash is deprecated/unavailable).
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
+// Stable Gemini model used for chat and product-image analysis.
+const GEMINI_MODELS = ['gemini-3.6-flash']
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 const TAVILY_API_URL = 'https://api.tavily.com/search'
 
@@ -294,7 +293,7 @@ async function searchAnalyzeProduct(apiKey: string, productName: string): Promis
     .slice(0, 18_000)
 }
 
-// ── Gemini API call (with model fallback) ─────────────────────────────────────
+// ── Gemini API call ───────────────────────────────────────────────────────────
 
 async function callGemini(
   apiKey: string,
@@ -324,7 +323,7 @@ async function callGemini(
         signal: controller.signal,
       })
 
-      // If rate-limited or overloaded and we have more models to try, fall back
+      // If rate-limited or overloaded and we have more configured models to try, fall back.
       if ((res.status === 429 || res.status === 503) && i < GEMINI_MODELS.length - 1) {
         log('WARN', 'Gemini model rate limited, falling back', { model, status: res.status, next_model: GEMINI_MODELS[i + 1] })
         continue
@@ -332,7 +331,7 @@ async function callGemini(
 
       return res
     } catch (err) {
-      // On network/timeout error, try next model if available
+      // On network/timeout error, try the next configured model if available.
       if (i < GEMINI_MODELS.length - 1) {
         log('WARN', 'Gemini model failed, falling back', { model, error: err instanceof Error ? err.message : String(err), next_model: GEMINI_MODELS[i + 1] })
         continue

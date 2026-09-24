@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router'
+import { Helmet } from 'react-helmet-async'
 import AboutSection from '@/components/sections/AboutSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import SectionHeading from '@/components/ui/SectionHeading'
@@ -11,6 +12,9 @@ export default function AboutPage() {
 
   return (
     <>
+      <Helmet>
+        <link rel="canonical" href="https://bakevault.com.ng/about" />
+      </Helmet>
       <section className="bg-white border-b border-orange-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="max-w-7xl mx-auto">
           <SectionHeading

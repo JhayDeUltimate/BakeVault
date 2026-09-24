@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router'
+import { Helmet } from 'react-helmet-async'
 import SectionHeading from '@/components/ui/SectionHeading'
 import { WHATSAPP_URL } from '@/constants'
 
@@ -63,6 +64,9 @@ const TIPS = [
 export default function HowToOrderPage() {
     return (
         <main className="flex-grow">
+            <Helmet>
+                <link rel="canonical" href="https://bakevault.com.ng/how-to-order" />
+            </Helmet>
             {/* Hero */}
             <section className="bg-white border-b border-orange-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
                 <div className="max-w-3xl mx-auto text-left sm:text-center">

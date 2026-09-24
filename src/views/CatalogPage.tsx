@@ -39,6 +39,7 @@ function CatalogHelmet({ category, searchInput }: { category: DBCategory | null;
       <meta property="og:description" content={meta.description} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={meta.description} />
+      <link rel="canonical" href="https://bakevault.com.ng/catalog" />
     </Helmet>
   )
 }
