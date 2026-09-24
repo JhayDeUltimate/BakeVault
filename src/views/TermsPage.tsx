@@ -1,4 +1,5 @@
 import React from 'react'
+import { Helmet } from 'react-helmet-async'
 import SectionHeading from '@/components/ui/SectionHeading'
 import { WHATSAPP_URL } from '@/constants'
 import { useSettings } from '@/hooks'
@@ -68,6 +69,9 @@ Our total liability for any claim arising from a transaction is limited to the v
 
     return (
         <main className="flex-grow">
+            <Helmet>
+                <link rel="canonical" href="https://bakevault.com.ng/terms" />
+            </Helmet>
             <section className="bg-white border-b border-orange-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
                 <div className="max-w-3xl mx-auto text-center">
                     <SectionHeading

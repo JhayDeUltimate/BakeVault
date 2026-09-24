@@ -212,7 +212,7 @@ What it does:
 
 Runtime behavior:
 
-- Gemini models in fallback order: `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`
+- Gemini model: `gemini-3.6-flash`
 - Tavily search for current product context
 - CORS allowlisting from `ALLOWED_ORIGINS`
 - Session-keyed IP rate limiting for chat mode (30 messages per minute per IP, via Deno KV)

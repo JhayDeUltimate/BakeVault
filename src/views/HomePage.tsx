@@ -47,6 +47,7 @@ export default function HomePage() {
       <Helmet>
         <title>BakeVault Lagos | Premium Baking Supplies &amp; Ingredients</title>
         <meta name="description" content="Shop premium baking supplies, ingredients, and tools at wholesale prices in Lagos, Nigeria. Reliable delivery for your baking success." />
+        <link rel="canonical" href="https://bakevault.com.ng/" />
       </Helmet>
       <HeroSection products={heroSlides} onAddToCart={p => addToCart(mapDBProduct(p))} />
       <AboutSection />
