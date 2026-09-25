@@ -20,13 +20,16 @@ const DIRECT_IMAGE_HOSTS = new Set([
   'images.weserv.nl',
 ])
 
-function proxiedImageUrl(parsed: URL, opts: { width?: number; height?: number; quality: number }): string {
+function proxiedImageUrl(
+  parsed: URL,
+  opts: { width?: number; height?: number; quality: number; fit?: 'cover' | 'inside' | 'contain' },
+): string {
   const remote = `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`
   const params = new URLSearchParams({ url: remote })
 
   if (opts.width) params.set('w', String(opts.width))
   if (opts.height) params.set('h', String(opts.height))
-  if (opts.width || opts.height) params.set('fit', 'cover')
+  if (opts.width || opts.height) params.set('fit', opts.fit ?? 'cover')
   params.set('q', String(opts.quality))
 
   return `https://images.weserv.nl/?${params.toString()}`
@@ -41,13 +44,13 @@ function proxiedImageUrl(parsed: URL, opts: { width?: number; height?: number; q
  */
 export function optimizeImageUrl(
   url: string | null | undefined,
-  _opts?: { width?: number; height?: number; quality?: number },
+  _opts?: { width?: number; height?: number; quality?: number; fit?: 'cover' | 'inside' | 'contain' },
 ): string {
   const source = url?.trim()
   if (!source) return FALLBACK_IMAGE
 
   const opts = _opts ?? {}
-  const { width, height, quality = 75 } = opts
+  const { width, height, quality = 75, fit } = opts
 
   if (/^(blob|data):/i.test(source) || source.startsWith('/')) return source
 
@@ -58,7 +61,7 @@ export function optimizeImageUrl(
 
     if (!width && !height && DIRECT_IMAGE_HOSTS.has(parsed.hostname)) return source
     if (parsed.hostname === 'images.weserv.nl') return source
-    return proxiedImageUrl(parsed, { width, height, quality })
+    return proxiedImageUrl(parsed, { width, height, quality, fit })
   } catch (e) {
     return source
   }
