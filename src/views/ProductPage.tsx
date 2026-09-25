@@ -303,7 +303,7 @@ export default function ProductPage() {
         <div className="min-w-0 w-full space-y-3">
           <div className="relative aspect-square w-full max-w-full bg-white rounded-2xl overflow-hidden border border-orange-100 shadow-sm">
             <img
-              src={optimizeImageUrl(images[slide] ?? null, IMG.hero)}
+              src={optimizeImageUrl(images[slide] ?? null, { ...IMG.hero, fit: 'inside' })}
               alt={product.name}
               className="h-full w-full object-contain"
               fetchPriority="high"
@@ -528,7 +528,7 @@ export default function ProductPage() {
           <div className="grid md:grid-cols-[18rem_minmax(0,1fr)]">
             <div className="bg-brand-cream">
               <img
-                src={optimizeImageUrl(images[0] ?? null, IMG.modal)}
+                src={optimizeImageUrl(images[0] ?? null, { ...IMG.modal, fit: 'inside' })}
                 alt={product.name}
                 className="h-full min-h-64 w-full object-contain"
                 loading="lazy"
